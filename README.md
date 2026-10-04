@@ -118,7 +118,18 @@ resources/fonts/      Custom date, time and temperature fonts
 package.json          Pebble Time 2 target, permissions and message keys
 ```
 
-## Third-party asset
+## License
+
+Halftone's source code and original artwork are available under the
+[PolyForm Noncommercial License 1.0.0](LICENSE). You may use, modify and share
+them for noncommercial purposes. Commercial use requires separate permission
+from Xef. Redistributed copies and derivatives must retain the license and the
+required attribution notice naming Xef as the original author.
+
+Because commercial use is restricted, Halftone is source-available rather than
+OSI-approved open-source software.
+
+### Third-party font
 
 The bundled Fira Sans Condensed Bold font is licensed under the SIL Open Font
 License 1.1. Its license text is included at

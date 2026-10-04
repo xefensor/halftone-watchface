@@ -1,0 +1,17 @@
+build/
+node_modules/
+.lock-waf_*
+.waf-*
+*.pbw
+!dist/*.pbw
+
+# Local emulator and visual-QA captures
+qa/
+corners-*.png
+effects-preview.png
+large-*.png
+normal-size-regression.png
+timeline-preview.png
+
+# Local release assembly workspace
+release/

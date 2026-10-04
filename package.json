@@ -1,0 +1,215 @@
+{
+  "name": "halftone",
+  "author": "Xef",
+  "version": "1.0.0",
+  "license": "SEE LICENSE IN LICENSE",
+  "keywords": [
+    "pebble-app",
+    "watchface",
+    "pebble-time-2"
+  ],
+  "private": true,
+  "dependencies": {
+    "@rebble/clay": "^1.0.0"
+  },
+  "pebble": {
+    "displayName": "Halftone",
+    "uuid": "d4dd5046-53be-4624-99e8-46e0b377fe66",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "emery"
+    ],
+    "watchapp": {
+      "watchface": true
+    },
+    "capabilities": [
+      "location",
+      "configurable"
+    ],
+    "messageKeys": [
+      "TEMPERATURE",
+      "REQUEST_WEATHER",
+      "BACKGROUND_COLOR",
+      "TEXT_COLOR",
+      "DEPTH_EFFECT",
+      "TEXT_SHADOW",
+      "LARGE_TEXT"
+    ],
+    "resources": {
+      "media": [
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_24",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[0-9A-ZÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽ·. °C-]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_76",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_38",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[0-9°C-]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_22",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[0-9A-ZÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽ·. °C-]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_20",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[0-9A-ZÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽ·. °C-]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_64",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_30",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[0-9°C-]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_28",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[0-9A-ZÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽ·. °C-]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_80",
+          "file": "fonts/FiraSansCondensed-Bold-Time.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_84",
+          "file": "fonts/FiraSansCondensed-Bold-Time.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_88",
+          "file": "fonts/FiraSansCondensed-Bold-Time.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_92",
+          "file": "fonts/FiraSansCondensed-Bold-Time.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_96",
+          "file": "fonts/FiraSansCondensed-Bold-Time.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_100",
+          "file": "fonts/FiraSansCondensed-Bold-Time.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_104",
+          "file": "fonts/FiraSansCondensed-Bold-Time.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_108",
+          "file": "fonts/FiraSansCondensed-Bold-Time.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_44",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[0-9°C-]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_72",
+          "file": "fonts/FiraSansCondensed-Bold-Time.ttf",
+          "characterRegex": "[:0-9]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_34",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[0-9°C-]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        }
+      ]
+    }
+  }
+}

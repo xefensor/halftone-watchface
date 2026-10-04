@@ -1,0 +1,10 @@
+Initial public release.
+
+- Native 200 × 228 Pebble Time 2 layout
+- Rounded halftone transition shaped to follow the metal frame
+- Time, automatically localized weekday/date and current local temperature
+- Automatic Timeline Quick View layout
+- Configurable background and text colors
+- Optional 4-step transition, floating shadow and edge-to-edge text
+- Weather caching and 30-minute refresh interval
+- Weekday translations for 17 languages with English fallback

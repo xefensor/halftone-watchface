@@ -1,0 +1,15 @@
+Halftone makes the color e-paper display feel like part of the Pebble Time 2 body. A precise halftone border grows out of the black bezel and curves around the screen with the same rounded shape as the metal frame.
+
+Features:
+- Large, readable digital time
+- Weekday automatically localized to the PebbleOS language
+- Current local temperature in °C, powered by Open-Meteo
+- Layout that automatically adapts to Timeline Quick View
+- Configurable background and text colors
+- Original 3-step or denser 4-step dot transition
+- Optional edge-to-edge text and floating shadow
+- Minute-only clock updates for low battery use
+
+Designed specifically for Pebble Time 2 (Emery). Weather requires a connected phone, internet access and location permission. Halftone sends the coordinates requested by the Pebble phone app directly to Open-Meteo to obtain the current temperature. It contains no account, advertising or analytics.
+
+Included weekday languages: English, Czech, Slovak, German, French, Spanish, Italian, Portuguese, Dutch, Polish, Danish, Swedish, Norwegian, Finnish, Hungarian, Romanian and Turkish. Unsupported locales fall back to English.

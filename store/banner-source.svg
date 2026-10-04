@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="720" height="320" viewBox="0 0 720 320">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#08090b"/>
+      <stop offset="1" stop-color="#202126"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e1e2e5"/>
+      <stop offset="0.45" stop-color="#76797f"/>
+      <stop offset="1" stop-color="#c8c9cc"/>
+    </linearGradient>
+    <pattern id="dots" width="16" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="4" cy="4" r="3" fill="#ed6b69" opacity="0.48"/>
+      <circle cx="12" cy="12" r="1.7" fill="#ed6b69" opacity="0.28"/>
+    </pattern>
+    <clipPath id="screenClip">
+      <rect x="466" y="46" width="200" height="228" rx="30" ry="30"/>
+    </clipPath>
+  </defs>
+
+  <rect width="720" height="320" fill="url(#background)"/>
+  <path d="M0 0H355C310 60 315 126 350 174C376 209 364 270 318 320H0Z"
+        fill="#ed6b69"/>
+  <path d="M306 0H420V320H278C337 261 337 207 306 164C271 116 269 60 306 0Z"
+        fill="url(#dots)"/>
+
+  <text x="42" y="129" fill="#ffffff"
+        font-family="Fira Sans Condensed, sans-serif" font-size="68"
+        font-weight="700" letter-spacing="2">HALFTONE</text>
+  <text x="44" y="171" fill="#101114"
+        font-family="Fira Sans Condensed, sans-serif" font-size="24"
+        font-weight="700">DITHERED INTO THE BEZEL</text>
+  <text x="44" y="229" fill="#ffffff"
+        font-family="Fira Sans Condensed, sans-serif" font-size="20"
+        opacity="0.92">Made for Pebble Time 2</text>
+
+  <rect x="493" y="1" width="146" height="22" rx="8" fill="#8b8d91"/>
+  <rect x="493" y="297" width="146" height="22" rx="8" fill="#8b8d91"/>
+  <rect x="443" y="12" width="246" height="296" rx="50"
+        fill="url(#metal)" stroke="#f4f4f5" stroke-width="2"/>
+  <rect x="454" y="28" width="224" height="264" rx="42" fill="#050505"/>
+  <image x="466" y="46" width="200" height="228"
+         xlink:href="emery_01_orange.png" clip-path="url(#screenClip)"/>
+</svg>
