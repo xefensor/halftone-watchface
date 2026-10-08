@@ -33,6 +33,27 @@ module.exports = [
     "items": [
       {
         "type": "heading",
+        "defaultValue": "Time & temperature"
+      },
+      {
+        "type": "toggle",
+        "messageKey": "USE_12_HOUR",
+        "defaultValue": false,
+        "label": "12-hour time"
+      },
+      {
+        "type": "toggle",
+        "messageKey": "USE_FAHRENHEIT",
+        "defaultValue": false,
+        "label": "Temperature in Fahrenheit"
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
         "defaultValue": "Text size"
       },
       {

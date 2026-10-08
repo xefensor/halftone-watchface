@@ -1,9 +1,9 @@
 Halftone makes the color e-paper display feel like part of the Pebble Time 2 body. A precise halftone border grows out of the black bezel and curves around the screen with the same rounded shape as the metal frame.
 
 Features:
-- Large, readable digital time
+- Large, readable digital time with 12-hour and 24-hour options
 - Weekday automatically localized to the PebbleOS language
-- Current local temperature in °C, powered by Open-Meteo
+- Current local temperature in °C or °F, powered by Open-Meteo
 - Layout that automatically adapts to Timeline Quick View
 - Configurable background and text colors
 - Original 3-step or denser 4-step dot transition

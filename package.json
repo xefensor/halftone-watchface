@@ -1,7 +1,7 @@
 {
   "name": "halftone",
   "author": "Xef",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "license": "SEE LICENSE IN LICENSE",
   "keywords": [
     "pebble-app",
@@ -34,7 +34,9 @@
       "TEXT_COLOR",
       "DEPTH_EFFECT",
       "TEXT_SHADOW",
-      "LARGE_TEXT"
+      "LARGE_TEXT",
+      "USE_12_HOUR",
+      "USE_FAHRENHEIT"
     ],
     "resources": {
       "media": [
@@ -60,7 +62,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_38",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9°C-]",
+          "characterRegex": "[0-9°CF-]",
           "targetPlatforms": [
             "emery"
           ]
@@ -96,7 +98,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_30",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9°C-]",
+          "characterRegex": "[0-9°CF-]",
           "targetPlatforms": [
             "emery"
           ]
@@ -186,7 +188,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_44",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9°C-]",
+          "characterRegex": "[0-9°CF-]",
           "targetPlatforms": [
             "emery"
           ]
@@ -204,7 +206,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_34",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9°C-]",
+          "characterRegex": "[0-9°CF-]",
           "targetPlatforms": [
             "emery"
           ]

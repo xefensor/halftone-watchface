@@ -9,9 +9,9 @@ bezel using a procedural halftone-dot transition.
 
 Halftone displays:
 
-- 24-hour time
+- configurable 12-hour or 24-hour time
 - automatically localized day name and numeric date
-- current temperature in Celsius
+- current temperature in Celsius or Fahrenheit
 - a black-to-orange halftone transition drawn directly from the screen edge
 - an adaptive Timeline Peek layout for upcoming events
 - optional recessed-dot and floating-text optical effects
@@ -20,9 +20,9 @@ Halftone displays:
 
 ## Install the prebuilt watchface
 
-Download [`dist/Halftone-1.0.0.pbw`](dist/Halftone-1.0.0.pbw) and open it with
+Download [`dist/Halftone-1.1.0.pbw`](dist/Halftone-1.1.0.pbw) and open it with
 the Pebble mobile app to install it. The complete Pebble Store upload kit is
-available as [`dist/Halftone-1.0.0-store-release.zip`](dist/Halftone-1.0.0-store-release.zip).
+available as [`dist/Halftone-1.1.0-store-release.zip`](dist/Halftone-1.1.0-store-release.zip).
 You can also build the source yourself as described below.
 
 ## How it works
@@ -35,6 +35,11 @@ key is required.
 
 The last successful temperature is persisted on the watch, so temporary phone
 or network disconnection does not blank the display.
+
+The settings page can switch independently between 24-hour and 12-hour time,
+and between Celsius and Fahrenheit. Weather is cached internally in Celsius,
+so changing the displayed unit works immediately even while the phone is
+offline.
 
 The weekday automatically follows the PebbleOS language. Halftone includes
 English, Czech, Slovak, German, French, Spanish, Italian, Portuguese, Dutch,

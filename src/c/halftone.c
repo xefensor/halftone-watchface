@@ -6,6 +6,8 @@
 #define PERSIST_KEY_DEPTH_EFFECT 4
 #define PERSIST_KEY_TEXT_SHADOW 5
 #define PERSIST_KEY_LARGE_TEXT 6
+#define PERSIST_KEY_USE_12_HOUR 7
+#define PERSIST_KEY_USE_FAHRENHEIT 8
 
 #define DOT_OUTER_CORNER_RADIUS 30
 #define DOT_SPACING 10
@@ -48,6 +50,8 @@ static bool s_compact_layout;
 static bool s_depth_effect_enabled;
 static bool s_text_shadow_enabled;
 static bool s_large_text_enabled;
+static bool s_use_12_hour;
+static bool s_use_fahrenheit;
 
 static char s_date_buffer[40];
 static char s_time_buffer[6];
@@ -518,7 +522,11 @@ static void prv_update_clock(void) {
   struct tm *current_time = localtime(&now);
   const char *const *localized_days = prv_get_localized_days();
 
-  strftime(s_time_buffer, sizeof(s_time_buffer), "%H:%M", current_time);
+  strftime(s_time_buffer, sizeof(s_time_buffer),
+           s_use_12_hour ? "%I:%M" : "%H:%M", current_time);
+  if (s_use_12_hour && s_time_buffer[0] == '0') {
+    memmove(s_time_buffer, s_time_buffer + 1, strlen(s_time_buffer));
+  }
   snprintf(s_date_buffer, sizeof(s_date_buffer), "%s · %d. %d.",
            localized_days[current_time->tm_wday], current_time->tm_mday,
            current_time->tm_mon + 1);
@@ -533,9 +541,26 @@ static void prv_update_clock(void) {
   prv_apply_unobstructed_layout();
 }
 
-static void prv_show_temperature(int temperature) {
-  snprintf(s_temperature_buffer, sizeof(s_temperature_buffer), "%d°C",
-           temperature);
+static void prv_show_temperature(int temperature_celsius) {
+  int display_temperature = temperature_celsius;
+  char unit = 'C';
+
+  if (s_use_fahrenheit) {
+    const int scaled = temperature_celsius * 9;
+    display_temperature =
+        (scaled >= 0 ? scaled + 2 : scaled - 2) / 5 + 32;
+    unit = 'F';
+  }
+
+  snprintf(s_temperature_buffer, sizeof(s_temperature_buffer), "%d°%c",
+           display_temperature, unit);
+  text_layer_set_text(s_temperature_layer, s_temperature_buffer);
+  text_layer_set_text(s_temperature_shadow_layer, s_temperature_buffer);
+}
+
+static void prv_show_temperature_placeholder(void) {
+  snprintf(s_temperature_buffer, sizeof(s_temperature_buffer), "--°%c",
+           s_use_fahrenheit ? 'F' : 'C');
   text_layer_set_text(s_temperature_layer, s_temperature_buffer);
   text_layer_set_text(s_temperature_shadow_layer, s_temperature_buffer);
 }
@@ -607,11 +632,40 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
   Tuple *depth_effect_tuple = dict_find(iterator, MESSAGE_KEY_DEPTH_EFFECT);
   Tuple *text_shadow_tuple = dict_find(iterator, MESSAGE_KEY_TEXT_SHADOW);
   Tuple *large_text_tuple = dict_find(iterator, MESSAGE_KEY_LARGE_TEXT);
+  Tuple *use_12_hour_tuple =
+      dict_find(iterator, MESSAGE_KEY_USE_12_HOUR);
+  Tuple *use_fahrenheit_tuple =
+      dict_find(iterator, MESSAGE_KEY_USE_FAHRENHEIT);
+
+  bool clock_format_changed = false;
+  bool temperature_unit_changed = false;
+
+  if (use_12_hour_tuple != NULL) {
+    s_use_12_hour = use_12_hour_tuple->value->int32 != 0;
+    persist_write_bool(PERSIST_KEY_USE_12_HOUR, s_use_12_hour);
+    clock_format_changed = true;
+  }
+
+  if (use_fahrenheit_tuple != NULL) {
+    s_use_fahrenheit = use_fahrenheit_tuple->value->int32 != 0;
+    persist_write_bool(PERSIST_KEY_USE_FAHRENHEIT, s_use_fahrenheit);
+    temperature_unit_changed = true;
+  }
 
   if (temperature_tuple != NULL) {
     const int temperature = (int)temperature_tuple->value->int32;
     persist_write_int(PERSIST_KEY_TEMPERATURE, temperature);
     prv_show_temperature(temperature);
+  } else if (temperature_unit_changed) {
+    if (persist_exists(PERSIST_KEY_TEMPERATURE)) {
+      prv_show_temperature(persist_read_int(PERSIST_KEY_TEMPERATURE));
+    } else {
+      prv_show_temperature_placeholder();
+    }
+  }
+
+  if (clock_format_changed) {
+    prv_update_clock();
   }
 
   bool colors_changed = false;
@@ -763,8 +817,7 @@ static void prv_window_load(Window *window) {
   if (persist_exists(PERSIST_KEY_TEMPERATURE)) {
     prv_show_temperature(persist_read_int(PERSIST_KEY_TEMPERATURE));
   } else {
-    text_layer_set_text(s_temperature_layer, "--°C");
-    text_layer_set_text(s_temperature_shadow_layer, "--°C");
+    prv_show_temperature_placeholder();
   }
 
   prv_update_clock();
@@ -816,6 +869,8 @@ static void prv_init(void) {
   s_depth_effect_enabled = false;
   s_text_shadow_enabled = false;
   s_large_text_enabled = false;
+  s_use_12_hour = false;
+  s_use_fahrenheit = false;
 
   if (persist_exists(PERSIST_KEY_BACKGROUND_COLOR)) {
     s_background_color = GColorFromHEX(
@@ -832,6 +887,12 @@ static void prv_init(void) {
   }
   if (persist_exists(PERSIST_KEY_LARGE_TEXT)) {
     s_large_text_enabled = persist_read_bool(PERSIST_KEY_LARGE_TEXT);
+  }
+  if (persist_exists(PERSIST_KEY_USE_12_HOUR)) {
+    s_use_12_hour = persist_read_bool(PERSIST_KEY_USE_12_HOUR);
+  }
+  if (persist_exists(PERSIST_KEY_USE_FAHRENHEIT)) {
+    s_use_fahrenheit = persist_read_bool(PERSIST_KEY_USE_FAHRENHEIT);
   }
 
   s_window = window_create();

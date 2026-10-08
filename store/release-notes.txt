@@ -1,5 +1,8 @@
-Initial public release.
+Version 1.1.0 adds requested time and temperature formats.
 
+- New 12-hour time option (24-hour remains the default)
+- New Fahrenheit option (Celsius remains the default)
+- Format changes apply immediately from the phone settings page
 - Native 200 × 228 Pebble Time 2 layout
 - Rounded halftone transition shaped to follow the metal frame
 - Time, automatically localized weekday/date and current local temperature

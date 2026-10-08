@@ -1,4 +1,4 @@
-# Halftone 1.0.0 publishing checklist
+# Halftone 1.1.0 publishing checklist
 
 ## Store listing
 
@@ -6,11 +6,11 @@
 - Title: Halftone
 - Developer: Xef
 - Platform: Pebble Time 2 / Emery
-- Version: 1.0.0
+- Version: 1.1.0
 - UUID: `d4dd5046-53be-4624-99e8-46e0b377fe66`
 - Description: copy `description.txt`
 - Release notes: copy `release-notes.txt`
-- Binary: upload `Halftone-1.0.0.pbw`
+- Binary: upload `Halftone-1.1.0.pbw`
 - Screenshots: upload the `emery_*.png` files in filename order
 - Banner: `halftone-banner-720x320.png` is optional for a watchface
 - Source URL and website: optional; add them only after a real public URL exists
@@ -44,6 +44,8 @@ https://developer.repebble.com/dashboard
 - Confirm weather after granting location permission.
 - Show and dismiss Timeline Quick View.
 - Verify normal and extra-large text at 00:00, 11:11 and 23:59.
+- Toggle 12-hour time and Fahrenheit, then confirm 13:00 becomes 1:00 and a
+  known Celsius value converts to the expected Fahrenheit value.
 - Switch PebbleOS between English, Czech and Polish; confirm the weekday updates
   automatically and the longest date line remains on one line.
 - Confirm the developer name and support email in the listing preview.
