@@ -20,26 +20,43 @@ Halftone displays:
 
 ## Install the prebuilt watchface
 
-Download [`dist/Halftone-1.1.0.pbw`](dist/Halftone-1.1.0.pbw) and open it with
+Download [`dist/Halftone-1.2.0.pbw`](dist/Halftone-1.2.0.pbw) and open it with
 the Pebble mobile app to install it. The complete Pebble Store upload kit is
-available as [`dist/Halftone-1.1.0-store-release.zip`](dist/Halftone-1.1.0-store-release.zip).
+available as [`dist/Halftone-1.2.0-store-release.zip`](dist/Halftone-1.2.0-store-release.zip).
 You can also build the source yourself as described below.
 
 ## How it works
 
 The watch-side C app draws the interface and updates the clock once per minute.
-Every 30 minutes it asks PebbleKit JS on the connected phone for fresh weather.
-The phone obtains a coarse location, requests the current temperature from
-Open-Meteo, and sends the rounded value back with AppMessage. No weather API
-key is required.
+Every 15 minutes it asks PebbleKit JS on the connected phone for fresh weather.
+The phone obtains a low-power location and first requests the temperature from
+the same weather endpoint currently used by the Pebble mobile app. HTTP errors,
+timeouts, malformed responses or observations over two hours old trigger a
+direct Open-Meteo request with the same coordinates. No weather API key is
+required. After a primary failure, requests use the fallback for an hour before
+trying Pebble again.
+
+Pebble's endpoint is an internal API, not a guaranteed public developer API;
+the independent Open-Meteo fallback is essential. The current implementation
+is based on the mobile app's
+[getWeather method](https://github.com/coredevices/mobileapp/blob/master/pebble/src/commonMain/kotlin/coredevices/pebble/services/PebbleWebServices.kt).
+The same location and units should give matching provider readings, but the
+phone app and watchface still have independent update times/caches. A saved
+city in the app can also differ from the phone's current GPS location.
 
 The last successful temperature is persisted on the watch, so temporary phone
-or network disconnection does not blank the display.
+or network disconnection does not immediately blank the display. An observation
+over two hours old is replaced with `--°C` or `--°F`, rather than being presented
+as current. Updates are requested on startup and after reconnecting; missed
+updates are retried every two minutes while connected. HTTP requests time out
+after 15 seconds, and failed AppMessage deliveries get two immediate retries.
 
 The settings page can switch independently between 24-hour and 12-hour time,
-and between Celsius and Fahrenheit. Weather is cached internally in Celsius,
-so changing the displayed unit works immediately even while the phone is
-offline.
+and between Celsius and Fahrenheit. Both rounded units are cached, so changing
+the displayed unit works immediately even while the phone is offline. A unit
+change also requests the provider's native value for that unit, avoiding a
+second rounding step. The fallback converts its unrounded Celsius reading to
+Fahrenheit before rounding.
 
 The weekday automatically follows the PebbleOS language. Halftone includes
 English, Czech, Slovak, German, French, Spanish, Italian, Portuguese, Dutch,
@@ -118,10 +135,23 @@ the defaults; all optional effects default to off.
 ```text
 src/c/halftone.c      Watchface rendering, time, persistence and AppMessage
 src/pkjs/index.js     Phone-side weather request and Clay initialization
+src/pkjs/weather.js   Pebble-first weather, Open-Meteo fallback and delivery retries
 src/pkjs/config.js    Pebble phone-app settings page definition
 resources/fonts/      Custom date, time and temperature fonts
 package.json          Pebble Time 2 target, permissions and message keys
 ```
+
+## Tests
+
+```sh
+npm ci
+npm test
+cc -std=c99 -Wall -Wextra -Werror tests/weather-schedule.c -o /tmp/halftone-weather-test
+/tmp/halftone-weather-test
+```
+
+The tests use mocked location, HTTP and AppMessage callbacks; they send no
+location data to either service.
 
 ## License
 

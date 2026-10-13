@@ -1,7 +1,10 @@
 {
   "name": "halftone",
   "author": "Xef",
-  "version": "1.1.0",
+  "version": "1.2.0",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
   "license": "SEE LICENSE IN LICENSE",
   "keywords": [
     "pebble-app",
@@ -36,7 +39,9 @@
       "TEXT_SHADOW",
       "LARGE_TEXT",
       "USE_12_HOUR",
-      "USE_FAHRENHEIT"
+      "USE_FAHRENHEIT",
+      "TEMPERATURE_FAHRENHEIT",
+      "WEATHER_UPDATED_AT"
     ],
     "resources": {
       "media": [

@@ -1,4 +1,5 @@
 #include <pebble.h>
+#include "weather_schedule.h"
 
 #define PERSIST_KEY_TEMPERATURE 1
 #define PERSIST_KEY_BACKGROUND_COLOR 2
@@ -8,6 +9,8 @@
 #define PERSIST_KEY_LARGE_TEXT 6
 #define PERSIST_KEY_USE_12_HOUR 7
 #define PERSIST_KEY_USE_FAHRENHEIT 8
+#define PERSIST_KEY_TEMPERATURE_FAHRENHEIT 9
+#define PERSIST_KEY_WEATHER_UPDATED_AT 10
 
 #define DOT_OUTER_CORNER_RADIUS 30
 #define DOT_SPACING 10
@@ -52,6 +55,13 @@ static bool s_text_shadow_enabled;
 static bool s_large_text_enabled;
 static bool s_use_12_hour;
 static bool s_use_fahrenheit;
+static int s_temperature_celsius;
+static int s_temperature_fahrenheit;
+static bool s_has_temperature;
+static time_t s_weather_observation_time;
+static time_t s_weather_received_time;
+static time_t s_weather_requested_time;
+static AppTimer *s_weather_startup_timer;
 
 static char s_date_buffer[40];
 static char s_time_buffer[6];
@@ -546,9 +556,7 @@ static void prv_show_temperature(int temperature_celsius) {
   char unit = 'C';
 
   if (s_use_fahrenheit) {
-    const int scaled = temperature_celsius * 9;
-    display_temperature =
-        (scaled >= 0 ? scaled + 2 : scaled - 2) / 5 + 32;
+    display_temperature = s_temperature_fahrenheit;
     unit = 'F';
   }
 
@@ -565,7 +573,20 @@ static void prv_show_temperature_placeholder(void) {
   text_layer_set_text(s_temperature_shadow_layer, s_temperature_buffer);
 }
 
+static void prv_refresh_temperature(void) {
+  if (s_has_temperature &&
+      weather_is_fresh(time(NULL), s_weather_observation_time)) {
+    prv_show_temperature(s_temperature_celsius);
+  } else {
+    prv_show_temperature_placeholder();
+  }
+}
+
 static void prv_request_weather(void) {
+  if (!connection_service_peek_pebble_app_connection()) {
+    return;
+  }
+  s_weather_requested_time = time(NULL);
   DictionaryIterator *iterator;
   const AppMessageResult result = app_message_outbox_begin(&iterator);
 
@@ -576,13 +597,30 @@ static void prv_request_weather(void) {
   }
 
   dict_write_uint8(iterator, MESSAGE_KEY_REQUEST_WEATHER, 1);
+  dict_write_uint8(iterator, MESSAGE_KEY_USE_FAHRENHEIT, s_use_fahrenheit);
   app_message_outbox_send();
+}
+
+static void prv_weather_startup(void *context) {
+  s_weather_startup_timer = NULL;
+  prv_request_weather();
+}
+
+static void prv_phone_connection_changed(bool connected) {
+  if (connected) {
+    if (s_weather_startup_timer != NULL) {
+      app_timer_cancel(s_weather_startup_timer);
+    }
+    s_weather_startup_timer = app_timer_register(1000, prv_weather_startup, NULL);
+  }
 }
 
 static void prv_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   prv_update_clock();
+  prv_refresh_temperature();
 
-  if (tick_time->tm_min % 30 == 0) {
+  if (weather_refresh_due(time(NULL), s_weather_received_time,
+                          s_weather_requested_time)) {
     prv_request_weather();
   }
 }
@@ -626,6 +664,9 @@ static void prv_apply_effects(void) {
 
 static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
   Tuple *temperature_tuple = dict_find(iterator, MESSAGE_KEY_TEMPERATURE);
+  Tuple *fahrenheit_tuple =
+      dict_find(iterator, MESSAGE_KEY_TEMPERATURE_FAHRENHEIT);
+  Tuple *updated_at_tuple = dict_find(iterator, MESSAGE_KEY_WEATHER_UPDATED_AT);
   Tuple *background_color_tuple =
       dict_find(iterator, MESSAGE_KEY_BACKGROUND_COLOR);
   Tuple *text_color_tuple = dict_find(iterator, MESSAGE_KEY_TEXT_COLOR);
@@ -654,14 +695,34 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
 
   if (temperature_tuple != NULL) {
     const int temperature = (int)temperature_tuple->value->int32;
-    persist_write_int(PERSIST_KEY_TEMPERATURE, temperature);
-    prv_show_temperature(temperature);
-  } else if (temperature_unit_changed) {
-    if (persist_exists(PERSIST_KEY_TEMPERATURE)) {
-      prv_show_temperature(persist_read_int(PERSIST_KEY_TEMPERATURE));
-    } else {
-      prv_show_temperature_placeholder();
+    const time_t observation = updated_at_tuple != NULL
+        ? updated_at_tuple->value->int32 : time(NULL);
+    const int scaled = temperature >= -100 && temperature <= 100
+        ? temperature * 9 : 0;
+    const int fahrenheit = fahrenheit_tuple != NULL
+        ? fahrenheit_tuple->value->int32
+        : (scaled >= 0 ? scaled + 2 : scaled - 2) / 5 + 32;
+    if (temperature >= -100 && temperature <= 100 &&
+        fahrenheit >= -148 && fahrenheit <= 212 &&
+        weather_is_fresh(time(NULL), observation) &&
+        (observation >= s_weather_observation_time ||
+         !weather_is_fresh(time(NULL), s_weather_observation_time))) {
+      s_temperature_celsius = temperature;
+      s_temperature_fahrenheit = fahrenheit;
+      s_has_temperature = true;
+      s_weather_observation_time = observation;
+      s_weather_received_time = time(NULL);
+      persist_write_int(PERSIST_KEY_TEMPERATURE, temperature);
+      persist_write_int(PERSIST_KEY_TEMPERATURE_FAHRENHEIT, fahrenheit);
+      persist_write_int(PERSIST_KEY_WEATHER_UPDATED_AT, observation);
     }
+  }
+  if (temperature_tuple != NULL || temperature_unit_changed) {
+    prv_refresh_temperature();
+  }
+  if (temperature_unit_changed) {
+    // The provider returns the selected unit without double-rounding it.
+    prv_request_weather();
   }
 
   if (clock_format_changed) {
@@ -814,11 +875,7 @@ static void prv_window_load(Window *window) {
   prv_configure_text_layer(s_temperature_layer, s_temperature_font);
   layer_add_child(s_window_layer, text_layer_get_layer(s_temperature_layer));
 
-  if (persist_exists(PERSIST_KEY_TEMPERATURE)) {
-    prv_show_temperature(persist_read_int(PERSIST_KEY_TEMPERATURE));
-  } else {
-    prv_show_temperature_placeholder();
-  }
+  prv_refresh_temperature();
 
   prv_update_clock();
   prv_apply_effects();
@@ -894,6 +951,10 @@ static void prv_init(void) {
   if (persist_exists(PERSIST_KEY_USE_FAHRENHEIT)) {
     s_use_fahrenheit = persist_read_bool(PERSIST_KEY_USE_FAHRENHEIT);
   }
+  s_has_temperature = persist_exists(PERSIST_KEY_TEMPERATURE);
+  s_temperature_celsius = persist_read_int(PERSIST_KEY_TEMPERATURE);
+  s_temperature_fahrenheit = persist_read_int(PERSIST_KEY_TEMPERATURE_FAHRENHEIT);
+  s_weather_observation_time = persist_read_int(PERSIST_KEY_WEATHER_UPDATED_AT);
 
   s_window = window_create();
   s_compact_layout = false;
@@ -910,9 +971,17 @@ static void prv_init(void) {
 
   tick_timer_service_subscribe(MINUTE_UNIT, prv_tick_handler);
   window_stack_push(s_window, false);
+  connection_service_subscribe((ConnectionHandlers) {
+    .pebble_app_connection_handler = prv_phone_connection_changed,
+  });
+  s_weather_startup_timer = app_timer_register(1000, prv_weather_startup, NULL);
 }
 
 static void prv_deinit(void) {
+  if (s_weather_startup_timer != NULL) {
+    app_timer_cancel(s_weather_startup_timer);
+  }
+  connection_service_unsubscribe();
   tick_timer_service_unsubscribe();
   app_message_deregister_callbacks();
   window_destroy(s_window);

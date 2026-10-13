@@ -2,3 +2,5 @@ dcb643dbe288c85c0fe11ad8094580e68a18f7340bcb06e0870ef051060fdd34  Halftone-1.0.0
 133cd6da9b3367fc23515e67aff6794b160f48865c1ac67e64080b90c098781f  Halftone-1.0.0-store-release.zip
 47e72dc4c46f762cfb9b6e221c7f5ef8cea4b89bfbc2a6e3cc6497f931dfc120  Halftone-1.1.0.pbw
 be9238bebcf8306d7fc0414904ccf2eeb86dafadbe6cea4af2f100ef6f6eb465  Halftone-1.1.0-store-release.zip
+65ff48fde47055ab43065c194bfd3f4c1285a7a3663e3d1d4d9f2a52b44605e0  Halftone-1.2.0.pbw
+c1dedf3ea981b539ed30aacc12bc23abe484c181f55511d98bb216bb7f518545  Halftone-1.2.0-store-release.zip
