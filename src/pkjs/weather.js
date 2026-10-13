@@ -4,6 +4,8 @@ var PEBBLE_URL = 'https://weather-api.repebble.com/api/v1/geocode/';
 var METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 var MAX_DATA_AGE_SECONDS = 2 * 60 * 60;
 var PEBBLE_COOLDOWN_MS = 60 * 60 * 1000;
+var REFRESH_MS = 30 * 60 * 1000;
+var RETRY_MS = 2 * 60 * 1000;
 var packForecast = require('./forecast');
 
 function finiteNumber(value) {
@@ -35,16 +37,32 @@ module.exports = function(options) {
   var lastSuccess = 0;
   var lastUnit = null;
   var pebbleUnavailableUntil = 0;
+  var generation = 0;
+  var startedAt = 0;
+  var cancelInFlight = null;
+  var refreshTimer = null;
+
+  function cancelTimer(timer) {
+    if (timer !== null && timer !== undefined) { options.cancelLater(timer); }
+  }
 
   function requestJson(url, callback) {
     var completed = false;
+    var request;
+    var deadline;
+    var requestGeneration = generation;
     function finish(error, data) {
-      if (completed) { return; }
+      if (completed || requestGeneration !== generation) { return; }
       completed = true;
+      cancelTimer(deadline);
+      cancelInFlight = null;
       callback(error, data);
     }
+    function abort() {
+      try { if (request && request.abort) { request.abort(); } } catch (ignored) {}
+    }
     try {
-      var request = new options.XMLHttpRequest();
+      request = new options.XMLHttpRequest();
       request.onload = function() {
         if (request.status < 200 || request.status >= 300) {
           finish(new Error('Weather HTTP error: ' + request.status));
@@ -63,6 +81,13 @@ module.exports = function(options) {
       request.onabort = function() { finish(new Error('Weather aborted')); };
       request.open('GET', url, true);
       request.timeout = 15000;
+      // Some PKJS XHR bridges do not forward the timeout property. Enforce
+      // our own deadline, with a once-only settlement for late callbacks.
+      deadline = options.later(function() {
+        finish(new Error('Weather timed out'));
+        abort();
+      }, 15000);
+      cancelInFlight = function() { cancelTimer(deadline); abort(); };
       request.send();
     } catch (error) {
       finish(error);
@@ -71,10 +96,21 @@ module.exports = function(options) {
 
   function complete() {
     busy = false;
+    cancelInFlight = null;
     if (queuedUnit !== null) {
       var unit = queuedUnit;
       queuedUnit = null;
       refresh(unit);
+    }
+    if (options.autoRefresh && !busy) {
+      cancelTimer(refreshTimer);
+      var elapsed = options.now() - lastSuccess;
+      var delay = lastSuccess && elapsed >= 0
+        ? Math.max(RETRY_MS, REFRESH_MS - elapsed) : RETRY_MS;
+      refreshTimer = options.later(function() {
+        refreshTimer = null;
+        refresh(activeUnit);
+      }, delay);
     }
   }
 
@@ -94,19 +130,39 @@ module.exports = function(options) {
         complete();
         return;
       }
-      options.send(payload, function() {
-        lastSuccess = options.now();
-        lastUnit = useFahrenheit;
-        options.log('Weather delivered via ' + source);
-        complete();
-      }, function() {
+      var sent = false;
+      var requestGeneration = generation;
+      var deadline;
+      function settle() {
+        if (sent || requestGeneration !== generation) { return false; }
+        sent = true;
+        cancelTimer(deadline);
+        cancelInFlight = null;
+        return true;
+      }
+      function failure() {
+        if (!settle()) { return; }
         if (attempt < 3) {
-          options.later(function() { send(attempt + 1); }, attempt * 1000);
+          var retry = options.later(function() {
+            if (requestGeneration === generation) { send(attempt + 1); }
+          }, attempt * 1000);
+          cancelInFlight = function() { cancelTimer(retry); };
         } else {
-          options.log('Weather delivery failed; watch will retry');
+          options.log('Weather delivery failed; retry scheduled');
           complete();
         }
-      });
+      }
+      deadline = options.later(failure, 10000);
+      cancelInFlight = function() { cancelTimer(deadline); };
+      try {
+        options.send(payload, function() {
+          if (!settle()) { return; }
+          lastSuccess = options.now();
+          lastUnit = useFahrenheit;
+          options.log('Weather delivered via ' + source);
+          complete();
+        }, failure);
+      } catch (error) { failure(); }
     }
     send(1);
   }
@@ -199,17 +255,51 @@ module.exports = function(options) {
   function refresh(useFahrenheit) {
     useFahrenheit = !!useFahrenheit;
     if (busy) {
-      if (activeUnit !== useFahrenheit) { queuedUnit = useFahrenheit; }
-      else { queuedUnit = null; }
-      return;
+      var age = options.now() - startedAt;
+      if (age >= 0 && age < RETRY_MS) {
+        if (activeUnit !== useFahrenheit) { queuedUnit = useFahrenheit; }
+        else { queuedUnit = null; }
+        return;
+      }
+      // Timers can be suspended by the phone. A later watch request must
+      // recover a stuck run instead of waiting for the face to be reopened.
+      generation++;
+      if (cancelInFlight) { cancelInFlight(); }
+      cancelInFlight = null;
+      busy = false;
+      queuedUnit = null;
+      options.log('Recovering stalled weather request');
     }
     // Coalesce PKJS ready + watch startup, but fetch a unit change immediately.
+    var elapsed = options.now() - lastSuccess;
     if (lastSuccess && lastUnit === useFahrenheit &&
-        options.now() - lastSuccess < 60000) { return; }
+        elapsed >= 0 && elapsed < 60000) { return; }
+    cancelTimer(refreshTimer);
+    refreshTimer = null;
+    generation++;
     busy = true;
+    startedAt = options.now();
     activeUnit = useFahrenheit;
+    var requestGeneration = generation;
+    var locationDone = false;
+    var locationDeadline;
+    function settleLocation() {
+      if (locationDone || requestGeneration !== generation) { return false; }
+      locationDone = true;
+      cancelTimer(locationDeadline);
+      cancelInFlight = null;
+      return true;
+    }
+    locationDeadline = options.later(function() {
+      if (settleLocation()) {
+        options.log('Location deadline reached; retry scheduled');
+        complete();
+      }
+    }, 20000);
+    cancelInFlight = function() { cancelTimer(locationDeadline); };
     try {
       options.geolocation.getCurrentPosition(function(position) {
+        if (!settleLocation()) { return; }
         var coords = position.coords;
         if (!coords || !finiteNumber(coords.latitude) ||
             !finiteNumber(coords.longitude) || Math.abs(coords.latitude) > 90 ||
@@ -220,10 +310,12 @@ module.exports = function(options) {
         }
         fromPebble(coords, useFahrenheit);
       }, function(error) {
+        if (!settleLocation()) { return; }
         options.log('Location failed: ' + error.code);
         complete();
       }, { enableHighAccuracy: false, maximumAge: 5 * 60 * 1000, timeout: 15000 });
     } catch (error) {
+      if (!settleLocation()) { return; }
       options.log('Location unavailable');
       complete();
     }

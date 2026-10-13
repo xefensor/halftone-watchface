@@ -1,4 +1,4 @@
-# Halftone 1.3.0 publishing checklist
+# Halftone 1.3.1 publishing checklist
 
 ## Store listing
 
@@ -6,11 +6,11 @@
 - Title: Halftone
 - Developer: Xef
 - Platform: Pebble Time 2 / Emery
-- Version: 1.3.0
+- Version: 1.3.1
 - UUID: `d4dd5046-53be-4624-99e8-46e0b377fe66`
 - Description: copy `description.txt`
 - Release notes: copy `release-notes.txt`
-- Binary: upload `Halftone-1.3.0.pbw`
+- Binary: upload `Halftone-1.3.1.pbw`
 - Screenshots: upload the `emery_*.png` files in filename order
 - Banner: `halftone-banner-720x320.png` is optional for a watchface
 - Source URL and website: optional; add them only after a real public URL exists
@@ -42,6 +42,9 @@ https://developer.repebble.com/dashboard
 - Install the exact release PBW on a physical Pebble Time 2.
 - Open settings and save every option at least once.
 - Confirm weather after granting location permission.
+- Keep the face open for at least 35 minutes; confirm a successful weather
+  refresh without opening a menu or restarting the face. If the temperature
+  stays the same, check the delivery log rather than assuming no refresh happened.
 - Compare the selected unit with Pebble weather at the same coordinates.
 - Disconnect and reconnect the phone; confirm a prompt weather refresh.
 - Stay offline across hour changes; confirm ~ marks the correct cached forecast.

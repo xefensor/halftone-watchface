@@ -14,13 +14,21 @@ var weather = createWeatherClient({
   },
   now: function() { return Date.now(); },
   later: function(callback, delay) { return setTimeout(callback, delay); },
+  cancelLater: function(timer) { clearTimeout(timer); },
+  autoRefresh: true,
   log: function(message) { console.log(message); }
 });
+
+function messageValue(payload, name) {
+  // The current Pebble mobile app resolves message IDs to their appinfo names.
+  // Older runners/emulators may deliver the numeric IDs instead.
+  return payload[name] !== undefined ? payload[name] : payload[MessageKeys[name]];
+}
 
 function savedFahrenheit() {
   try {
     var settings = JSON.parse(localStorage.getItem('clay-settings')) || {};
-    return !!(settings.USE_FAHRENHEIT || settings[MessageKeys.USE_FAHRENHEIT]);
+    return !!messageValue(settings, 'USE_FAHRENHEIT');
   } catch (error) {
     return false;
   }
@@ -31,8 +39,9 @@ Pebble.addEventListener('ready', function() {
 });
 
 Pebble.addEventListener('appmessage', function(event) {
-  if (event.payload[MessageKeys.REQUEST_WEATHER]) {
-    weather.refresh(event.payload[MessageKeys.USE_FAHRENHEIT] !== undefined
-      ? !!event.payload[MessageKeys.USE_FAHRENHEIT] : savedFahrenheit());
+  var payload = event.payload || {};
+  if (messageValue(payload, 'REQUEST_WEATHER')) {
+    var unit = messageValue(payload, 'USE_FAHRENHEIT');
+    weather.refresh(unit !== undefined ? !!unit : savedFahrenheit());
   }
 });

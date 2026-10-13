@@ -591,9 +591,8 @@ static void prv_refresh_temperature(void) {
 }
 
 static void prv_request_weather(void) {
-  if (!connection_service_peek_pebble_app_connection()) {
-    return;
-  }
+  // The transport reports whether AppMessage can actually reach PKJS. A
+  // connection-service flag can lag behind and must not silently skip polling.
   s_weather_requested_time = time(NULL);
   DictionaryIterator *iterator;
   const AppMessageResult result = app_message_outbox_begin(&iterator);
@@ -606,7 +605,10 @@ static void prv_request_weather(void) {
 
   dict_write_uint8(iterator, MESSAGE_KEY_REQUEST_WEATHER, 1);
   dict_write_uint8(iterator, MESSAGE_KEY_USE_FAHRENHEIT, s_use_fahrenheit);
-  app_message_outbox_send();
+  const AppMessageResult sent = app_message_outbox_send();
+  if (sent != APP_MSG_OK) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Weather request could not be queued: %d", sent);
+  }
 }
 
 static void prv_weather_startup(void *context) {

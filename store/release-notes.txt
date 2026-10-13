@@ -1,6 +1,9 @@
-Version 1.3.0 adds an offline hourly temperature cache.
+Version 1.3.1 fixes automatic weather refresh while the watchface stays open.
 
 - Pebble weather is tried first, with automatic Open-Meteo fallback
+- Fixed scheduled weather requests being ignored by the phone's message listener
+- Phone-side 30-minute refresh timer backs up requests from the watch
+- Stalled location, HTTP and message-delivery requests recover without reopening the face
 - Normal refreshes every 30 minutes again
 - Up to six hours of hourly forecasts saved on the watch in both temperature units
 - Offline forecasts advance with the current hour, including across midnight

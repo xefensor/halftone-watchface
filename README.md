@@ -20,9 +20,9 @@ Halftone displays:
 
 ## Install the prebuilt watchface
 
-Download [`dist/Halftone-1.3.0.pbw`](dist/Halftone-1.3.0.pbw) and open it with
+Download [`dist/Halftone-1.3.1.pbw`](dist/Halftone-1.3.1.pbw) and open it with
 the Pebble mobile app to install it. The complete Pebble Store upload kit is
-available as [`dist/Halftone-1.3.0-store-release.zip`](dist/Halftone-1.3.0-store-release.zip).
+available as [`dist/Halftone-1.3.1-store-release.zip`](dist/Halftone-1.3.1-store-release.zip).
 You can also build the source yourself as described below.
 
 ## How it works
@@ -63,7 +63,16 @@ so another location's hours cannot be reused accidentally.
 
 Updates are requested on startup and after reconnecting; missed
 updates are retried every two minutes while connected. HTTP requests time out
-after 15 seconds, and failed AppMessage deliveries get two immediate retries.
+after 15 seconds, and failed AppMessage deliveries get two retries. These
+deadlines are enforced independently of the PKJS platform: missing location,
+HTTP or AppMessage callbacks cannot leave the weather client permanently busy.
+The phone also schedules its own 30-minute refresh as a backup to the watch's
+requests. A request from the watch can recover a run whose timers were suspended.
+
+Incoming AppMessages accept both named keys (as sent by the current Pebble
+mobile app) and numeric keys (used by some older runners). Version 1.3.1 fixes
+the numeric-only listener that ignored the mobile app's scheduled weather
+requests even though startup weather worked.
 
 The settings page can switch independently between 24-hour and 12-hour time,
 and between Celsius and Fahrenheit. Both rounded units are cached, so changing

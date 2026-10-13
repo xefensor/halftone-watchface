@@ -9,31 +9,49 @@ const NOW = 1791849000000;
 const HOUR = Math.floor(NOW / 3600000) * 3600;
 const TIMES = Array.from({ length: 7 }, (_, i) => HOUR + i * 3600);
 
-function fixture() {
+function fixture(settings = {}) {
   let now = NOW;
   const requests = [];
   const deliveries = [];
   const timers = [];
   const locations = [];
+  const locationCallbacks = [];
+  const deliveryCallbacks = [];
   let failDelivery = false;
   let failLocation = false;
+  let hangLocation = false;
+  let hangDelivery = false;
   const client = createWeatherClient({
     keys: KEYS,
     now: () => now,
     log: () => {},
-    later: (callback) => timers.push(callback),
+    autoRefresh: !!settings.autoRefresh,
+    later: (callback, delay) => {
+      callback.delay = delay;
+      timers.push(callback);
+      return callback;
+    },
+    cancelLater: callback => {
+      const i = timers.indexOf(callback);
+      if (i >= 0) timers.splice(i, 1);
+    },
     send: (payload, success, failure) => {
       deliveries.push(payload);
+      deliveryCallbacks.push({ success, failure });
+      if (hangDelivery) return;
       if (failDelivery) failure(); else success();
     },
     geolocation: { getCurrentPosition: (success, failure, options) => {
       locations.push(options);
+      locationCallbacks.push({ success, failure });
+      if (hangLocation) return;
       if (failLocation) failure({ code: 1 });
       else success({ coords: { latitude: 52.52, longitude: 13.41 } });
     } },
     XMLHttpRequest: function() {
       this.open = (_method, url) => { this.url = url; };
       this.send = () => requests.push(this);
+      this.abort = () => { this.aborted = true; this.onabort(); };
       this.respond = (data, status = 200) => {
         this.status = status;
         this.responseText = typeof data === 'string' ? data : JSON.stringify(data);
@@ -42,9 +60,19 @@ function fixture() {
     }
   });
   return { client, requests, deliveries, timers, locations,
+    locationCallbacks, deliveryCallbacks,
     advance: (ms) => { now += ms; },
+    fire: delay => {
+      const index = timers.findIndex(timer => timer.delay === delay);
+      assert.notEqual(index, -1, 'Expected a timer for ' + delay + 'ms');
+      const timer = timers.splice(index, 1)[0];
+      now += delay;
+      timer();
+    },
     deliveryFails: (value) => { failDelivery = value; },
-    locationFails: (value) => { failLocation = value; } };
+    locationFails: (value) => { failLocation = value; },
+    locationHangs: (value) => { hangLocation = value; },
+    deliveryHangs: (value) => { hangDelivery = value; } };
 }
 
 function pebble(temp = 20, unit = 'metric', timestamp = NOW / 1000) {
@@ -227,4 +255,89 @@ test('Null/malformed Pebble hours use the timestamped fallback', () => {
   f.requests[0].respond(data);
   f.requests[1].respond(meteo());
   assert.equal(f.deliveries[0][10000], 7);
+});
+
+test('Phone timer refreshes at 30 minutes without leaving the face or receiving a watch request', () => {
+  const f = fixture({ autoRefresh: true });
+  f.client.refresh(false);
+  f.requests[0].respond(pebble(7));
+  assert.equal(f.timers.length, 1);
+  assert.equal(f.timers[0].delay, 1800000);
+  f.fire(1800000);
+  assert.equal(f.requests.length, 2);
+  f.requests[1].respond(pebble(9, 'metric', NOW / 1000 + 1800));
+  assert.equal(f.deliveries[1][10000], 9);
+  assert.equal(f.timers[0].delay, 1800000);
+});
+
+test('XHR that never fires its native timeout falls back at the independent deadline', () => {
+  const f = fixture({ autoRefresh: true });
+  f.client.refresh(false);
+  f.fire(15000);
+  assert.equal(f.requests[0].aborted, true);
+  assert.equal(f.requests.length, 2);
+  f.requests[1].respond(meteo(9));
+  f.requests[0].respond(pebble(1)); // Late primary reply must not overwrite it.
+  assert.equal(f.deliveries.length, 1);
+  assert.equal(f.deliveries[0][10000], 9);
+});
+
+test('Missing location callback is released and retried without reopening', () => {
+  const f = fixture({ autoRefresh: true });
+  f.locationHangs(true);
+  f.client.refresh(false);
+  f.fire(20000);
+  f.locationCallbacks[0].success({ coords: { latitude: 52.52, longitude: 13.41 } });
+  assert.equal(f.requests.length, 0);
+  f.locationHangs(false);
+  f.fire(120000);
+  f.requests[0].respond(pebble(9));
+  assert.equal(f.deliveries[0][10000], 9);
+});
+
+test('Lost delivery callback is bounded; late ACKs cannot cancel a new attempt', () => {
+  const f = fixture({ autoRefresh: true });
+  f.deliveryHangs(true);
+  f.client.refresh(false);
+  f.requests[0].respond(pebble(7));
+  f.fire(10000);
+  f.fire(1000);
+  f.fire(10000);
+  f.fire(2000);
+  f.fire(10000);
+  assert.equal(f.deliveries.length, 3);
+  f.deliveryHangs(false);
+  f.fire(120000);
+  f.requests[1].respond(pebble(9));
+  const nextTimer = f.timers[0];
+  f.deliveryCallbacks[0].success();
+  assert.equal(f.timers[0], nextTimer);
+  assert.equal(f.deliveries[3][10000], 9);
+});
+
+test('Watch request after suspended timers recovers the busy run immediately', () => {
+  const f = fixture();
+  f.client.refresh(false);
+  f.advance(120000);
+  f.client.refresh(false);
+  assert.equal(f.requests.length, 2);
+  assert.equal(f.requests[0].aborted, true);
+  f.requests[0].respond(pebble(1));
+  assert.equal(f.deliveries.length, 0);
+  f.requests[1].respond(pebble(9));
+  assert.equal(f.deliveries[0][10000], 9);
+});
+
+test('Two hung providers release busy and schedule a two-minute retry', () => {
+  const f = fixture({ autoRefresh: true });
+  f.client.refresh(false);
+  f.fire(15000);
+  f.fire(15000);
+  assert.equal(f.timers.length, 1);
+  assert.equal(f.timers[0].delay, 120000);
+  f.fire(120000);
+  assert.equal(f.requests.length, 3);
+  assert.match(f.requests[2].url, /api.open-meteo.com/);
+  f.requests[2].respond(meteo(9));
+  assert.equal(f.deliveries[0][10000], 9);
 });
