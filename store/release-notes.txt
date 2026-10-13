@@ -1,10 +1,14 @@
-Version 1.2.0 improves weather consistency and reliability.
+Version 1.3.0 adds an offline hourly temperature cache.
 
 - Pebble weather is tried first, with automatic Open-Meteo fallback
-- 15-minute refreshes, two-minute retries after missed updates and refresh on reconnect
+- Normal refreshes every 30 minutes again
+- Up to six hours of hourly forecasts saved on the watch in both temperature units
+- Offline forecasts advance with the current hour, including across midnight
+- Forecast estimates are marked with ~ and survive restarting the watchface
+- Two-minute retries after missed updates and refresh on reconnect are retained
 - HTTP timeouts, response validation and AppMessage delivery retries
 - Native Fahrenheit readings avoid converting already-rounded Celsius values
-- Cached observations older than two hours are replaced with a placeholder
+- A placeholder appears when neither a usable forecast nor a recent observation is available
 - Existing 12-hour/24-hour and Celsius/Fahrenheit settings are preserved
 - Native 200 × 228 Pebble Time 2 layout
 - Rounded halftone transition shaped to follow the metal frame

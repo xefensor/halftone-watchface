@@ -4,12 +4,13 @@ Features:
 - Large, readable digital time with 12-hour and 24-hour options
 - Weekday automatically localized to the PebbleOS language
 - Current local temperature in °C or °F, using Pebble weather with Open-Meteo fallback
+- Six-hour offline forecast cache, with estimated readings marked by ~
 - Layout that automatically adapts to Timeline Quick View
 - Configurable background and text colors
 - Original 3-step or denser 4-step dot transition
 - Optional edge-to-edge text and floating shadow
 - Minute-only clock updates for low battery use
 
-Designed specifically for Pebble Time 2 (Emery). Weather requires a connected phone, internet access and location permission. Halftone sends the coordinates requested by the Pebble phone app to Pebble's weather service, or directly to Open-Meteo if Pebble weather is unavailable. Weather refreshes every 15 minutes, retries missed updates and refreshes after reconnecting. Cached observations older than two hours are replaced by a placeholder. It contains no account, advertising or analytics.
+Designed specifically for Pebble Time 2 (Emery). Fetching weather requires a connected phone, internet access and location permission. Halftone sends the coordinates requested by the Pebble phone app to Pebble's weather service, or to Open-Meteo for fallback weather or a supplemental hourly forecast. Weather refreshes every 30 minutes, retries missed updates and refreshes after reconnecting. Cached forecasts can cover up to six hours offline for the last fetched location; estimates are marked with ~. A placeholder appears after all usable weather expires. It contains no account, advertising or analytics.
 
 Included weekday languages: English, Czech, Slovak, German, French, Spanish, Italian, Portuguese, Dutch, Polish, Danish, Swedish, Norwegian, Finnish, Hungarian, Romanian and Turkish. Unsupported locales fall back to English.

@@ -1,5 +1,6 @@
 #include <pebble.h>
 #include "weather_schedule.h"
+#include "weather_forecast.h"
 
 #define PERSIST_KEY_TEMPERATURE 1
 #define PERSIST_KEY_BACKGROUND_COLOR 2
@@ -11,6 +12,8 @@
 #define PERSIST_KEY_USE_FAHRENHEIT 8
 #define PERSIST_KEY_TEMPERATURE_FAHRENHEIT 9
 #define PERSIST_KEY_WEATHER_UPDATED_AT 10
+#define PERSIST_KEY_FORECAST 11
+#define PERSIST_KEY_WEATHER_RECEIVED_AT 12
 
 #define DOT_OUTER_CORNER_RADIUS 30
 #define DOT_SPACING 10
@@ -62,6 +65,8 @@ static time_t s_weather_observation_time;
 static time_t s_weather_received_time;
 static time_t s_weather_requested_time;
 static AppTimer *s_weather_startup_timer;
+static uint8_t s_forecast[FORECAST_MAX_BYTES];
+static size_t s_forecast_length;
 
 static char s_date_buffer[40];
 static char s_time_buffer[6];
@@ -551,17 +556,10 @@ static void prv_update_clock(void) {
   prv_apply_unobstructed_layout();
 }
 
-static void prv_show_temperature(int temperature_celsius) {
-  int display_temperature = temperature_celsius;
-  char unit = 'C';
-
-  if (s_use_fahrenheit) {
-    display_temperature = s_temperature_fahrenheit;
-    unit = 'F';
-  }
-
-  snprintf(s_temperature_buffer, sizeof(s_temperature_buffer), "%d°%c",
-           display_temperature, unit);
+static void prv_show_temperature(int celsius, int fahrenheit, bool forecast) {
+  snprintf(s_temperature_buffer, sizeof(s_temperature_buffer), "%s%d°%c",
+           forecast ? "~" : "", s_use_fahrenheit ? fahrenheit : celsius,
+           s_use_fahrenheit ? 'F' : 'C');
   text_layer_set_text(s_temperature_layer, s_temperature_buffer);
   text_layer_set_text(s_temperature_shadow_layer, s_temperature_buffer);
 }
@@ -574,9 +572,19 @@ static void prv_show_temperature_placeholder(void) {
 }
 
 static void prv_refresh_temperature(void) {
-  if (s_has_temperature &&
-      weather_is_fresh(time(NULL), s_weather_observation_time)) {
-    prv_show_temperature(s_temperature_celsius);
+  const time_t now = time(NULL);
+  const bool has_observation = s_has_temperature &&
+      weather_is_fresh(now, s_weather_observation_time);
+  const int forecast_index = forecast_hour_index(s_forecast,
+                                                 s_forecast_length, now);
+  if (has_observation && weather_observation_is_current(
+      now, s_weather_observation_time, s_weather_received_time)) {
+    prv_show_temperature(s_temperature_celsius, s_temperature_fahrenheit, false);
+  } else if (forecast_index >= 0) {
+    prv_show_temperature(forecast_i16(s_forecast + 9 + forecast_index * 4),
+                         forecast_i16(s_forecast + 11 + forecast_index * 4), true);
+  } else if (has_observation) {
+    prv_show_temperature(s_temperature_celsius, s_temperature_fahrenheit, false);
   } else {
     prv_show_temperature_placeholder();
   }
@@ -667,6 +675,7 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
   Tuple *fahrenheit_tuple =
       dict_find(iterator, MESSAGE_KEY_TEMPERATURE_FAHRENHEIT);
   Tuple *updated_at_tuple = dict_find(iterator, MESSAGE_KEY_WEATHER_UPDATED_AT);
+  Tuple *forecast_tuple = dict_find(iterator, MESSAGE_KEY_FORECAST_DATA);
   Tuple *background_color_tuple =
       dict_find(iterator, MESSAGE_KEY_BACKGROUND_COLOR);
   Tuple *text_color_tuple = dict_find(iterator, MESSAGE_KEY_TEXT_COLOR);
@@ -715,6 +724,20 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
       persist_write_int(PERSIST_KEY_TEMPERATURE, temperature);
       persist_write_int(PERSIST_KEY_TEMPERATURE_FAHRENHEIT, fahrenheit);
       persist_write_int(PERSIST_KEY_WEATHER_UPDATED_AT, observation);
+      persist_write_int(PERSIST_KEY_WEATHER_RECEIVED_AT, s_weather_received_time);
+      // Every successful update replaces the forecast for that location. Empty
+      // or invalid data clears it rather than leaving another city's forecast.
+      if (forecast_tuple != NULL && forecast_tuple->type == TUPLE_BYTE_ARRAY &&
+          forecast_tuple->length <= FORECAST_MAX_BYTES &&
+          forecast_hour_index(forecast_tuple->value->data,
+                              forecast_tuple->length, time(NULL)) >= 0) {
+        s_forecast_length = forecast_tuple->length;
+        memcpy(s_forecast, forecast_tuple->value->data, s_forecast_length);
+        persist_write_data(PERSIST_KEY_FORECAST, s_forecast, s_forecast_length);
+      } else {
+        s_forecast_length = 0;
+        persist_delete(PERSIST_KEY_FORECAST);
+      }
     }
   }
   if (temperature_tuple != NULL || temperature_unit_changed) {
@@ -955,6 +978,13 @@ static void prv_init(void) {
   s_temperature_celsius = persist_read_int(PERSIST_KEY_TEMPERATURE);
   s_temperature_fahrenheit = persist_read_int(PERSIST_KEY_TEMPERATURE_FAHRENHEIT);
   s_weather_observation_time = persist_read_int(PERSIST_KEY_WEATHER_UPDATED_AT);
+  s_weather_received_time = persist_read_int(PERSIST_KEY_WEATHER_RECEIVED_AT);
+  const int forecast_length = persist_get_size(PERSIST_KEY_FORECAST);
+  if (forecast_length > 0 && forecast_length <= FORECAST_MAX_BYTES) {
+    const int read_length = persist_read_data(PERSIST_KEY_FORECAST, s_forecast,
+                                              sizeof(s_forecast));
+    if (read_length == forecast_length) { s_forecast_length = read_length; }
+  }
 
   s_window = window_create();
   s_compact_layout = false;

@@ -1,4 +1,4 @@
-# Halftone 1.2.0 publishing checklist
+# Halftone 1.3.0 publishing checklist
 
 ## Store listing
 
@@ -6,11 +6,11 @@
 - Title: Halftone
 - Developer: Xef
 - Platform: Pebble Time 2 / Emery
-- Version: 1.2.0
+- Version: 1.3.0
 - UUID: `d4dd5046-53be-4624-99e8-46e0b377fe66`
 - Description: copy `description.txt`
 - Release notes: copy `release-notes.txt`
-- Binary: upload `Halftone-1.2.0.pbw`
+- Binary: upload `Halftone-1.3.0.pbw`
 - Screenshots: upload the `emery_*.png` files in filename order
 - Banner: `halftone-banner-720x320.png` is optional for a watchface
 - Source URL and website: optional; add them only after a real public URL exists
@@ -44,7 +44,10 @@ https://developer.repebble.com/dashboard
 - Confirm weather after granting location permission.
 - Compare the selected unit with Pebble weather at the same coordinates.
 - Disconnect and reconnect the phone; confirm a prompt weather refresh.
-- Confirm that old weather is replaced by a placeholder after two hours.
+- Stay offline across hour changes; confirm ~ marks the correct cached forecast.
+- Restart the watchface offline; confirm the forecast cache remains available.
+- Confirm the forecast expires six hours after fetching and a placeholder appears
+  when no recent observation remains.
 - Review the changed weather privacy disclosure (Pebble first, Open-Meteo fallback).
 - Show and dismiss Timeline Quick View.
 - Verify normal and extra-large text at 00:00, 11:11 and 23:59.

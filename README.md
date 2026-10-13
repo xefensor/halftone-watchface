@@ -20,15 +20,15 @@ Halftone displays:
 
 ## Install the prebuilt watchface
 
-Download [`dist/Halftone-1.2.0.pbw`](dist/Halftone-1.2.0.pbw) and open it with
+Download [`dist/Halftone-1.3.0.pbw`](dist/Halftone-1.3.0.pbw) and open it with
 the Pebble mobile app to install it. The complete Pebble Store upload kit is
-available as [`dist/Halftone-1.2.0-store-release.zip`](dist/Halftone-1.2.0-store-release.zip).
+available as [`dist/Halftone-1.3.0-store-release.zip`](dist/Halftone-1.3.0-store-release.zip).
 You can also build the source yourself as described below.
 
 ## How it works
 
 The watch-side C app draws the interface and updates the clock once per minute.
-Every 15 minutes it asks PebbleKit JS on the connected phone for fresh weather.
+Every 30 minutes it asks PebbleKit JS on the connected phone for fresh weather.
 The phone obtains a low-power location and first requests the temperature from
 the same weather endpoint currently used by the Pebble mobile app. HTTP errors,
 timeouts, malformed responses or observations over two hours old trigger a
@@ -45,9 +45,23 @@ phone app and watchface still have independent update times/caches. A saved
 city in the app can also differ from the phone's current GPS location.
 
 The last successful temperature is persisted on the watch, so temporary phone
-or network disconnection does not immediately blank the display. An observation
-over two hours old is replaced with `--°C` or `--°F`, rather than being presented
-as current. Updates are requested on startup and after reconnecting; missed
+or network disconnection does not immediately blank the display. The watch also
+stores the current hour plus six hours of hourly forecasts, in both units, with
+UTC timestamps. After 30 minutes without a successful update it can display
+the cached forecast for the current hour, prefixed with `~` (for example `~7°C`)
+to distinguish an estimate from a live observation. The forecast changes as
+the hours pass without needing the phone and survives restarting the watchface.
+It is valid for at most six hours from when it was fetched. If neither a usable
+forecast nor an observation under two hours old exists, the display becomes
+`--°C` or `--°F`. Forecasts are for the last fetched location; offline travel
+cannot be detected or corrected without a new phone location.
+
+Hourly data is taken from Pebble when explicit UTC timestamps are present;
+otherwise Open-Meteo supplies a supplemental forecast. A missing or malformed
+forecast never discards a valid live reading, but clears the previous forecast
+so another location's hours cannot be reused accidentally.
+
+Updates are requested on startup and after reconnecting; missed
 updates are retried every two minutes while connected. HTTP requests time out
 after 15 seconds, and failed AppMessage deliveries get two immediate retries.
 
@@ -136,6 +150,7 @@ the defaults; all optional effects default to off.
 src/c/halftone.c      Watchface rendering, time, persistence and AppMessage
 src/pkjs/index.js     Phone-side weather request and Clay initialization
 src/pkjs/weather.js   Pebble-first weather, Open-Meteo fallback and delivery retries
+src/pkjs/forecast.js  Timestamped hourly forecast packing for offline use
 src/pkjs/config.js    Pebble phone-app settings page definition
 resources/fonts/      Custom date, time and temperature fonts
 package.json          Pebble Time 2 target, permissions and message keys
@@ -148,6 +163,8 @@ npm ci
 npm test
 cc -std=c99 -Wall -Wextra -Werror tests/weather-schedule.c -o /tmp/halftone-weather-test
 /tmp/halftone-weather-test
+cc -std=c99 -Wall -Wextra -Werror tests/weather-forecast.c -o /tmp/halftone-forecast-test
+/tmp/halftone-forecast-test
 ```
 
 The tests use mocked location, HTTP and AppMessage callbacks; they send no

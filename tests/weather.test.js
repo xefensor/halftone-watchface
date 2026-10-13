@@ -1,10 +1,13 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const createWeatherClient = require('../src/pkjs/weather');
+const packForecast = require('../src/pkjs/forecast');
 
 const KEYS = { TEMPERATURE: 10000, TEMPERATURE_FAHRENHEIT: 10009,
-  WEATHER_UPDATED_AT: 10010 };
+  WEATHER_UPDATED_AT: 10010, FORECAST_DATA: 10011 };
 const NOW = 1791849000000;
+const HOUR = Math.floor(NOW / 3600000) * 3600;
+const TIMES = Array.from({ length: 7 }, (_, i) => HOUR + i * 3600);
 
 function fixture() {
   let now = NOW;
@@ -47,11 +50,12 @@ function fixture() {
 function pebble(temp = 20, unit = 'metric', timestamp = NOW / 1000) {
   return { conditions: { data: { observation: {
     [unit]: { temp }, obs_time: timestamp
-  } } } };
+  } } }, fcsthourly: { data: { hours: TIMES.map(fcst_valid => ({fcst_valid, temp})) } } };
 }
 
 function meteo(temp = 24.6, timestamp = NOW / 1000) {
-  return { current: { temperature_2m: temp, time: timestamp } };
+  return { current: { temperature_2m: temp, time: timestamp },
+    hourly: { time: TIMES, temperature_2m: TIMES.map(() => temp) } };
 }
 
 test('Pebble is primary; native Celsius is delivered with its observation time', () => {
@@ -62,7 +66,8 @@ test('Pebble is primary; native Celsius is delivered with its observation time',
   assert.equal(f.requests[0].timeout, 15000);
   assert.equal(f.locations[0].maximumAge, 5 * 60 * 1000);
   f.requests[0].respond(pebble());
-  assert.deepEqual(f.deliveries, [{ 10000: 20, 10009: 68, 10010: NOW / 1000 }]);
+  assert.deepEqual(f.deliveries, [{ 10000: 20, 10009: 68, 10010: NOW / 1000,
+    10011: packForecast(TIMES, TIMES.map(() => 20), false, NOW) }]);
   assert.equal(f.requests.length, 1);
 });
 
@@ -101,7 +106,8 @@ for (const failure of ['http', 'timeout', 'network', 'abort', 'json', 'schema',
     assert.match(f.requests[1].url, /latitude=52.52&longitude=13.41/);
     assert.match(f.requests[1].url, /timeformat=unixtime/);
     f.requests[1].respond(meteo());
-    assert.deepEqual(f.deliveries, [{ 10000: 25, 10009: 76, 10010: NOW / 1000 }]);
+    assert.deepEqual(f.deliveries, [{ 10000: 25, 10009: 76, 10010: NOW / 1000,
+      10011: packForecast(TIMES, TIMES.map(() => 24.6), false, NOW) }]);
     assert.equal(f.locations.length, 1);
     r.onerror(); // Late timeout/error callbacks cannot start another fallback.
     assert.equal(f.requests.length, 2);
@@ -188,4 +194,37 @@ test('Permission denial sends no location to either provider and can recover', (
   f.locationFails(false);
   f.client.refresh(false);
   assert.equal(f.requests.length, 1);
+});
+
+test('Legacy Pebble hourly data without timestamps is supplemented, not guessed', () => {
+  const f = fixture();
+  f.client.refresh(false);
+  const data = pebble(7);
+  delete data.fcsthourly;
+  f.requests[0].respond(data);
+  assert.match(f.requests[1].url, /hourly=temperature_2m&forecast_hours=7/);
+  f.requests[1].respond(meteo(5.5));
+  assert.equal(f.deliveries[0][10000], 7); // Keep the native Pebble observation.
+  assert.equal(f.deliveries[0][10011].length, 37);
+});
+
+test('Forecast failure does not discard live Pebble weather; old forecast is cleared', () => {
+  const f = fixture();
+  f.client.refresh(false);
+  const data = pebble(7);
+  delete data.fcsthourly;
+  f.requests[0].respond(data);
+  f.requests[1].onerror();
+  assert.equal(f.deliveries[0][10000], 7);
+  assert.deepEqual(f.deliveries[0][10011], []);
+});
+
+test('Null/malformed Pebble hours use the timestamped fallback', () => {
+  const f = fixture();
+  f.client.refresh(false);
+  const data = pebble(7);
+  data.fcsthourly.data.hours[0] = null;
+  f.requests[0].respond(data);
+  f.requests[1].respond(meteo());
+  assert.equal(f.deliveries[0][10000], 7);
 });

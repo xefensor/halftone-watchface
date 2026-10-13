@@ -4,6 +4,7 @@ var PEBBLE_URL = 'https://weather-api.repebble.com/api/v1/geocode/';
 var METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 var MAX_DATA_AGE_SECONDS = 2 * 60 * 60;
 var PEBBLE_COOLDOWN_MS = 60 * 60 * 1000;
+var packForecast = require('./forecast');
 
 function finiteNumber(value) {
   return typeof value === 'number' && isFinite(value);
@@ -87,6 +88,7 @@ module.exports = function(options) {
     payload[options.keys.TEMPERATURE] = data.celsius;
     payload[options.keys.TEMPERATURE_FAHRENHEIT] = data.fahrenheit;
     payload[options.keys.WEATHER_UPDATED_AT] = data.timestamp;
+    payload[options.keys.FORECAST_DATA] = data.forecast || [];
     function send(attempt) {
       if (queuedUnit !== null && queuedUnit !== useFahrenheit) {
         complete();
@@ -112,7 +114,8 @@ module.exports = function(options) {
   function fromMeteo(coords, useFahrenheit) {
     var url = METEO_URL + '?latitude=' + encodeURIComponent(coords.latitude) +
       '&longitude=' + encodeURIComponent(coords.longitude) +
-      '&current=temperature_2m&temperature_unit=celsius&timeformat=unixtime';
+      '&current=temperature_2m&hourly=temperature_2m&forecast_hours=7' +
+      '&temperature_unit=celsius&timeformat=unixtime';
     requestJson(url, function(error, weather) {
       var data;
       if (!error) {
@@ -120,6 +123,7 @@ module.exports = function(options) {
           var current = weather.current;
           data = reading(current.temperature_2m,
             current.temperature_2m * 9 / 5 + 32, current.time, options.now());
+          data.forecast = meteoForecast(weather);
         } catch (invalid) { error = invalid; }
       }
       if (error) {
@@ -128,6 +132,36 @@ module.exports = function(options) {
       } else {
         deliver(data, 'Open-Meteo', useFahrenheit);
       }
+    });
+  }
+
+  function meteoForecast(weather) {
+    var hourly = weather && weather.hourly;
+    return hourly ? packForecast(hourly.time, hourly.temperature_2m,
+      false, options.now()) : [];
+  }
+
+  function completePebble(data, weather, coords, useFahrenheit) {
+    var hours = weather.fcsthourly && weather.fcsthourly.data &&
+      weather.fcsthourly.data.hours;
+    data.forecast = Array.isArray(hours) ? packForecast(
+      hours.map(function(hour) { return hour && hour.fcst_valid; }),
+      hours.map(function(hour) { return hour && hour.temp; }),
+      useFahrenheit, options.now()) : [];
+    if (data.forecast.length) {
+      deliver(data, 'Pebble', useFahrenheit);
+      return;
+    }
+    // Older Pebble responses omit hourly timestamps. Never guess them from
+    // the phone's timezone: fetch explicitly timestamped Open-Meteo hours.
+    var url = METEO_URL + '?latitude=' + encodeURIComponent(coords.latitude) +
+      '&longitude=' + encodeURIComponent(coords.longitude) +
+      '&hourly=temperature_2m&forecast_hours=7&temperature_unit=celsius' +
+      '&timeformat=unixtime';
+    requestJson(url, function(error, forecast) {
+      data.forecast = error ? [] : meteoForecast(forecast);
+      // Failure to fetch the forecast must not discard the live Pebble reading.
+      deliver(data, 'Pebble', useFahrenheit);
     });
   }
 
@@ -157,7 +191,7 @@ module.exports = function(options) {
         fromMeteo(coords, useFahrenheit);
       } else {
         pebbleUnavailableUntil = 0;
-        deliver(data, 'Pebble', useFahrenheit);
+        completePebble(data, weather, coords, useFahrenheit);
       }
     });
   }

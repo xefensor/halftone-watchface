@@ -1,7 +1,7 @@
 {
   "name": "halftone",
   "author": "Xef",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "scripts": {
     "test": "node --test tests/*.test.js"
   },
@@ -41,7 +41,8 @@
       "USE_12_HOUR",
       "USE_FAHRENHEIT",
       "TEMPERATURE_FAHRENHEIT",
-      "WEATHER_UPDATED_AT"
+      "WEATHER_UPDATED_AT",
+      "FORECAST_DATA"
     ],
     "resources": {
       "media": [
@@ -67,7 +68,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_38",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9°CF-]",
+          "characterRegex": "[0-9°CF~-]",
           "targetPlatforms": [
             "emery"
           ]
@@ -103,7 +104,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_30",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9°CF-]",
+          "characterRegex": "[0-9°CF~-]",
           "targetPlatforms": [
             "emery"
           ]
@@ -193,7 +194,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_44",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9°CF-]",
+          "characterRegex": "[0-9°CF~-]",
           "targetPlatforms": [
             "emery"
           ]
@@ -211,7 +212,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_34",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9°CF-]",
+          "characterRegex": "[0-9°CF~-]",
           "targetPlatforms": [
             "emery"
           ]
