@@ -678,6 +678,7 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
       dict_find(iterator, MESSAGE_KEY_TEMPERATURE_FAHRENHEIT);
   Tuple *updated_at_tuple = dict_find(iterator, MESSAGE_KEY_WEATHER_UPDATED_AT);
   Tuple *forecast_tuple = dict_find(iterator, MESSAGE_KEY_FORECAST_DATA);
+  Tuple *clear_tuple = dict_find(iterator, MESSAGE_KEY_WEATHER_CLEAR);
   Tuple *background_color_tuple =
       dict_find(iterator, MESSAGE_KEY_BACKGROUND_COLOR);
   Tuple *text_color_tuple = dict_find(iterator, MESSAGE_KEY_TEXT_COLOR);
@@ -699,9 +700,22 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
   }
 
   if (use_fahrenheit_tuple != NULL) {
+    temperature_unit_changed = s_use_fahrenheit !=
+        (use_fahrenheit_tuple->value->int32 != 0);
     s_use_fahrenheit = use_fahrenheit_tuple->value->int32 != 0;
     persist_write_bool(PERSIST_KEY_USE_FAHRENHEIT, s_use_fahrenheit);
-    temperature_unit_changed = true;
+  }
+
+  if (clear_tuple != NULL && clear_tuple->value->int32 != 0) {
+    s_has_temperature = false;
+    s_weather_observation_time = 0;
+    s_weather_received_time = 0;
+    s_forecast_length = 0;
+    persist_delete(PERSIST_KEY_TEMPERATURE);
+    persist_delete(PERSIST_KEY_TEMPERATURE_FAHRENHEIT);
+    persist_delete(PERSIST_KEY_WEATHER_UPDATED_AT);
+    persist_delete(PERSIST_KEY_WEATHER_RECEIVED_AT);
+    persist_delete(PERSIST_KEY_FORECAST);
   }
 
   if (temperature_tuple != NULL) {
@@ -722,27 +736,32 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
       s_temperature_fahrenheit = fahrenheit;
       s_has_temperature = true;
       s_weather_observation_time = observation;
-      s_weather_received_time = time(NULL);
       persist_write_int(PERSIST_KEY_TEMPERATURE, temperature);
       persist_write_int(PERSIST_KEY_TEMPERATURE_FAHRENHEIT, fahrenheit);
       persist_write_int(PERSIST_KEY_WEATHER_UPDATED_AT, observation);
-      persist_write_int(PERSIST_KEY_WEATHER_RECEIVED_AT, s_weather_received_time);
-      // Every successful update replaces the forecast for that location. Empty
-      // or invalid data clears it rather than leaving another city's forecast.
-      if (forecast_tuple != NULL && forecast_tuple->type == TUPLE_BYTE_ARRAY &&
-          forecast_tuple->length <= FORECAST_MAX_BYTES &&
-          forecast_hour_index(forecast_tuple->value->data,
-                              forecast_tuple->length, time(NULL)) >= 0) {
-        s_forecast_length = forecast_tuple->length;
-        memcpy(s_forecast, forecast_tuple->value->data, s_forecast_length);
-        persist_write_data(PERSIST_KEY_FORECAST, s_forecast, s_forecast_length);
-      } else {
-        s_forecast_length = 0;
-        persist_delete(PERSIST_KEY_FORECAST);
-      }
     }
   }
-  if (temperature_tuple != NULL || temperature_unit_changed) {
+  if (forecast_tuple != NULL) {
+    // A timestamped forecast can remain usable after the observation expires.
+    if (forecast_tuple->type == TUPLE_BYTE_ARRAY &&
+        forecast_tuple->length <= FORECAST_MAX_BYTES &&
+        forecast_hour_index(forecast_tuple->value->data,
+                            forecast_tuple->length, time(NULL)) >= 0) {
+      s_forecast_length = forecast_tuple->length;
+      memcpy(s_forecast, forecast_tuple->value->data, s_forecast_length);
+      persist_write_data(PERSIST_KEY_FORECAST, s_forecast, s_forecast_length);
+    } else {
+      s_forecast_length = 0;
+      persist_delete(PERSIST_KEY_FORECAST);
+    }
+  }
+  if (temperature_tuple != NULL || forecast_tuple != NULL || clear_tuple != NULL) {
+    // Transport receipt drives the retry schedule; it must not renew sample age.
+    s_weather_received_time = time(NULL);
+    persist_write_int(PERSIST_KEY_WEATHER_RECEIVED_AT, s_weather_received_time);
+  }
+  if (temperature_tuple != NULL || temperature_unit_changed ||
+      forecast_tuple != NULL || clear_tuple != NULL) {
     prv_refresh_temperature();
   }
   if (temperature_unit_changed) {

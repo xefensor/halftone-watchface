@@ -3,6 +3,30 @@
 Halftone does not require an account and contains no advertising, analytics or
 developer-operated tracking service.
 
+## Shared weather (1.4.0 beta)
+
+When the Pebble mobile app's plugin preview is enabled and its built-in Weather
+source is available, Halftone subscribes to that source. It receives weather
+for the selected saved location, including hourly forecasts, and can follow
+Pebble's temperature unit preference. This path reads the same weather database
+as Pebble's Weather app and makes no independent weather or GPS request.
+Pebble and the weather provider chosen in its settings handle network fetching.
+The plugin requires Location permission. A permission denial or temporary error
+does not switch to a different provider.
+
+The selected location ID, unit preference, and a bounded record of each weather
+snapshot's contents and first-seen time are stored locally on the phone to
+prevent reconnecting from renewing stale data. These records are not uploaded
+to Halftone's developer. Up to six hours of hourly temperatures are also stored
+on the watch for offline use. The shared source currently exposes no observation
+timestamp; identical snapshots may expire conservatively even if Pebble fetched
+them again.
+
+## Compatibility weather client
+
+The following direct requests are used only on older apps, when plugins are
+disabled, or when the built-in Weather source is not installed/available.
+
 To show local weather, the Pebble phone app requests an approximate location
 from the phone. The coordinates are sent to Pebble's weather service
 (`weather-api.repebble.com`) to request the current temperature. If that service

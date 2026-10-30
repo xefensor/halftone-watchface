@@ -1,5 +1,18 @@
 # Halftone
 
+## Shared weather beta — 1.4.0
+
+The plugin beta reads the same weather database as Pebble's Weather app, keeps
+the six-hour offline forecast cache, and adds saved-location selection and
+"Follow Pebble temperature units". Existing explicit unit choices are retained.
+Older apps and disabled plugin preview retain the previous weather client.
+
+Install [Halftone-1.4.0-beta.1.pbw](dist/Halftone-1.4.0-beta.1.pbw).
+See [setup, build instructions and limitations](docs/PLUGIN-WEATHER.md).
+This beta is for sideloading and device testing; 1.3.1 remains the prepared
+stable release. When building this beta, run `python3 scripts/package-beta.py`
+after `pebble build` so plugin permissions are present in the final PBW.
+
 Open Halftone from the Pebble phone app and tap the gear icon to choose the
 background and text colors. Both settings are stored on the watch and applied
 immediately after saving. The dithered border remains black.
@@ -26,6 +39,9 @@ available as [`dist/Halftone-1.3.1-store-release.zip`](dist/Halftone-1.3.1-store
 You can also build the source yourself as described below.
 
 ## How it works
+
+The following describes the compatibility weather client. The 1.4.0 beta uses
+shared Pebble weather when available; see the beta setup guide above.
 
 The watch-side C app draws the interface and updates the clock once per minute.
 Every 30 minutes it asks PebbleKit JS on the connected phone for fresh weather.

@@ -341,3 +341,56 @@ test('Two hung providers release busy and schedule a two-minute retry', () => {
   f.requests[2].respond(meteo(9));
   assert.equal(f.deliveries[0][10000], 9);
 });
+
+test('Stopping legacy weather during a hung location lookup cancels retries and ignores late callbacks', () => {
+  const f = fixture({autoRefresh: true});
+  f.locationHangs(true);
+  f.client.refresh(false);
+  f.client.stop();
+  assert.equal(f.timers.length, 0);
+  f.locationCallbacks[0].success({coords: {latitude: 52.52, longitude: 13.41}});
+  f.locationCallbacks[0].failure({code: 1});
+  assert.equal(f.requests.length, 0);
+  assert.equal(f.deliveries.length, 0);
+  assert.equal(f.timers.length, 0);
+});
+
+test('Stopping legacy weather aborts its HTTP lookup and rejects an old reply', () => {
+  const f = fixture({autoRefresh: true});
+  f.client.refresh(false);
+  f.client.stop();
+  assert.equal(f.requests[0].aborted, true);
+  f.requests[0].respond(pebble(7));
+  assert.equal(f.deliveries.length, 0);
+  assert.equal(f.timers.length, 0);
+  // A later return to legacy mode can start a new request immediately.
+  f.client.refresh(false);
+  f.requests[1].respond(pebble(9));
+  assert.equal(f.deliveries[0][10000], 9);
+});
+
+test('Stopping legacy weather while delivery is hung prevents late ACKs from scheduling another refresh', () => {
+  const f = fixture({autoRefresh: true});
+  f.deliveryHangs(true);
+  f.client.refresh(false);
+  f.requests[0].respond(pebble(7));
+  f.client.stop();
+  assert.equal(f.timers.length, 0);
+  f.deliveryCallbacks[0].success();
+  f.deliveryCallbacks[0].failure();
+  assert.equal(f.timers.length, 0);
+  assert.equal(f.deliveries.length, 1);
+});
+
+test('Returning to legacy within sixty seconds of its last success still requests replacement weather', () => {
+  const f = fixture({autoRefresh: true});
+  f.client.refresh(false);
+  f.requests[0].respond(pebble(7));
+  f.advance(10000);
+  f.client.stop();
+  assert.equal(f.timers.length, 0);
+  f.client.refresh(false);
+  assert.equal(f.requests.length, 2, 'The previous success must not suppress refresh after a source switch');
+  f.requests[1].respond(pebble(9));
+  assert.equal(f.deliveries[1][10000], 9);
+});

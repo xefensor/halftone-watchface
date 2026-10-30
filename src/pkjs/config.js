@@ -37,6 +37,12 @@ module.exports = [
       },
       {
         "type": "toggle",
+        "messageKey": "FOLLOW_PEBBLE_UNITS",
+        "defaultValue": true,
+        "label": "Follow Pebble temperature units"
+      },
+      {
+        "type": "toggle",
         "messageKey": "USE_12_HOUR",
         "defaultValue": false,
         "label": "12-hour time"
@@ -46,6 +52,17 @@ module.exports = [
         "messageKey": "USE_FAHRENHEIT",
         "defaultValue": false,
         "label": "Temperature in Fahrenheit"
+      },
+      {
+        "type": "text",
+        "defaultValue": "Fahrenheit applies when Follow Pebble is off. Shared weather uses Pebble's saved locations; older apps use the phone's current location."
+      },
+      {
+        "type": "select",
+        "messageKey": "WEATHER_LOCATION",
+        "defaultValue": "",
+        "label": "Weather location",
+        "options": [{"label": "First Pebble weather location", "value": ""}]
       }
     ]
   },
