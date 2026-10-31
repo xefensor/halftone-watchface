@@ -36,3 +36,6 @@ c713cc395b29384240e6a7ccf1358fb8c8fc7c08a3e58b268c955f31ff337e93  Halftone-1.9.0
 5d4fd52f545ac0b8cbd36e9954ffab088452feac2323ea716bc9bdefa5b5ae33  Halftone-1.9.0-rc.4.pbw
 a8340a94b679ae3e1beaae42254a9424b102d1f09dd371eca025ad28968c0406  Halftone-1.9.0-rc.4-source.zip
 d5680d191e9c952f638d415bf0b1c2c443b53ad69a99cd7543a5ffec86b5ca94  Halftone-1.9.0-rc.4-store-package.zip
+5caec4ca5464ff8de5aca8d63eb1431e4ad4b6a3ba48b23aabf38780fc60dae0  Halftone-1.9.0-rc.5.pbw
+d59873a6220e2a4f946e4afa12f618d104e5944f74c8d8106d06b9977b870337  Halftone-1.9.0-rc.5-source.zip
+0d8934bc562bdd6739cef5591fb4a2cac5653c16a06b5f8263824fd85c5892b4  Halftone-1.9.0-rc.5-store-package.zip

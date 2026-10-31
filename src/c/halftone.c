@@ -3,6 +3,7 @@
 #include "context_data.h"
 #include "watch_layout.h"
 #include "reading_presentation.h"
+#include "context_text_metrics.h"
 
 #define PERSIST_KEY_BACKGROUND_COLOR 2
 #define PERSIST_KEY_TEXT_COLOR 3
@@ -577,22 +578,51 @@ static GFont prv_fit_complication(char *text, size_t capacity, int width, int he
   return smallest;
 }
 
-static void prv_draw_bitmap(GContext *ctx, const ComplicationSlot *slot,
-                            int x, int y, int size, bool shadow, bool cover) {
+typedef struct {
+  int width, height, x, y, source_x, source_y, source_width, source_height;
+} BitmapLayout;
+
+static BitmapLayout prv_bitmap_layout(const ComplicationSlot *slot, int size, bool cover) {
   const int longest = slot->width > slot->height ? slot->width : slot->height;
-  if (longest <= 0) { return; }
+  if (longest <= 0 || size <= 0) { return (BitmapLayout){0}; }
   const ReadingCoverCrop crop = reading_cover_crop(slot->width, slot->height);
   const int width = cover ? size : (slot->width * size + longest / 2) / longest;
   const int height = cover ? size : (slot->height * size + longest / 2) / longest;
-  x += (size - width) / 2;
-  y += (size - height) / 2;
-  for (int row = 0; row < height; ++row) {
-    const int sy = cover ? crop.y + row * crop.size / height : row * slot->height / height;
-    for (int column = 0; column < width; ++column) {
-      const int sx = cover ? crop.x + column * crop.size / width : column * slot->width / width;
-      const uint8_t pair = slot->bitmap[sy * slot->stride + sx / 2];
-      const uint8_t index = sx % 2 ? pair & 15 : pair >> 4;
-      const uint8_t source = slot->palette[index];
+  return (BitmapLayout){width, height, (size - width) / 2, (size - height) / 2,
+      cover ? crop.x : 0, cover ? crop.y : 0,
+      cover ? crop.size : slot->width, cover ? crop.size : slot->height};
+}
+
+static uint8_t prv_bitmap_pixel(const ComplicationSlot *slot, const BitmapLayout *layout,
+                                int column, int row) {
+  const int sx = layout->source_x + column * layout->source_width / layout->width;
+  const int sy = layout->source_y + row * layout->source_height / layout->height;
+  const uint8_t pair = slot->bitmap[sy * slot->stride + sx / 2];
+  return slot->palette[sx % 2 ? pair & 15 : pair >> 4];
+}
+
+// Include contain-fit letterboxing and source transparency when aligning an
+// icon. The same sampling path is used for drawing and visible-bound lookup.
+static int prv_bitmap_visible_bottom(const ComplicationSlot *slot, int size, bool cover) {
+  const BitmapLayout layout = prv_bitmap_layout(slot, size, cover);
+  for (int row = layout.height - 1; row >= 0; --row) {
+    for (int column = 0; column < layout.width; ++column) {
+      if (prv_bitmap_pixel(slot, &layout, column, row) & 0xc0) {
+        return layout.y + row + 1;
+      }
+    }
+  }
+  return 0;
+}
+
+static void prv_draw_bitmap(GContext *ctx, const ComplicationSlot *slot,
+                            int x, int y, int size, bool shadow, bool cover) {
+  const BitmapLayout layout = prv_bitmap_layout(slot, size, cover);
+  x += layout.x;
+  y += layout.y;
+  for (int row = 0; row < layout.height; ++row) {
+    for (int column = 0; column < layout.width; ++column) {
+      const uint8_t source = prv_bitmap_pixel(slot, &layout, column, row);
       if (!(source & 0xc0)) { continue; }
       GColor8 color = {.argb = source};
       if (shadow) { color = GColorBlack; }
@@ -738,22 +768,45 @@ static int prv_status_right_reserve(void) {
   return s_show_status && !s_phone_connected ? 12 : 0;
 }
 
-static void prv_draw_context_text(GContext *ctx, const ComplicationSlot *slot,
-                                  GRect rect, int preferred) {
-  if (!context_slot_fresh(slot, time(NULL)) || !(slot->flags & COMPLICATION_FLAG_TEXT)) { return; }
+typedef struct {
   char text[COMPLICATION_MAX_TEXT_BYTES + 5];
-  snprintf(text, sizeof(text), "%s", slot->text);
-  GFont font = prv_fit_complication(text, sizeof(text), rect.size.w - 2, rect.size.h, preferred);
-  const GSize size = graphics_text_layout_get_content_size(text, font,
+  GFont font;
+  GRect frame;
+  int ink_bottom;
+} PreparedContextText;
+
+static PreparedContextText prv_prepare_context_text(const ComplicationSlot *slot,
+                                                     GRect rect, int preferred) {
+  PreparedContextText result = {.frame = rect};
+  if (!context_slot_fresh(slot, time(NULL)) || !(slot->flags & COMPLICATION_FLAG_TEXT)) {
+    return result;
+  }
+  snprintf(result.text, sizeof(result.text), "%s", slot->text);
+  result.font = prv_fit_complication(result.text, sizeof(result.text),
+      rect.size.w - 2, rect.size.h, preferred);
+  const GSize size = graphics_text_layout_get_content_size(result.text, result.font,
       GRect(0, 0, 2048, 100), GTextOverflowModeFill, GTextAlignmentLeft);
-  rect.origin.y += (rect.size.h - size.h) / 2;
+  result.frame.origin.y += (rect.size.h - size.h) / 2;
+  int font_size = 18;
+  for (unsigned i = 0; i < COMPLICATION_FONT_COUNT; ++i) {
+    if (result.font == s_complication_fonts[i]) { font_size = s_complication_font_sizes[i]; break; }
+  }
+  const int bottom = context_text_ink_bottom(result.text, font_size);
+  result.ink_bottom = bottom ? result.frame.origin.y + bottom : 0;
+  return result;
+}
+
+static void prv_draw_context_text(GContext *ctx, const PreparedContextText *text) {
+  if (text->font == NULL || !text->text[0]) { return; }
+  const GRect rect = text->frame;
   if (s_text_shadow_enabled) {
     graphics_context_set_text_color(ctx, GColorBlack);
-    graphics_draw_text(ctx, text, font, GRect(rect.origin.x + 1, rect.origin.y + 1,
+    graphics_draw_text(ctx, text->text, text->font, GRect(rect.origin.x + 1, rect.origin.y + 1,
         rect.size.w, rect.size.h), GTextOverflowModeFill, GTextAlignmentLeft, NULL);
   }
   graphics_context_set_text_color(ctx, s_text_color);
-  graphics_draw_text(ctx, text, font, rect, GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+  graphics_draw_text(ctx, text->text, text->font, rect,
+      GTextOverflowModeFill, GTextAlignmentLeft, NULL);
 }
 
 static bool prv_context_bitmap_visible(const ComplicationSlot *title, ContextMode mode,
@@ -791,19 +844,30 @@ static void prv_draw_context(Layer *layer, GContext *ctx) {
   const int preferred = has_subtitle ? (s_large_text_enabled ? 24 : 20)
       : (s_large_text_enabled ? 28 : 24);
   const bool bitmap = prv_context_bitmap_visible(title, mode, bounds, has_subtitle);
-  const int artwork = reading_context_artwork_size(has_subtitle, bounds.size.h);
+  int artwork = reading_context_artwork_size(has_subtitle, bounds.size.h);
   const int text_x = bitmap ? artwork + 6 : 0;
+  const PreparedContextText primary = prv_prepare_context_text(title,
+      GRect(text_x, 0, bounds.size.w - text_x, line_height), preferred);
+  const PreparedContextText secondary = has_subtitle
+      ? prv_prepare_context_text(subtitle, GRect(text_x, line_height,
+          bounds.size.w - text_x, bounds.size.h - line_height), preferred)
+      : (PreparedContextText){0};
+  int text_bottom = primary.ink_bottom > secondary.ink_bottom
+      ? primary.ink_bottom : secondary.ink_bottom;
+  if (text_bottom <= 0 || text_bottom > bounds.size.h) { text_bottom = bounds.size.h; }
   if (bitmap) {
-    prv_draw_bitmap(ctx, title, 0, reading_context_artwork_y(bounds.size.h, artwork), artwork, false,
-        mode == CONTEXT_MUSIC && (title->flags & COMPLICATION_FLAG_IMAGE) != 0);
+    // Very short punctuation-only text can end above a normal-sized image.
+    // Keep the whole image inside the layer while preserving its lower edge.
+    if (artwork > text_bottom) { artwork = text_bottom; }
+    const bool cover = mode == CONTEXT_MUSIC && (title->flags & COMPLICATION_FLAG_IMAGE) != 0;
+    const int visible_bottom = prv_bitmap_visible_bottom(title, artwork, cover);
+    if (visible_bottom > 0) {
+      prv_draw_bitmap(ctx, title, 0, reading_context_artwork_y(text_bottom, visible_bottom),
+          artwork, false, cover);
+    }
   }
-  if (has_subtitle) {
-    prv_draw_context_text(ctx, title, GRect(text_x, 0, bounds.size.w - text_x, line_height), preferred);
-    prv_draw_context_text(ctx, subtitle, GRect(text_x, line_height,
-        bounds.size.w - text_x, bounds.size.h - line_height), preferred);
-  } else {
-    prv_draw_context_text(ctx, title, GRect(text_x, 0, bounds.size.w - text_x, bounds.size.h), preferred);
-  }
+  prv_draw_context_text(ctx, &primary);
+  if (has_subtitle) { prv_draw_context_text(ctx, &secondary); }
 }
 
 static void prv_apply_unobstructed_layout(void);

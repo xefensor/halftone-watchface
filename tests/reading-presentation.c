@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <string.h>
 #include "../src/c/reading_presentation.h"
+#include "../src/c/context_text_metrics.h"
 
 int main(void) {
   const struct { const char *text, *number, *unit; } valid[] = {
@@ -33,16 +34,33 @@ int main(void) {
   assert(reading_hide_artwork(150, 170, 30));
   assert(!reading_hide_artwork(130, 170, 30));
   assert(!reading_hide_artwork(180, 170, 30));
-  // Music covers and notification icons share an inset box, lowered two
-  // pixels from center. Both two-line sizes end at screen y202.
+  // Covers and icons keep the inset sizes and follow the visible text bottom,
+  // including letterboxing or transparent rows inside their source bitmap.
   assert(reading_context_artwork_size(true,48)==40);
   assert(reading_context_artwork_size(true,40)==32);
   assert(reading_context_artwork_size(false,48)==28);
   assert(reading_context_artwork_size(false,40)==28);
-  assert(reading_context_artwork_y(48,40)==6);
-  assert(reading_context_artwork_y(40,32)==6);
-  assert(reading_context_artwork_y(48,28)==12);
-  assert(reading_context_artwork_y(40,28)==8);
+  assert(reading_context_artwork_y(48,40)==8);
+  assert(reading_context_artwork_y(40,32)==8);
+  assert(reading_context_artwork_y(32,28)==4);
+  assert(reading_context_artwork_y(30,24)==6);
+  // The fitted font and rendered characters determine alignment, including
+  // descenders, punctuation, trailing spaces and localized glyphs.
+  assert(context_text_ink_bottom("Artist",24)==24);
+  assert(context_text_ink_bottom("Justice",24)==28);
+  assert(context_text_ink_bottom("Justice   ",24)==28);
+  assert(context_text_ink_bottom("gypq",24)==29);
+  assert(context_text_ink_bottom("gypq",20)==24);
+  assert(context_text_ink_bottom("gypq",18)==22);
+  assert(context_text_ink_bottom("ȘȚç",24)==32);
+  assert(context_text_ink_bottom("9",28)==29);
+  assert(context_text_ink_bottom("…",18)==18);
+  assert(context_text_ink_bottom("   ",24)==0);
+  assert(context_text_ink_bottom("",24)==0);
+  assert(context_text_ink_bottom("Orbit 🪐",24)==24);
+  assert(context_text_ink_bottom("☀️",24)==24);
+  assert(context_text_ink_bottom("中",24)==33);
+  assert(context_text_ink_bottom("▯",24)==33);
   // The inset cover keeps short titles, while a title that fits only in the
   // full row can still reclaim its width instead of shrinking unnecessarily.
   assert(!reading_hide_artwork(80,170,46));

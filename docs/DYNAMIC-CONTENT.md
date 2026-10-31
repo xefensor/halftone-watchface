@@ -1,6 +1,6 @@
 # Dynamic content
 
-Halftone 1.9.0 rc.4 uses one adaptive layout. Two large complications sit side
+Halftone 1.9.0 rc.5 uses one adaptive layout. Two large complications sit side
 by side below the clock and plain date. When music or a brief new-notification
 summary appears, both readings shrink into a compact horizontal row above it.
 Neither selected reading is replaced by contextual content.
@@ -31,10 +31,17 @@ Halftone does not add motion-based playback controls.
 built-in source is currently an Android feature. Incoming artwork is optional,
 static and capped at 24 pixels. Music artwork and notification icons use the
 same display box: **32 pixels normally or 40 with Big text** for a two-line
-panel, and **28 pixels** for a single-line panel. The box is centered beside
-the text and shifted down by **2 pixels**, leaving more space above it than
-the previous full-height music image. This changes display size without
-adding source-image detail.
+panel, and **28 pixels** for a single-line panel. The visible artwork/icon
+bottom aligns with the visible bottom of the actual fitted foreground text,
+including its ellipsis when needed and excluding the one-pixel shadow.
+Compiled-font glyph metrics determine the text edge; transparent icon padding
+and empty space from contain-fitting are excluded from the icon edge. Text
+and clock positions are unchanged. Scaling adds no source-image detail.
+
+Bundled glyphs use exact compiled ink metrics. System emoji belong to the
+firmware and follow its nominal baseline; their painted edge can differ by a
+few pixels, especially in emoji-only text. Other missing glyphs use the bundled
+wildcard bounds. Source text is preserved.
 
 Rectangular music images are center-cropped to a square before scaling,
 preserving their proportions without stretching. Generic complication images

@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.9.0 rc.5
+
+- Bottom-aligns visible music artwork and notification icons with the actual
+  fitted foreground text, excluding its one-pixel shadow, instead of using
+  the previous centered-plus-offset placement.
+- Uses generated compiled-font glyph metrics after fitting and ellipsis, and
+  accounts for transparent icon padding and contain-fit empty space.
+- Preserves rc.4 artwork boxes: 32 pixels normally or 40 with Big text for
+  two-line panels, and 28 pixels for a single line.
+- Leaves clock/text positions, source artwork limits, music cropping,
+  notification contain-fitting, privacy and the dot border unchanged.
+
 ## 1.9.0 rc.4
 
 - Reduces the contextual artwork box to 32 pixels normally or 40 with Big text

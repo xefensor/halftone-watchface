@@ -1,10 +1,10 @@
 {
   "version": "1.9.0",
-  "releaseCandidate": 4,
+  "releaseCandidate": 5,
   "pbw": {
-    "file": "Halftone-1.9.0-rc.4.pbw",
-    "sha256": "5d4fd52f545ac0b8cbd36e9954ffab088452feac2323ea716bc9bdefa5b5ae33",
-    "nativeBinarySha256": "7f517b883fcea5eab518ae60fc4668cc8b3f187bdc7d23067f9e8e897ef75aff",
+    "file": "Halftone-1.9.0-rc.5.pbw",
+    "sha256": "5caec4ca5464ff8de5aca8d63eb1431e4ad4b6a3ba48b23aabf38780fc60dae0",
+    "nativeBinarySha256": "65740ee124dd74f17a56fe47626220abdc4d0baf67c5636370fcc399f068f51d",
     "resourcesSha256": "b52b3456e45f5bdeb4e97ecec2ddf188953f6cdade42aa33feaf58070433e803"
   },
   "screenshots": {
@@ -36,7 +36,7 @@
       },
       {
         "file": "emery_04_music.png",
-        "sha256": "2f81d448eff34c874cec3493b4a4c1cfe4c4a8e21d1b77264644a1017465f338",
+        "sha256": "bc74785ea40872984e282f128faafa196e6ec120214f49b2d28cdf6c4231a631",
         "pixels": [
           200,
           228
@@ -44,7 +44,7 @@
       },
       {
         "file": "emery_05_notification.png",
-        "sha256": "fa72a60d18fe994a8cb6c23029794af7fd7a535e0b0f5c0df929654236821006",
+        "sha256": "1431d20d10c6ac7524be19bab6b910ec1ad572b78d4039c5b12addfe350f87c6",
         "pixels": [
           200,
           228

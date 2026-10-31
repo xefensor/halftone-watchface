@@ -1,5 +1,62 @@
 # Halftone release validation
 
+## 1.9.0 rc.5 — artwork aligned to the text bottom
+
+- Artwork keeps the rc.4 sizes (32px standard / 40px Big for two lines; 28px
+  for one line). Its opaque bottom now follows the fitted foreground text,
+  excluding the one-pixel shadow. The text is prepared once after font fitting
+  and ellipsis; visible bounds respect the existing context-layer clipping.
+  Text positions, clock/date, readings and border geometry are unchanged.
+- A generated table covers **205 bundled codepoints × four context fonts =
+  820 exact ink-bottom values**, verified against the final packaged PFOs.
+  The same bitmap sampling path drives rendering and visible-bottom lookup,
+  accounting for crop, contain-fit letterboxing and transparent icon padding.
+- **34 final native captures pass:** 30 actual opaque-bottom comparisons plus
+  four unchanged Timeline Peek endpoints. Standard/Big, one/two-line music and
+  notifications, descenders, long fitted/ellipsized strings, transparent and
+  landscape icons, mixed emoji, BMP fallback and explicit missing glyphs are
+  covered. **30,000 source-pixel checks pass.** Final sheets were visually
+  reviewed before refreshing the listing/documentation captures.
+- Two-line Genesis/Justice and notification panels now end at foreground row
+  203 with artwork ending on the same row. Single-line standard Genesis ends
+  at 195 and WhatsApp/Petr at 196; their art follows each fitted line rather
+  than using a shared fixed offset. Big mixed Orbit/emoji ends at 193 and
+  standard at 195, also matching the artwork.
+- Native testing found that system emoji bypass the bundled wildcard font.
+  The final policy follows PebbleOS's emoji baseline convention while keeping
+  source text unchanged; non-emoji missing glyphs retain the compiled wildcard
+  metric. Firmware owns fallback glyph artwork, so this is not an exact ink
+  guarantee for all Unicode. Separate emoji-only Saturn diagnostics show a
+  2px painted-ink/baseline difference; these are not counted as exact alignment
+  passes. Existing context text/shadow clipping is unchanged by this tweak.
+- **225 JavaScript tests and nine strict C99 suites pass**. The final changed
+  reading helper passes AddressSanitizer/UndefinedBehaviorSanitizer with
+  unsupported leak scanning disabled. The compiled helper also passed 944
+  session checks across glyphs, text, Unicode and bounded UTF-8 decoding.
+  The release verifier retains **25,920 clock checks + 522,648 localized date
+  checks**, and rejects drift in the generated context metrics.
+- SDK 4.33.1 builds **149,964 resource bytes**, a **28,970-byte RAM footprint**
+  and **102,102 bytes free heap**. Exact SDK payloads, all 31 C/JS keys, eight
+  active phone-source modules, original UUID/ReadMusic permission and seven
+  nonfallback Unicode-minus glyphs pass release audit. Settings controls and
+  translations are unchanged; the earlier Clay browser corpus is retained.
+- Native captures use idle phone JavaScript and production-encoded fixtures.
+  They verify rendering, not live phone/provider data or playback. Physical
+  Bluetooth callbacks and real Timeline event text still need device checks.
+  Five final listing screenshots are separate from the 34 focused captures.
+
+Final PBW SHA-256:
+
+`5caec4ca5464ff8de5aca8d63eb1431e4ad4b6a3ba48b23aabf38780fc60dae0`
+
+Native binary SHA-256:
+
+`65740ee124dd74f17a56fe47626220abdc4d0baf67c5636370fcc399f068f51d`
+
+Resources SHA-256:
+
+`b52b3456e45f5bdeb4e97ecec2ddf188953f6cdade42aa33feaf58070433e803`
+
 ## 1.9.0 rc.4 — smaller, lowered artwork and matching notification icons
 
 - Two-line music artwork and notification icons now share a **32px standard /

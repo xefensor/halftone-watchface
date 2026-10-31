@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check clock fitting and the C ink-bound table against an exact release PBW.
+"""Check clock/date fitting and generated text ink bounds in an exact release PBW.
 
 Run after building and permission-packaging the watchface. Resource IDs come
 from the matching local SDK build; native payload equality prevents accidentally
@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CLOCK_SIZES = (64, 72, 76, 80, 84, 88, 92, 96, 100, 104, 108)
 CLOCK_CHARS = "0123456789:"
 DATE_SIZES = (28, 24, 22, 20, 18)
+CONTEXT_SIZES = (28, 24, 20, 18)
 RESOURCE_TABLE_BYTES = 256 * 16
 
 
@@ -28,7 +29,7 @@ def require(condition, message):
         raise ValueError(message)
 
 
-def read_font(packed, resource_id, chars=CLOCK_CHARS):
+def read_font(packed, resource_id, chars=CLOCK_CHARS, ink_bottoms=False):
     """Read glyph metrics from a compiled Pebble v3 font resource."""
     record = 12 + 16 * (resource_id - 1)
     require(resource_id > 0 and record + 16 <= len(packed), "Invalid font resource ID")
@@ -42,6 +43,7 @@ def read_font(packed, resource_id, chars=CLOCK_CHARS):
         "<BBHHBBBB", data)
     require(version == 3, "Unsupported compiled font version; update the verifier")
     require(cp_bytes in (2, 4) and header_size >= 10, "Invalid compiled font header")
+    require(features & ~1 == 0, "Unsupported compiled font encoding; raw bitmap glyphs required")
     offset_bytes = 2 if features & 1 else 4
     table = header_size + buckets * 4
     entries = {}
@@ -49,6 +51,7 @@ def read_font(packed, resource_id, chars=CLOCK_CHARS):
     for bucket in range(buckets):
         _hash, number, position = struct.unpack_from("<BBH", data, header_size + bucket * 4)
         total += number
+        bucket_entries = []
         for index in range(number):
             at = table + position + index * (cp_bytes + offset_bytes)
             require(at + cp_bytes + offset_bytes <= len(data), "Truncated font lookup table")
@@ -58,20 +61,176 @@ def read_font(packed, resource_id, chars=CLOCK_CHARS):
             # glyph under the same codepoint. Clock digits must stay unique.
             require(codepoint not in entries or codepoint == wildcard,
                     "Duplicate compiled font codepoint")
-            entries[codepoint] = glyph_offset
+            bucket_entries.append((codepoint, glyph_offset))
+            entries.setdefault(codepoint, glyph_offset)
+        # Match the firmware's binary search exactly, including the SDK's
+        # duplicate wildcard entries. In this repertoire it chooses the
+        # reserved missing glyph rather than the later concrete square.
+        require(bucket_entries == sorted(bucket_entries, key=lambda entry: entry[0]),
+                "Compiled font bucket is not sorted by codepoint")
+        for codepoint in {entry[0] for entry in bucket_entries}:
+            left, right = 0, len(bucket_entries) - 1
+            while left <= right:
+                middle = (left + right) // 2
+                candidate, glyph_offset = bucket_entries[middle]
+                if candidate < codepoint:
+                    left = middle + 1
+                elif candidate > codepoint:
+                    right = middle - 1
+                else:
+                    entries[codepoint] = glyph_offset
+                    break
     require(total == count, "Compiled font glyph count differs from its lookup table")
     glyph_base = table + total * (cp_bytes + offset_bytes)
     metrics = {}
-    for char in chars:
+    all_glyphs = chars is None
+    require(not all_glyphs or wildcard == 0x25af, "Context font wildcard codepoint changed")
+    for char in (map(chr, sorted(entries)) if all_glyphs else chars):
         codepoint = ord(char)
-        require(codepoint in entries and codepoint != wildcard, "Required glyph missing: " + char)
+        require(codepoint in entries and (all_glyphs or codepoint != wildcard),
+                "Required glyph missing: " + char)
         at = glyph_base + entries[codepoint]
         require(at + 5 <= len(data), "Truncated glyph: " + char)
         width, height, left, top, advance = struct.unpack_from("<BBbbb", data, at)
         require(advance > 0 and (char == " " or (width > 0 and height > 0)),
                 "Empty required glyph: " + char)
-        metrics[char] = (width, height, left, top, advance)
+        if ink_bottoms:
+            byte_count = (width * height + 7) // 8
+            require(at + 5 + byte_count <= len(data), "Truncated glyph bitmap: " + char)
+            bitmap = data[at + 5:at + 5 + byte_count]
+            last = next((bit for bit in range(width * height - 1, -1, -1)
+                         if bitmap[bit // 8] & (1 << (bit % 8))), None)
+            metrics[char] = top + last // width + 1 if last is not None else 0
+        else:
+            metrics[char] = (width, height, left, top, advance)
     return metrics
+
+
+def context_metrics_header(packed, ids):
+    fonts = {}
+    for size in CONTEXT_SIZES:
+        name = "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_" + str(size)
+        require(name in ids, "Generated resource header is missing " + name)
+        fonts[size] = read_font(packed, ids[name], chars=None, ink_bottoms=True)
+    codepoints = sorted(ord(char) for char in fonts[CONTEXT_SIZES[0]])
+    require(len(codepoints) == 205 and codepoints[-1] <= 0xffff,
+            "Context font repertoire changed; review the generated lookup")
+    require(all(set(font) == set(fonts[CONTEXT_SIZES[0]]) for font in fonts.values()),
+            "Context fonts have different repertoires")
+    require(all(0 <= bottom <= 255 for font in fonts.values() for bottom in font.values()),
+            "Context glyph ink bottom cannot be represented as uint8_t")
+    wildcard = 0x25af
+    require(wildcard in codepoints, "Context font wildcard is missing")
+
+    def rows(values, width, format_value=str):
+        return "\n".join("  " + ", ".join(map(format_value, values[index:index + width])) + ","
+                         for index in range(0, len(values), width))
+
+    generated = """#pragma once
+
+// Generated from the compiled context PFO bitmaps; do not edit the tables.
+// Regenerate after building with:
+// python3 scripts/check-clock-fonts.py --pbw dist/<release>.pbw --write-context-metrics
+// Bottoms are foreground ink bounds, exclusive, relative to the text origin.
+// Bundled glyphs are exact. Firmware emoji fonts align to the nominal baseline;
+// other missing glyphs use the bundled wildcard. Firmware-provided glyph ink
+// can vary, so the emoji policy is baseline alignment rather than exact bounds.
+#include <stdint.h>
+
+static const uint16_t s_context_text_codepoints[] = {
+%s
+};
+
+// Font order: 28, 24, 20, 18. Space is blank; wildcard uses the first PFO entry.
+static const uint8_t s_context_text_bottoms[4][205] = {
+%s
+};
+
+// Invalid UTF-8 consumes one byte and uses the bundled missing-glyph metric.
+// Reading continuations sequentially avoids crossing a truncated NUL string.
+static inline uint32_t context_text_next_codepoint(const unsigned char **cursor) {
+  const unsigned char *start = *cursor;
+  const unsigned char lead = *start;
+  *cursor = start + 1;
+  if (lead < 0x80) return lead;
+  int count;
+  uint32_t value, minimum;
+  if (lead >= 0xc2 && lead <= 0xdf) {
+    count = 2; value = lead & 0x1f; minimum = 0x80;
+  } else if (lead >= 0xe0 && lead <= 0xef) {
+    count = 3; value = lead & 0x0f; minimum = 0x800;
+  } else if (lead >= 0xf0 && lead <= 0xf4) {
+    count = 4; value = lead & 0x07; minimum = 0x10000;
+  } else {
+    return 0x25af;
+  }
+  for (int index = 1; index < count; ++index) {
+    const unsigned char next = start[index];
+    if ((next & 0xc0) != 0x80) return 0x25af;
+    value = (value << 6) | (next & 0x3f);
+  }
+  if (value < minimum || value > 0x10ffff ||
+      (value >= 0xd800 && value <= 0xdfff)) return 0x25af;
+  *cursor = start + count;
+  return value;
+}
+
+// Match PebbleOS v4.33.1 codepoint_is_emoji(), including BMP emoji.
+static inline int context_text_is_emoji(uint32_t value) {
+  return (value >= 0x1f300 && value <= 0x1faff) ||
+      (value >= 0x2300 && value <= 0x23ff) ||
+      (value >= 0x2600 && value <= 0x27bf) ||
+      (value >= 0x2b00 && value <= 0x2bff) ||
+      (value >= 0x1f100 && value <= 0x1f2ff) ||
+      value == 0x2192 || value == 0x25aa || value == 0x25ab ||
+      value == 0x25b6 || value == 0x25ba || value == 0x25c0 ||
+      (value >= 0x25fb && value <= 0x25fe);
+}
+
+// These Unicode spaces, formatting marks and modifiers have no drawn ink.
+// In particular, emoji variation selectors/ZWJ must not introduce a wildcard.
+static inline int context_text_has_no_ink(uint32_t value) {
+  return value <= 0x20 || (value >= 0x7f && value <= 0x9f) || value == 0xa0 ||
+      (value >= 0x2000 && value <= 0x200f) ||
+      (value >= 0x202a && value <= 0x202f) ||
+      (value >= 0x2060 && value <= 0x206f) || value == 0x205f ||
+      value == 0x20e3 || value == 0x3000 || value == 0xfe0e || value == 0xfe0f ||
+      value == 0xfeff || (value >= 0xfff9 && value <= 0xfffc) ||
+      (value >= 0x1f3fb && value <= 0x1f3ff) ||
+      (value >= 0xe0000 && value <= 0xe007f) ||
+      (value >= 0xf0000 && value <= 0x10fffd);
+}
+
+// Use the final fitted/ellipsized single-line text and its selected font size.
+// Add the text origin afterwards, then clamp to the actual drawing layer.
+static inline int context_text_ink_bottom(const char *text, int font_size) {
+  const int baseline = font_size == 28 || font_size == 24 || font_size == 20 ? font_size : 18;
+  const int font = font_size == 28 ? 0 : font_size == 24 ? 1 : font_size == 20 ? 2 : 3;
+  const int count = sizeof(s_context_text_codepoints) / sizeof(s_context_text_codepoints[0]);
+  const int wildcard = %d;
+  int bottom = 0;
+  if (!text) return bottom;
+  const unsigned char *cursor = (const unsigned char *)text;
+  while (*cursor) {
+    const uint32_t codepoint = context_text_next_codepoint(&cursor);
+    if (context_text_has_no_ink(codepoint)) continue;
+    int left = 0, right = count;
+    while (left < right) {
+      const int middle = left + (right - left) / 2;
+      if (s_context_text_codepoints[middle] < codepoint) left = middle + 1;
+      else right = middle;
+    }
+    const int glyph_bottom = left < count && s_context_text_codepoints[left] == codepoint
+        ? s_context_text_bottoms[font][left] : context_text_is_emoji(codepoint)
+        ? baseline : s_context_text_bottoms[font][wildcard];
+    if (glyph_bottom > bottom) bottom = glyph_bottom;
+  }
+  return bottom;
+}
+""" % (rows(codepoints, 10, lambda value: "0x%04x" % value),
+       ",\n".join("  { // %dpx\n%s\n  }" % (size, rows([fonts[size][chr(cp)] for cp in codepoints], 20))
+                    for size in CONTEXT_SIZES), codepoints.index(wildcard))
+    return generated
 
 
 def measure(text, metrics):
@@ -195,7 +354,7 @@ def verify_dates(packed, ids, native, layout, minimum_clock_tops):
             "minimumDateClockGapPx": minimum_gap, "minimumDateInkTopPx": minimum_top}
 
 
-def verify(pbw, root=ROOT):
+def verify(pbw, root=ROOT, write_context_metrics=False):
     package = json.loads((root / "package.json").read_text(encoding="utf-8"))
     header = root / "build/emery/src/resource_ids.auto.h"
     require(header.is_file(), "Build the watchface first: matching generated resource IDs are required")
@@ -213,6 +372,14 @@ def verify(pbw, root=ROOT):
             require(path.is_file() and archive.read("emery/" + name) == path.read_bytes(),
                     "PBW native payload differs from the local build: " + name)
         packed = archive.read("emery/app_resources.pbpack")
+    context_header = root / "src/c/context_text_metrics.h"
+    expected_context = context_metrics_header(packed, ids)
+    if write_context_metrics:
+        context_header.write_text(expected_context, encoding="utf-8")
+    require(context_header.is_file(),
+            "Context ink metadata missing; run with --write-context-metrics after building")
+    require(context_header.read_text(encoding="utf-8") == expected_context,
+            "Context ink metadata drift: regenerate with --write-context-metrics against the matching PBW")
     fonts = {}
     for size in CLOCK_SIZES:
         name = "FIRA_SANS_CONDENSED_BOLD_" + str(size)
@@ -268,7 +435,9 @@ def verify(pbw, root=ROOT):
                     checks += 1
     result = {"clockStrings": len(clocks), "presentations": 12, "fitChecks": checks,
               "compiledFonts": len(fonts), "selectedFontSizes": sorted(selected_sizes),
-              "inkBoundsMatch": True, "nativePayloadMatchesBuild": True}
+              "inkBoundsMatch": True, "nativePayloadMatchesBuild": True,
+              "contextGlyphs": 205, "contextFonts": len(CONTEXT_SIZES),
+              "contextInkBoundsMatch": True, "contextFallbackPolicy": "emojiBaselineOtherwiseWildcard"}
     result.update(verify_dates(packed, ids, native, layout, minimum_clock_tops))
     return result
 
@@ -276,9 +445,11 @@ def verify(pbw, root=ROOT):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pbw", type=Path, required=True, help="Final permission-packaged PBW")
+    parser.add_argument("--write-context-metrics", action="store_true",
+                        help="Regenerate src/c/context_text_metrics.h from the matching compiled fonts")
     args = parser.parse_args()
     try:
-        result = verify(args.pbw)
+        result = verify(args.pbw, write_context_metrics=args.write_context_metrics)
     except (OSError, ValueError, KeyError, struct.error, zipfile.BadZipFile) as error:
         parser.exit(1, "Clock font check failed: " + str(error) + "\n")
     print(json.dumps(result, indent=2))

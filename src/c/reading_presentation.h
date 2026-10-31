@@ -79,8 +79,8 @@ static inline int reading_context_artwork_size(bool two_lines, int panel_height)
   return two_lines ? panel_height - 8 : 28;
 }
 
-static inline int reading_context_artwork_y(int panel_height, int artwork_size) {
-  return (panel_height - artwork_size) / 2 + 2;
+static inline int reading_context_artwork_y(int text_bottom, int visible_artwork_bottom) {
+  return text_bottom - visible_artwork_bottom;
 }
 
 typedef struct { int x, y, size; } ReadingCoverCrop;
