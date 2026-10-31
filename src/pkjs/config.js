@@ -10,10 +10,7 @@ module.exports = [
   {
     "type": "section",
     "items": [
-      {
-        "type": "heading",
-        "defaultValue": "Layout"
-      },
+      {"type": "heading", "defaultValue": "Layout"},
       {
         "type": "select",
         "messageKey": "LAYOUT_STYLE",
@@ -25,149 +22,50 @@ module.exports = [
           {"label": "Stacked time", "value": "2"}
         ]
       },
-      {
-        "type": "text",
-        "defaultValue": "Comic cover keeps a wide clock with a weather column. Stacked time puts hours above minutes. Timeline Peek uses a compact clock."
-      }
+      {"type": "text", "defaultValue": "Classic: 1 centered; 2/3 above 4/5 in the bottom grid."},
+      {"type": "text", "defaultValue": "Comic cover: 1 large at lower left, 5 above it; 2, 3 and 4 down the right."},
+      {"type": "text", "defaultValue": "Stacked time: 5, 1, 2, 3 and 4 down the right; clock on the left."},
+      {"type": "text", "defaultValue": "Timeline Peek shows only complication 1."}
     ]
   },
   {
     "type": "section",
     "items": [
-      {
-        "type": "heading",
-        "defaultValue": "Colors"
-      },
-      {
-        "type": "color",
-        "messageKey": "BACKGROUND_COLOR",
-        "defaultValue": "0xFF5500",
-        "label": "Background color"
-      },
-      {
-        "type": "color",
-        "messageKey": "TEXT_COLOR",
-        "defaultValue": "0xFFFFFF",
-        "label": "Text color"
-      }
+      {"type": "heading", "defaultValue": "Colors"},
+      {"type": "color", "messageKey": "BACKGROUND_COLOR", "defaultValue": "0xFF5500", "label": "Background color"},
+      {"type": "color", "messageKey": "TEXT_COLOR", "defaultValue": "0xFFFFFF", "label": "Text color"}
     ]
   },
   {
     "type": "section",
     "items": [
-      {
-        "type": "heading",
-        "defaultValue": "Time & temperature"
-      },
-      {
-        "type": "text",
-        "id": "weather-status",
-        "defaultValue": "Weather source: waiting for data"
-      },
-      {
-        "type": "toggle",
-        "messageKey": "FOLLOW_PEBBLE_UNITS",
-        "defaultValue": true,
-        "label": "Follow Pebble temperature units"
-      },
-      {
-        "type": "toggle",
-        "messageKey": "USE_12_HOUR",
-        "defaultValue": false,
-        "label": "12-hour time"
-      },
-      {
-        "type": "toggle",
-        "messageKey": "USE_FAHRENHEIT",
-        "defaultValue": false,
-        "label": "Temperature in Fahrenheit"
-      },
-      {
-        "type": "text",
-        "defaultValue": "Fahrenheit applies when Follow Pebble is off. Shared weather uses Pebble's saved locations; older apps use the phone's current location."
-      },
-      {
-        "type": "select",
-        "messageKey": "WEATHER_LOCATION",
-        "defaultValue": "",
-        "label": "Weather location",
-        "options": [{"label": "First Pebble weather location", "value": ""}]
-      }
+      {"type": "heading", "defaultValue": "Time"},
+      {"type": "toggle", "messageKey": "USE_12_HOUR", "defaultValue": false, "label": "12-hour time"}
     ]
   },
   {
     "type": "section",
     "items": [
-      {
-        "type": "heading",
-        "defaultValue": "Weather details"
-      },
-      {
-        "type": "toggle",
-        "messageKey": "SHOW_DAILY_RANGE",
-        "defaultValue": false,
-        "label": "Show today's low and high"
-      },
-      {
-        "type": "toggle",
-        "messageKey": "SHOW_RAIN_CHANCE",
-        "defaultValue": false,
-        "label": "Show today's rain / snow chance"
-      },
-      {
-        "type": "toggle",
-        "messageKey": "SHOW_WEATHER_ICON",
-        "defaultValue": true,
-        "label": "Show weather icon"
-      },
-      {
-        "type": "text",
-        "defaultValue": "Shows the condition supplied by Pebble. Hidden when unavailable."
-      },
-      {
-        "type": "text",
-        "defaultValue": "High/low is shown as 19/5. The droplet shows today's rain or snow chance. Missing data stays hidden. Details hide during Timeline Peek."
-      }
+      {"type": "heading", "defaultValue": "Complications"},
+      {"type": "text", "id": "complications-status", "defaultValue": "Complications: waiting for Pebble"},
+      {"type": "text", "defaultValue": "Choose slots 1–5 in the Pebble app under Settings → Complications. Empty slots keep their positions."},
+      {"type": "text", "defaultValue": "Units come from Pebble and the selected plugin."}
     ]
   },
   {
     "type": "section",
     "items": [
-      {
-        "type": "heading",
-        "defaultValue": "Text size"
-      },
-      {
-        "type": "toggle",
-        "messageKey": "LARGE_TEXT",
-        "defaultValue": false,
-        "label": "Extra-large edge-to-edge text"
-      }
+      {"type": "heading", "defaultValue": "Text size"},
+      {"type": "toggle", "messageKey": "LARGE_TEXT", "defaultValue": false, "label": "Extra-large edge-to-edge text"}
     ]
   },
   {
     "type": "section",
     "items": [
-      {
-        "type": "heading",
-        "defaultValue": "Optical effects"
-      },
-      {
-        "type": "toggle",
-        "messageKey": "DEPTH_EFFECT",
-        "defaultValue": false,
-        "label": "4-step dot transition"
-      },
-      {
-        "type": "toggle",
-        "messageKey": "TEXT_SHADOW",
-        "defaultValue": false,
-        "label": "Floating text shadow"
-      }
+      {"type": "heading", "defaultValue": "Optical effects"},
+      {"type": "toggle", "messageKey": "DEPTH_EFFECT", "defaultValue": false, "label": "4-step dot transition"},
+      {"type": "toggle", "messageKey": "TEXT_SHADOW", "defaultValue": false, "label": "Floating text shadow"}
     ]
   },
-  {
-    "type": "submit",
-    "defaultValue": "Save settings"
-  }
+  {"type": "submit", "defaultValue": "Save settings"}
 ];

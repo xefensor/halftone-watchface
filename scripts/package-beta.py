@@ -45,8 +45,8 @@ def package_beta(project, source, output):
     package = json.loads((project / "package.json").read_text(encoding="utf-8"))
     pebble = package["pebble"]
     permissions = pebble.get("usesPermissions")
-    if not isinstance(permissions, list) or "Location" not in permissions:
-        raise ValueError("package.json must declare usesPermissions including Location")
+    if not isinstance(permissions, list):
+        raise ValueError("package.json must declare usesPermissions (empty is valid for dynamic complication access)")
     if not re.fullmatch(r"\d+\.\d+\.\d+", package["version"]):
         raise ValueError("use a numeric SDK version; the filename identifies this as a beta")
     if source.resolve() == output.resolve():

@@ -1,268 +1,148 @@
 # Halftone
 
-## Layouts and shared weather beta — 1.5.1 beta 6
+## Five-complication beta — 1.6.0 beta 7
 
-Beta 6 improves readability in **Classic**, **Comic cover** and **Stacked time**:
-today's range reads high/low, precipitation uses a large droplet and percentage,
-and an optional icon shows the current condition supplied by Pebble. Comic cover
-now uses a plain date instead of a black badge. Classic remains the default for
-both existing users and new installs. To try a new layout, open Halftone's settings in the Pebble phone app,
-choose it under **Layout style** and save. The choice survives reopening the
-watchface.
+Halftone displays five readings chosen in the Pebble phone app's global
+**Complications** settings. Choose weather, phone battery, calendar data or
+other installed plugin readings. The clock and date continue to run on the
+watch, with Halftone's existing 12-hour/24-hour option.
 
-The beta reads the same weather database as Pebble's Weather app, keeps a
-six-hour offline forecast cache, and supports saved-location selection and
-**Follow Pebble** temperature units. Existing explicit unit choices are retained.
-Older apps and disabled plugin preview retain the compatibility weather client.
+Install [Halftone-1.6.0-beta.7.pbw](dist/Halftone-1.6.0-beta.7.pbw).
+Source: [Halftone-1.6.0-beta.7-source.zip](dist/Halftone-1.6.0-beta.7-source.zip).
+This is a sideloadable testing build. Automated checks and native emulator
+results are recorded in [validation](docs/VALIDATION.md); physical phone/watch
+testing is still needed.
 
-Install [Halftone-1.5.1-beta.6.pbw](dist/Halftone-1.5.1-beta.6.pbw).
-Source: [Halftone-1.5.1-beta.6-source.zip](dist/Halftone-1.5.1-beta.6-source.zip).
-Halftone's phone settings and weather status messages support
-the same 17 languages as the watchface. Settings follow the active watch's
-language when available, then the phone's language, with English as the fallback.
-The watch's weekday follows its system language. Weather details use the same
-high/low and droplet format across languages. Existing settings and their saved
-values are preserved.
+All five data areas now follow global complications. This build has no weather
+preset, independent weather HTTP client, pinned weather provider, temperature
+unit override or hourly forecast cache. Pebble and the selected sources supply
+the readings, units and any source-specific permission or sign-in flow.
 
-The optional **Show today's low and high** and **Show today's rain / snow
-chance** settings both default to off. When enabled and supplied by shared
-Pebble weather, all three styles show a range such as `19/5` (high then low)
-and a droplet beside `40%`. These options are independent, hide missing values
-and hide during Timeline Peek. A supplied zero probability is valid and
-displays as `0%`. **Show weather icon** defaults to on; missing, unknown or
-expired conditions stay hidden. These details make no extra weather HTTP
-requests.
+## Set up
 
-The beta also corrects unit preference handling and tracks forecast age by its
-absolute UTC hour, so a moving forecast window cannot renew old cached hours.
-Settings show the active source, selected location and received temperature.
-See [setup, build instructions and limitations](docs/PLUGIN-WEATHER.md).
+1. Enable the Pebble app's plugin preview if your app version requires it.
+2. Open **Complications** in the Pebble phone app's Settings and configure slots
+   1–5. Some preview builds place this screen under **Settings → Plugins**.
+3. Open Halftone's settings with its gear icon. Choose **Classic**, **Comic
+   cover** or **Stacked time** under **Layout style**, then save. Classic is the
+   default for both new and existing installations.
+4. Allow the permissions requested by the sources you selected. Connect or
+   configure a provider in Pebble if that provider requires it.
 
-This beta is for sideloading and device testing; 1.3.1 remains the prepared
-stable release. When building this beta, run `pebble clean` before `pebble build`
-to regenerate message keys, then `python3 scripts/package-beta.py` so plugin
-permissions are present in the final PBW.
+For a weather arrangement, choose Temperature, High, Low, Precipitation and
+Condition for slots 1–5. These remain five independent readings; Halftone does
+not combine high/low or infer a condition or droplet from a percentage. Phone
+battery or any other supported reading can replace any slot.
 
-Open Halftone from the Pebble phone app and tap the gear icon to choose the
-background and text colors. Both settings are stored on the watch and applied
-immediately after saving. The dithered border remains black.
+![Five numbered complication positions in all three layouts](docs/images/complication-layout-map.png)
 
-A Pebble Time 2 watchface that visually blends the screen into the physical
-bezel using a procedural halftone-dot transition.
+Read the [slot-by-slot layout and format guide](docs/COMPLICATIONS.md), or the
+[weather setup guide](docs/PLUGIN-WEATHER.md).
 
-Halftone displays:
+## Layouts
 
-- configurable 12-hour or 24-hour time
-- Classic, Comic cover and Stacked time layouts
-- automatically localized day name and numeric date
-- current temperature in Celsius or Fahrenheit
-- optional shared-weather daily high/low and rain/snow probability
-- an optional current-condition icon from shared Pebble weather
-- a black-to-orange halftone transition drawn directly from the screen edge
-- an adaptive Timeline Peek layout for upcoming events
-- optional recessed-dot and floating-text optical effects
-
-![Pebble Time 2 emulator preview](preview.png)
-
-## Install the prebuilt watchface
-
-Download [`dist/Halftone-1.3.1.pbw`](dist/Halftone-1.3.1.pbw) and open it with
-the Pebble mobile app to install it. The complete Pebble Store upload kit is
-available as [`dist/Halftone-1.3.1-store-release.zip`](dist/Halftone-1.3.1-store-release.zip).
-You can also build the source yourself as described below.
-
-## How it works
-
-The following describes the compatibility weather client. The 1.5.1 beta uses
-shared Pebble weather when available; see the beta setup guide above.
-
-The watch-side C app draws the interface and updates the clock once per minute.
-Every 30 minutes it asks PebbleKit JS on the connected phone for fresh weather.
-The phone obtains a low-power location and first requests the temperature from
-the same weather endpoint currently used by the Pebble mobile app. HTTP errors,
-timeouts, malformed responses or observations over two hours old trigger a
-direct Open-Meteo request with the same coordinates. No weather API key is
-required. After a primary failure, requests use the fallback for an hour before
-trying Pebble again.
-
-Pebble's endpoint is an internal API, not a guaranteed public developer API;
-the independent Open-Meteo fallback is essential. The current implementation
-is based on the mobile app's
-[getWeather method](https://github.com/coredevices/mobileapp/blob/master/pebble/src/commonMain/kotlin/coredevices/pebble/services/PebbleWebServices.kt).
-The same location and units should give matching provider readings, but the
-phone app and watchface still have independent update times/caches. A saved
-city in the app can also differ from the phone's current GPS location.
-
-The last successful temperature is persisted on the watch, so temporary phone
-or network disconnection does not immediately blank the display. The watch also
-stores the current hour plus six hours of hourly forecasts, in both units, with
-UTC timestamps. After 30 minutes without a successful update it can display
-the cached forecast for the current hour, prefixed with `~` (for example `~7°C`)
-to distinguish an estimate from a live observation. The forecast changes as
-the hours pass without needing the phone and survives restarting the watchface.
-It is valid for at most six hours from when it was fetched. If neither a usable
-forecast nor an observation under two hours old exists, the display becomes
-`--°C` or `--°F`. Forecasts are for the last fetched location; offline travel
-cannot be detected or corrected without a new phone location.
-
-Hourly data is taken from Pebble when explicit UTC timestamps are present;
-otherwise Open-Meteo supplies a supplemental forecast. A missing or malformed
-forecast never discards a valid live reading, but clears the previous forecast
-so another location's hours cannot be reused accidentally.
-
-Updates are requested on startup and after reconnecting; missed
-updates are retried every two minutes while connected. HTTP requests time out
-after 15 seconds, and failed AppMessage deliveries get two retries. These
-deadlines are enforced independently of the PKJS platform: missing location,
-HTTP or AppMessage callbacks cannot leave the weather client permanently busy.
-The phone also schedules its own 30-minute refresh as a backup to the watch's
-requests. A request from the watch can recover a run whose timers were suspended.
-
-Incoming AppMessages accept both named keys (as sent by the current Pebble
-mobile app) and numeric keys (used by some older runners). Version 1.3.1 fixes
-the numeric-only listener that ignored the mobile app's scheduled weather
-requests even though startup weather worked.
-
-The settings page can switch independently between 24-hour and 12-hour time,
-and between Celsius and Fahrenheit. Both rounded units are cached, so changing
-the displayed unit works immediately even while the phone is offline. A unit
-change also requests the provider's native value for that unit, avoiding a
-second rounding step. The fallback converts its unrounded Celsius reading to
-Fahrenheit before rounding.
-
-The weekday automatically follows the PebbleOS language.
-Halftone includes
-English, Czech, Slovak, German, French, Spanish, Italian, Portuguese, Dutch,
-Polish, Danish, Swedish, Norwegian, Finnish, Hungarian, Romanian and Turkish;
-Norwegian includes the `no`, `nb` and `nn` locale codes. Other locales fall back
-to English. Long translated names automatically use a slightly smaller date
-font while the time remains unchanged. The phone settings also
-translate the display and color controls, weather options, location controls
-and dynamic status messages. They prefer the active watch language, then the
-phone language, and finally English.
-
-When Pebble Timeline Quick View appears at the bottom of the screen, Halftone
-uses the watchface unobstructed-area API to move the lower dotted edge above
-the event card. The date, time and temperature are simultaneously rearranged
-and switched to compact font sizes, then restored when the event card leaves.
-The compact layout keeps the date below the complete top dot transition so no
-row is covered by text. All three layout styles use this common compact clock
-layout during Peek and restore the selected style afterward.
-
-## Build
-
-Install the current Pebble command-line tool and SDK:
-
-```sh
-uv tool install pebble-tool
-pebble sdk install latest
-```
-
-Then build the project:
-
-```sh
-git clone https://github.com/xefensor/halftone-watchface.git
-cd halftone-watchface
-pebble build
-```
-
-Run it in the Pebble Time 2 emulator:
-
-```sh
-pebble install --emulator emery
-```
-
-To install on a real Pebble Time 2, enable **Dev Connect** for the watch in the
-Pebble mobile app, then run:
-
-```sh
-pebble login
-pebble install --cloudpebble
-```
-
-The phone must grant location access to the Pebble app for automatic local
-weather.
-
-## Appstore release
-
-The `store/` directory contains the final description, release notes, privacy
-disclosure, raw Emery screenshots and optional 720 x 320 marketing banner.
-See `store/PUBLISHING.md` for the upload checklist.
-
-## Customize the design
-
-The **Layout style** setting offers Classic, Comic cover and Stacked time. Classic
-keeps the original arrangement and is the default; installing the beta does not
-automatically select a new style.
+Halftone blends the PT2 screen into the bezel with its procedural black
+halftone border. The three styles place the same five numbered complications
+in different fixed positions:
 
 | Style | Arrangement |
 | --- | --- |
-| Classic | Existing date, wide clock and temperature layout |
-| Comic cover | Wide clock with a weather column |
-| Stacked time | Hours above minutes |
+| Classic | Slot 1 centered; slots 2–5 in two rows below |
+| Comic cover | Large slot 1 at lower left, slot 5 above it, slots 2–4 down the right |
+| Stacked time | Hours above minutes on the left; slots 5, 1, 2, 3, 4 down the right |
 
-The clock and date remain live in every style, including the 12-hour and
-24-hour options. Changing style preserves
-the saved weather options. Missing or disabled optional weather details remain
-hidden, and column layouts recenter the remaining values.
-All three styles use the chosen text color; Comic cover's date is now unboxed.
-Long weekday/date combinations use smaller date fonts when needed to fit.
-Stacked time fits both clock rows to the same size and gives weather a wider
-column, with fitted temperature fonts for signs, forecast markers and units.
-The condition icon and droplet are drawn in the selected text color. The
-condition icon has its own **Show weather icon** toggle, enabled by default.
+Empty slots stay empty without moving later slots. A selected reading that has
+no usable value shows `--`, with a reason in Halftone's settings diagnostics.
+During Timeline Peek / Quick View, every style uses the common compact clock
+layout with slot 1 only; slots 2–5 return afterward.
 
-The main visual parameters are near the top of `src/c/halftone.c`:
+Time and date remain live in every style. The layout, time format, colors,
+extra-large text, text shadow and three-step/four-step border remain Halftone
+settings. Selecting a layout does not change the global complication choices.
+Source icons use the chosen text color; source images retain their own palette.
 
-```c
-#define DOT_OUTER_CORNER_RADIUS 30
-#define DOT_SPACING 10
-#define CLASSIC_DOT_TRANSITION_STEPS 3
-#define DEPTH_DOT_TRANSITION_STEPS 4
-```
+## Readings and offline use
 
-The phone settings page exposes the native Pebble 64-color palette for both
-the background and all text. It also has independent toggles for the original
-three-step border versus a **4-step dot transition**, and for an offset black
-shadow that makes the text appear to float. **Extra-large edge-to-edge text**
-enlarges every information line and dynamically picks the largest time font
-that fits the current digits across the PT2 display. Orange and white remain
-the defaults; all optional effects default to off.
+Halftone accepts text, numbers, booleans, timestamps and small source-supplied
+icons/images. It prefers a property's short text when available and can display
+an icon beside the text. Long values fit the available area or end in an
+ellipsis. Series-only readings are unsupported and show `--`; choose a current
+scalar reading instead of an hourly or daily series.
 
-## Project structure
+Each reading can be retained for up to two hours from its confirmed receipt,
+or until the source's expiry if earlier. Restarting, changing layout or
+replaying a cached value does not renew that time. Receipt time is not the
+provider's observation time. There is no six-hour forecast or separate HTTP
+fallback in beta 7. The clock and date continue while the phone is unavailable.
 
-```text
-src/c/halftone.c      Watchface rendering, time, persistence and AppMessage
-src/pkjs/index.js     Phone-side weather request and Clay initialization
-src/pkjs/weather.js   Pebble-first weather, Open-Meteo fallback and delivery retries
-src/pkjs/forecast.js  Timestamped hourly forecast packing for offline use
-src/pkjs/config.js    Pebble phone-app settings page definition
-resources/fonts/      Custom date, time and temperature fonts
-package.json          Pebble Time 2 target, permissions and message keys
-```
+Generic complications do not make a provider more accurate or refresh it more
+often. Direct plugin readings can also differ from the values normalized for
+Pebble's native Weather app; see the weather guide for that distinction.
 
-## Tests
+## Languages
+
+The weekday follows the watch's PebbleOS language. Halftone supports English,
+Czech, Slovak, German, French, Spanish, Italian, Portuguese, Dutch, Polish,
+Danish, Swedish, Norwegian, Finnish, Hungarian, Romanian and Turkish. Norwegian
+accepts `no`, `nb` and `nn`; unsupported languages fall back to English.
+
+Phone settings prefer the active watch language, then the phone language, and
+finally English. Source-provided text, units and names are displayed as supplied
+rather than translated or converted by Halftone.
+
+## Build and install
+
+Use the Pebble command-line tool and an SDK supporting the Emery target
+(Pebble Time 2). From this repository:
 
 ```sh
 npm ci
 npm test
-cc -std=c99 -Wall -Wextra -Werror tests/weather-schedule.c -o /tmp/halftone-weather-test
-/tmp/halftone-weather-test
-cc -std=c99 -Wall -Wextra -Werror tests/weather-forecast.c -o /tmp/halftone-forecast-test
-/tmp/halftone-forecast-test
-cc -std=c99 -Wall -Wextra -Werror tests/weather-display.c -o /tmp/halftone-display-test
-/tmp/halftone-display-test
-cc -std=c99 -Wall -Wextra -Werror tests/weather-details.c -o /tmp/halftone-details-test
-/tmp/halftone-details-test
-cc -std=c99 -Wall -Wextra -Werror tests/weather-icon.c -o /tmp/halftone-icon-test
-/tmp/halftone-icon-test
-cc -std=c99 -Wall -Wextra -Werror tests/watch-layout.c -o /tmp/halftone-layout-test
-/tmp/halftone-layout-test
+pebble clean
+pebble build
+python3 scripts/package-beta.py
 ```
 
-The tests use mocked location, HTTP and AppMessage callbacks; they send no
-location data to either service.
-See [beta validation and remaining device checks](docs/VALIDATION.md).
+The clean step regenerates SDK message keys. The final step produces
+`dist/Halftone-1.6.0-beta.7.pbw` with manifest version 2 and verifies the existing
+UUID and byte-identical SDK-built payloads. This watchface consumes plugin data;
+it does not install a plugin of its own or need a plugin-only SDK project.
+
+Install the packaged build in the Emery emulator:
+
+```sh
+pebble install --emulator emery dist/Halftone-1.6.0-beta.7.pbw
+```
+
+For a real PT2, enable Dev Connection in the Pebble phone app and use:
+
+```sh
+pebble login
+pebble install --cloudpebble dist/Halftone-1.6.0-beta.7.pbw
+```
+
+See [version-specific validation and remaining device checks](docs/VALIDATION.md).
+
+## Project structure
+
+```text
+src/c/halftone.c      Watchface rendering, clock, persistence and AppMessage
+src/pkjs/index.js     Phone-side source subscriptions and Clay initialization
+src/pkjs/complications.js Global slot selection, subscriptions and receipt cache
+src/pkjs/complication-data.js Bounded text, artwork and five-slot packet
+src/pkjs/config.js    Halftone phone-app settings
+resources/fonts/     Custom date, clock and reading fonts
+docs/COMPLICATIONS.md Fixed slot maps, supported formats and data limits
+package.json         Emery target, permissions and message keys
+```
+
+## Earlier releases
+
+Previous PBWs and source archives remain in `dist/`. The 1.4.x–1.5.x betas used
+a weather preset; the older 1.3.1 release used an independent weather client.
+Their caches, settings, permissions and screenshots describe those versions,
+not beta 7. Historical Store materials remain in `store/`, and previous test
+results remain under their own versions in `docs/VALIDATION.md`.
 
 ## License
 

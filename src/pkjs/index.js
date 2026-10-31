@@ -1,8 +1,7 @@
 var MessageKeys = require('message_keys');
 var Clay = require('@rebble/clay');
 var clayConfig = require('./config');
-var createWeatherClient = require('./weather');
-var createSharedWeather = require('./shared-weather');
+var createComplications = require('./complications');
 var localization = require('./localization');
 var clay = new Clay(clayConfig, null, {autoHandleEvents: false});
 
@@ -16,7 +15,6 @@ function settingsLanguage() {
     (navigator.language || navigator.userLanguage || (navigator.languages && navigator.languages[0]));
   return localization.resolveLanguage(watchLanguage, phoneLanguage);
 }
-
 function messageValue(payload, name) {
   return payload[name] !== undefined ? payload[name] : payload[MessageKeys[name]];
 }
@@ -24,122 +22,81 @@ function savedSettings() {
   try { return JSON.parse(localStorage.getItem('clay-settings')) || {}; }
   catch (error) { return {}; }
 }
-function migrateSettings() {
-  var s = savedSettings();
-  if (messageValue(s, 'FOLLOW_PEBBLE_UNITS') === undefined) {
-    // Existing installs retain their explicit unit. New installs follow Pebble.
-    s.FOLLOW_PEBBLE_UNITS = Object.keys(s).length === 0;
-    localStorage.setItem('clay-settings', JSON.stringify(s));
-  }
-}
-function weatherSettings() {
-  var s = savedSettings();
-  return {
-    followPebbleUnits: !!messageValue(s, 'FOLLOW_PEBBLE_UNITS'),
-    useFahrenheit: !!messageValue(s, 'USE_FAHRENHEIT'),
-    locationId: messageValue(s, 'WEATHER_LOCATION') || ''
-  };
-}
 function send(payload, success, failure) { Pebble.sendAppMessage(payload, success, failure); }
-function now() { return Date.now(); }
-function later(callback, delay) { return setTimeout(callback, delay); }
-function cancelLater(timer) { clearTimeout(timer); }
 function log(message) { console.log(message); }
 
-var weather = createSharedWeather({
-  pebble: Pebble, keys: MessageKeys, storage: localStorage, getSettings: weatherSettings,
-  send: send, now: now, later: later, cancelLater: cancelLater, log: log,
-  legacy: function() {
-    return createWeatherClient({
-      keys: MessageKeys, geolocation: navigator.geolocation, XMLHttpRequest: XMLHttpRequest,
-      send: function(payload, success, failure) {
-        if (weather.isLegacy()) {
-          // Compatibility weather has no shared daily details or condition. Clear any
-          // persisted values from the previous provider in the same update.
-          payload[MessageKeys.WEATHER_DETAILS] = [];
-          payload[MessageKeys.WEATHER_CONDITION] = [];
-          send(payload, success, failure);
-        }
-        else if (failure) { failure(); }
-      },
-      now: now, later: later, cancelLater: cancelLater, autoRefresh: true, log: log
-    });
+// Every data field comes from the user's global complication slots. There is
+// no direct weather client, provider override, GPS lookup or local unit rewrite.
+var complications = createComplications({
+  pebble: Pebble, keys: MessageKeys, storage: localStorage,
+  send: send, now: function() { return Date.now(); },
+  later: function(callback, delay) { return setTimeout(callback, delay); },
+  cancelLater: function(timer) { clearTimeout(timer); }, log: log,
+  getSettings: function() {
+    return {use12Hour: !!messageValue(savedSettings(), 'USE_12_HOUR'), language: settingsLanguage()};
+  },
+  localizeBoolean: function(value) {
+    return localization.t(value ? 'stateOn' : 'stateOff', settingsLanguage());
   }
 });
 
-Pebble.addEventListener('ready', function() {
-  migrateSettings();
-  weather.refresh(weatherSettings().useFahrenheit);
-});
+Pebble.addEventListener('ready', function() { complications.refresh(); });
 Pebble.addEventListener('appmessage', function(event) {
-  var payload = event.payload || {};
-  if (messageValue(payload, 'REQUEST_WEATHER')) {
-    var unit = messageValue(payload, 'USE_FAHRENHEIT');
-    weather.refresh(unit !== undefined ? !!unit : weatherSettings().useFahrenheit);
-  }
+  if (messageValue(event.payload || {}, 'REQUEST_COMPLICATIONS')) { complications.refresh(); }
 });
-
 Pebble.addEventListener('showConfiguration', function() {
-  migrateSettings();
   var language = settingsLanguage();
-  // Translate a fresh config on each open, so a language change never reuses
-  // old translated labels or alters the saved option IDs and values.
   clay.config = localization.translateConfig(clayConfig, language);
+  var status = complications.status();
   function t(key, params) { return localization.t(key, language, params); }
-  var places = weather.locations();
-  var chosen = weatherSettings().locationId;
-  if (chosen && !places.some(function(p) { return p.id === chosen; })) {
-    places.push({id: chosen, name: t('savedUnavailable')});
-  }
   clay.config.forEach(function(section) {
     (section.items || []).forEach(function(item) {
-      if (item.id === 'weather-status') {
-        var status = weather.status();
-        var errors = {PERMISSION_DENIED: 'permissionDenied', PLUGIN_UNAVAILABLE: 'sourceUnavailable',
-          TIMEOUT: 'sourceTimeout', NETWORK_ERROR: 'networkError', NETWORK: 'networkError'};
-        var errorText = '';
-        if (status.error) {
-          errorText = errors[status.error]
-            ? t(errors[status.error]) + ' (' + status.error + ')'
-            : t('sourceError', {error: status.error});
-        }
-        item.defaultValue = 'Halftone 1.5.1 beta 6. ' +
-          t(status.source === 'shared' ? 'sharedSource' : 'legacySource') +
-          (status.location ? ' · ' + status.location : '') +
-          (status.temperature ? ' · ' + t('received', {temperature: status.temperature}) : '') +
-          (status.receivedAt ? ' · ' + t('lastRead', {
-            minutes: Math.max(0, Math.floor((Date.now() / 1000 - status.receivedAt) / 60))}) : '') +
-          (errorText ? ' · ' + errorText : '');
-      }
-      if (item.messageKey === 'WEATHER_LOCATION') {
-        item.options = [{label: t('First Pebble weather location'), value: ''}].concat(
-          places.map(function(p) { return {label: p.name, value: p.id}; }));
-      }
+      if (item.id !== 'complications-status') { return; }
+      var summary = status.available === false ? t('complicationsDisabled') :
+        status.configured ? t('complicationsStatus', {ready: status.ready || 0, configured: status.configured}) :
+        t('complicationsWaiting');
+      var issue = status.error;
+      var problem = (status.slots || []).filter(function(slot) { return slot.error === issue; })[0];
+      if (issue && problem) { issue = '#' + problem.slot + ' · ' + issue; }
+      item.defaultValue = 'Halftone 1.6.0 beta 7. ' + summary +
+        (issue ? ' · ' + t('complicationsError', {error: issue}) : '');
     });
   });
   Pebble.openURL(clay.generateUrl());
 });
+
+function watchSettings(payload) {
+  var result = {};
+  ['BACKGROUND_COLOR', 'TEXT_COLOR', 'DEPTH_EFFECT', 'TEXT_SHADOW', 'LARGE_TEXT',
+    'USE_12_HOUR', 'LAYOUT_STYLE'].forEach(function(name) {
+    var value = messageValue(payload, name);
+    if (value === undefined) { return; }
+    if (name === 'LAYOUT_STYLE') {
+      if (value === 0 || value === 1 || value === 2 ||
+          (typeof value === 'string' && /^[012]$/.test(value))) { value = Number(value); }
+      else { return; }
+    } else if (name === 'BACKGROUND_COLOR' || name === 'TEXT_COLOR') {
+      if (typeof value !== 'number' || !isFinite(value) || Math.floor(value) !== value ||
+          value < 0 || value > 0xFFFFFF) { return; }
+    } else {
+      if (value === true || value === false || value === 0 || value === 1) { value = Number(value); }
+      else { return; }
+    }
+    result[MessageKeys[name]] = value;
+  });
+  return result;
+}
 Pebble.addEventListener('webviewclosed', function(event) {
   if (!event || !event.response) { return; }
   var payload;
-  try { payload = clay.getSettings(event.response); }
+  try { payload = watchSettings(clay.getSettings(event.response)); }
   catch (error) { log('Invalid settings response'); return; }
-  var layout = messageValue(payload, 'LAYOUT_STYLE');
-  if (layout !== undefined) {
-    // Clay selects return strings; watch layout settings use an integer tuple.
-    delete payload.LAYOUT_STYLE;
-    delete payload[MessageKeys.LAYOUT_STYLE];
-    if (layout === 0 || layout === 1 || layout === 2 ||
-        (typeof layout === 'string' && /^[012]$/.test(layout))) {
-      payload[MessageKeys.LAYOUT_STYLE] = Number(layout);
-    }
+  if (!Object.keys(payload).length) { complications.configure(); return; }
+  function deliver(attempt) {
+    send(payload, function() { complications.configure(); }, function() {
+      if (attempt < 3) { setTimeout(function() { deliver(attempt + 1); }, attempt * 1000); }
+      else { log('Settings delivery failed'); complications.configure(); }
+    });
   }
-  delete payload[MessageKeys.FOLLOW_PEBBLE_UNITS];
-  delete payload[MessageKeys.WEATHER_LOCATION];
-  // The plugin's preference wins when following global units. Keep the saved
-  // explicit Fahrenheit toggle untouched for when the user turns following off.
-  if (weatherSettings().followPebbleUnits) { delete payload[MessageKeys.USE_FAHRENHEIT]; }
-  send(payload, function() { weather.configure(); }, function() {
-    log('Settings delivery failed'); weather.configure();
-  });
+  deliver(1);
 });

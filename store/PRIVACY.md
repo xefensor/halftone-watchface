@@ -3,6 +3,36 @@
 Halftone does not require an account and contains no advertising, analytics or
 developer-operated tracking service.
 
+## Complications — 1.6 beta
+
+The 1.6 beta reads the five complication entries selected in the Pebble phone
+app. Depending on those choices, the entries may contain weather, phone state,
+calendar or other plugin data. Pebble and the selected plugin handle fetching,
+permissions and any accounts they need. Halftone requests only the selected
+source properties and their optional icons. It does not make its own weather
+HTTP request, request GPS coordinates, override a source's units or send these
+readings to a developer-operated service. The complication-only package declares
+no Internet permission; Pebble handles permissions required by each selected
+source when it is read.
+
+The five current slot descriptors, bounded values/icons and original source-read
+times are cached locally on the phone and watch. They expire at the source's
+reported expiry or two hours after the successful source read, whichever is
+earlier. This is a receipt/confirmation time, not a provider's observation time.
+Reopening the face or changing its display settings does not renew it. Replacing
+or clearing a slot invalidates its old value. Temporary transport/source failures
+may retain an unexpired cached value; denied permission clears it. This cache is
+not a history of readings and is not uploaded to Halftone's developer.
+
+Layout, color, clock and text preferences remain local. Settings translations
+use the watch language, then the phone language, and require no network request.
+Other plugins have their own privacy practices and permissions.
+
+## Earlier versions through 1.5
+
+The following sections describe the archived builds and the prepared 1.3.1
+Store release. Their independent weather clients are not used by the 1.6 beta.
+
 ## Shared weather (beta)
 
 When the Pebble mobile app's plugin preview is enabled and its built-in Weather

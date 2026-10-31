@@ -309,6 +309,220 @@ var ICON_ROWS = {
 };
 Object.keys(ICON_ROWS).forEach(function(language) { ROWS[language] = ROWS[language].concat(ICON_ROWS[language]); });
 
+// Global complication controls append to the catalog so existing indices stay stable.
+KEYS = KEYS.concat(['time','complications','complicationsWaiting','complicationsHelp','complicationsUnits',
+  'classicSlots','comicSlots','stackedSlots','peekSlots','complicationsStatus','complicationsDisabled',
+  'complicationsError','stateOn','stateOff']);
+var COMPLICATION_ROWS = {
+  en:[
+    'Time','Complications','Complications: waiting for Pebble',
+    'Choose slots 1–5 in the Pebble app under Settings → Complications. Empty slots keep their positions.',
+    'Units come from Pebble and the selected plugin.',
+    'Classic: 1 centered; 2/3 above 4/5 in the bottom grid.',
+    'Comic cover: 1 large at lower left, 5 above it; 2, 3 and 4 down the right.',
+    'Stacked time: 5, 1, 2, 3 and 4 down the right; clock on the left.',
+    'Timeline Peek shows only complication 1.',
+    'Complications: {ready}/{configured} ready',
+    'Enable plugins in Pebble to use complications.',
+    'Complication error: {error}','On','Off'
+  ],
+  cs:[
+    'Čas','Komplikace','Komplikace: čeká se na Pebble',
+    'Vyberte pozice 1–5 v aplikaci Pebble v Nastavení → Komplikace. Prázdné pozice zůstávají na svém místě.',
+    'Jednotky se přebírají z Pebble a vybraného pluginu.',
+    'Klasické: 1 uprostřed; 2/3 nad 4/5 v dolní mřížce.',
+    'Komiksová obálka: 1 velká vlevo dole, 5 nad ní; 2, 3 a 4 pod sebou vpravo.',
+    'Čas pod sebou: 5, 1, 2, 3 a 4 pod sebou vpravo; čas vlevo.',
+    'Při Timeline Peek se zobrazuje pouze komplikace 1.',
+    'Komplikace: připraveno {ready}/{configured}',
+    'Pro používání komplikací zapněte pluginy v Pebble.',
+    'Chyba komplikace: {error}','Zapnuto','Vypnuto'
+  ],
+  sk:[
+    'Čas','Komplikácie','Komplikácie: čaká sa na Pebble',
+    'Vyberte pozície 1–5 v aplikácii Pebble v Nastavenia → Komplikácie. Prázdne pozície zostávajú na svojom mieste.',
+    'Jednotky sa preberajú z Pebble a vybraného pluginu.',
+    'Klasické: 1 uprostred; 2/3 nad 4/5 v dolnej mriežke.',
+    'Komiksová obálka: 1 veľká vľavo dole, 5 nad ňou; 2, 3 a 4 pod sebou vpravo.',
+    'Čas pod sebou: 5, 1, 2, 3 a 4 pod sebou vpravo; čas vľavo.',
+    'Pri Timeline Peek sa zobrazuje iba komplikácia 1.',
+    'Komplikácie: pripravených {ready}/{configured}',
+    'Na používanie komplikácií zapnite pluginy v Pebble.',
+    'Chyba komplikácie: {error}','Zapnuté','Vypnuté'
+  ],
+  de:[
+    'Uhrzeit','Komplikationen','Komplikationen: Warten auf Pebble',
+    'Wähle die Plätze 1–5 in der Pebble-App unter Einstellungen → Komplikationen. Leere Plätze behalten ihre Position.',
+    'Die Einheiten kommen von Pebble und dem gewählten Plugin.',
+    'Klassisch: 1 mittig; 2/3 über 4/5 im unteren Raster.',
+    'Comic-Cover: 1 groß unten links, 5 darüber; 2, 3 und 4 rechts untereinander.',
+    'Zeit untereinander: 5, 1, 2, 3 und 4 rechts untereinander; Uhrzeit links.',
+    'Timeline Peek zeigt nur Komplikation 1.',
+    'Komplikationen: {ready}/{configured} bereit',
+    'Aktiviere Plugins in Pebble, um Komplikationen zu nutzen.',
+    'Komplikationsfehler: {error}','Ein','Aus'
+  ],
+  fr:[
+    'Heure','Complications','Complications : en attente de Pebble',
+    'Choisissez les emplacements 1–5 dans l’application Pebble sous Réglages → Complications. Les emplacements vides gardent leur position.',
+    'Les unités proviennent de Pebble et du plugin sélectionné.',
+    'Classique : 1 au centre ; 2/3 au-dessus de 4/5 dans la grille du bas.',
+    'Couverture de BD : 1 en grand en bas à gauche, 5 au-dessus ; 2, 3 et 4 à droite, de haut en bas.',
+    'Heure sur deux lignes : 5, 1, 2, 3 et 4 à droite, de haut en bas ; heure à gauche.',
+    'Timeline Peek affiche uniquement la complication 1.',
+    'Complications : {ready}/{configured} prêtes',
+    'Activez les plugins dans Pebble pour utiliser les complications.',
+    'Erreur de complication : {error}','Activé','Désactivé'
+  ],
+  es:[
+    'Hora','Complicaciones','Complicaciones: esperando a Pebble',
+    'Elige las posiciones 1–5 en la aplicación Pebble, en Ajustes → Complicaciones. Las posiciones vacías conservan su lugar.',
+    'Las unidades proceden de Pebble y del plugin seleccionado.',
+    'Clásico: 1 centrada; 2/3 sobre 4/5 en la cuadrícula inferior.',
+    'Portada de cómic: 1 grande abajo a la izquierda, 5 encima; 2, 3 y 4 de arriba abajo a la derecha.',
+    'Hora en dos líneas: 5, 1, 2, 3 y 4 de arriba abajo a la derecha; hora a la izquierda.',
+    'Timeline Peek solo muestra la complicación 1.',
+    'Complicaciones: {ready}/{configured} listas',
+    'Activa los plugins en Pebble para usar complicaciones.',
+    'Error de complicación: {error}','Activado','Desactivado'
+  ],
+  it:[
+    'Ora','Complicazioni','Complicazioni: in attesa di Pebble',
+    'Scegli le posizioni 1–5 nell’app Pebble in Impostazioni → Complicazioni. Le posizioni vuote restano al loro posto.',
+    'Le unità provengono da Pebble e dal plugin selezionato.',
+    'Classico: 1 al centro; 2/3 sopra 4/5 nella griglia in basso.',
+    'Copertina a fumetti: 1 grande in basso a sinistra, 5 sopra; 2, 3 e 4 dall’alto in basso a destra.',
+    'Ora su due righe: 5, 1, 2, 3 e 4 dall’alto in basso a destra; orologio a sinistra.',
+    'Timeline Peek mostra solo la complicazione 1.',
+    'Complicazioni: {ready}/{configured} pronte',
+    'Abilita i plugin in Pebble per usare le complicazioni.',
+    'Errore della complicazione: {error}','Attivato','Disattivato'
+  ],
+  pt:[
+    'Hora','Complicações','Complicações: à espera do Pebble',
+    'Escolha as posições 1–5 no aplicativo Pebble em Configurações → Complicações. As posições vazias mantêm seu lugar.',
+    'As unidades vêm do Pebble e do plugin selecionado.',
+    'Clássico: 1 no centro; 2/3 acima de 4/5 na grade inferior.',
+    'Capa de quadrinhos: 1 grande embaixo à esquerda, 5 acima; 2, 3 e 4 de cima para baixo à direita.',
+    'Hora em duas linhas: 5, 1, 2, 3 e 4 de cima para baixo à direita; relógio à esquerda.',
+    'O Timeline Peek mostra apenas a complicação 1.',
+    'Complicações: {ready}/{configured} prontas',
+    'Ative os plugins no Pebble para usar complicações.',
+    'Erro de complicação: {error}','Ativado','Desativado'
+  ],
+  nl:[
+    'Tijd','Complicaties','Complicaties: wachten op Pebble',
+    'Kies posities 1–5 in de Pebble-app onder Instellingen → Complicaties. Lege posities behouden hun plaats.',
+    'De eenheden komen van Pebble en de gekozen plugin.',
+    'Klassiek: 1 in het midden; 2/3 boven 4/5 in het onderste raster.',
+    'Stripomslag: 1 groot linksonder, 5 erboven; 2, 3 en 4 rechts onder elkaar.',
+    'Tijd onder elkaar: 5, 1, 2, 3 en 4 rechts onder elkaar; klok links.',
+    'Timeline Peek toont alleen complicatie 1.',
+    'Complicaties: {ready}/{configured} gereed',
+    'Schakel plugins in Pebble in om complicaties te gebruiken.',
+    'Complicatiefout: {error}','Aan','Uit'
+  ],
+  pl:[
+    'Czas','Komplikacje','Komplikacje: oczekiwanie na Pebble',
+    'Wybierz pozycje 1–5 w aplikacji Pebble w Ustawienia → Komplikacje. Puste pozycje pozostają na swoim miejscu.',
+    'Jednostki pochodzą z Pebble i wybranej wtyczki.',
+    'Klasyczny: 1 pośrodku; 2/3 nad 4/5 w dolnej siatce.',
+    'Okładka komiksu: 1 duża na dole po lewej, 5 nad nią; 2, 3 i 4 po prawej od góry do dołu.',
+    'Godziny nad minutami: 5, 1, 2, 3 i 4 po prawej od góry do dołu; zegar po lewej.',
+    'Timeline Peek pokazuje tylko komplikację 1.',
+    'Komplikacje: gotowe {ready}/{configured}',
+    'Włącz wtyczki w Pebble, aby korzystać z komplikacji.',
+    'Błąd komplikacji: {error}','Wł.','Wył.'
+  ],
+  da:[
+    'Tid','Komplikationer','Komplikationer: venter på Pebble',
+    'Vælg pladserne 1–5 i Pebble-appen under Indstillinger → Komplikationer. Tomme pladser beholder deres position.',
+    'Enhederne kommer fra Pebble og det valgte plugin.',
+    'Klassisk: 1 i midten; 2/3 over 4/5 i det nederste gitter.',
+    'Tegneserieforside: 1 stor nederst til venstre, 5 ovenover; 2, 3 og 4 ned langs højre side.',
+    'Tid i to rækker: 5, 1, 2, 3 og 4 ned langs højre side; uret til venstre.',
+    'Timeline Peek viser kun komplikation 1.',
+    'Komplikationer: {ready}/{configured} klar',
+    'Aktivér plugins i Pebble for at bruge komplikationer.',
+    'Komplikationsfejl: {error}','Til','Fra'
+  ],
+  sv:[
+    'Tid','Komplikationer','Komplikationer: väntar på Pebble',
+    'Välj platserna 1–5 i Pebble-appen under Inställningar → Komplikationer. Tomma platser behåller sin position.',
+    'Enheterna kommer från Pebble och det valda insticksprogrammet.',
+    'Klassisk: 1 i mitten; 2/3 ovanför 4/5 i det nedre rutnätet.',
+    'Serietidningsomslag: 1 stor nere till vänster, 5 ovanför; 2, 3 och 4 nedåt till höger.',
+    'Tid i två rader: 5, 1, 2, 3 och 4 nedåt till höger; klockan till vänster.',
+    'Timeline Peek visar bara komplikation 1.',
+    'Komplikationer: {ready}/{configured} klara',
+    'Aktivera insticksprogram i Pebble för att använda komplikationer.',
+    'Komplikationsfel: {error}','På','Av'
+  ],
+  no:[
+    'Tid','Komplikasjoner','Komplikasjoner: venter på Pebble',
+    'Velg plassene 1–5 i Pebble-appen under Innstillinger → Komplikasjoner. Tomme plasser beholder posisjonen sin.',
+    'Enhetene kommer fra Pebble og det valgte programtillegget.',
+    'Klassisk: 1 i midten; 2/3 over 4/5 i det nederste rutenettet.',
+    'Tegneserieomslag: 1 stor nede til venstre, 5 over; 2, 3 og 4 nedover til høyre.',
+    'Tid i to rader: 5, 1, 2, 3 og 4 nedover til høyre; klokken til venstre.',
+    'Timeline Peek viser bare komplikasjon 1.',
+    'Komplikasjoner: {ready}/{configured} klare',
+    'Aktiver programtillegg i Pebble for å bruke komplikasjoner.',
+    'Komplikasjonsfeil: {error}','På','Av'
+  ],
+  fi:[
+    'Aika','Kellon lisätiedot','Lisätiedot: odotetaan Pebbleä',
+    'Valitse paikat 1–5 Pebble-sovelluksen kohdasta Asetukset → Kellon lisätiedot. Tyhjät paikat säilyttävät sijaintinsa.',
+    'Yksiköt tulevat Pebblestä ja valitusta lisäosasta.',
+    'Perinteinen: 1 keskellä; 2/3 paikkojen 4/5 yläpuolella alaruudukossa.',
+    'Sarjakuvakansi: 1 suurena alhaalla vasemmalla, 5 sen yläpuolella; 2, 3 ja 4 oikealla allekkain.',
+    'Kellonaika allekkain: 5, 1, 2, 3 ja 4 oikealla allekkain; kello vasemmalla.',
+    'Timeline Peek näyttää vain lisätiedon 1.',
+    'Lisätiedot: {ready}/{configured} valmiina',
+    'Ota lisäosat käyttöön Pebblessä, jotta voit näyttää lisätietoja.',
+    'Lisätietovirhe: {error}','Päällä','Pois'
+  ],
+  hu:[
+    'Idő','Komplikációk','Komplikációk: várakozás a Pebble-re',
+    'Válaszd ki az 1–5. helyet a Pebble alkalmazás Beállítások → Komplikációk menüjében. Az üres helyek nem változtatják meg a pozíciójukat.',
+    'A mértékegységeket a Pebble és a kiválasztott bővítmény adja meg.',
+    'Klasszikus: 1 középen; 2/3 a 4/5 fölött az alsó rácsban.',
+    'Képregényborító: 1 nagy méretben bal alul, 5 fölötte; 2, 3 és 4 jobbra egymás alatt.',
+    'Óra és perc egymás alatt: 5, 1, 2, 3 és 4 jobbra egymás alatt; az óra balra.',
+    'A Timeline Peek csak az 1. komplikációt mutatja.',
+    'Komplikációk: {ready}/{configured} kész',
+    'A komplikációk használatához engedélyezd a bővítményeket a Pebble-ben.',
+    'Komplikációhiba: {error}','Be','Ki'
+  ],
+  ro:[
+    'Oră','Complicații','Complicații: se așteaptă Pebble',
+    'Alege pozițiile 1–5 în aplicația Pebble, la Setări → Complicații. Pozițiile goale își păstrează locul.',
+    'Unitățile provin de la Pebble și de la extensia selectată.',
+    'Clasic: 1 în centru; 2/3 deasupra lui 4/5 în grila de jos.',
+    'Copertă de benzi desenate: 1 mare în stânga jos, 5 deasupra; 2, 3 și 4 în dreapta, de sus în jos.',
+    'Oră pe două rânduri: 5, 1, 2, 3 și 4 în dreapta, de sus în jos; ceasul în stânga.',
+    'Timeline Peek afișează doar complicația 1.',
+    'Complicații: {ready}/{configured} pregătite',
+    'Activează extensiile în Pebble pentru a folosi complicații.',
+    'Eroare de complicație: {error}','Pornit','Oprit'
+  ],
+  tr:[
+    'Saat','Komplikasyonlar','Komplikasyonlar: Pebble bekleniyor',
+    'Pebble uygulamasında Ayarlar → Komplikasyonlar altında 1–5 yuvalarını seçin. Boş yuvalar yerlerini korur.',
+    'Birimler Pebble ve seçilen eklentiden alınır.',
+    'Klasik: 1 ortada; alt ızgarada 2/3, 4/5 üzerinde.',
+    'Çizgi roman kapağı: 1 sol altta büyük, 5 üstünde; 2, 3 ve 4 sağda alt alta.',
+    'Dikey saat: sağda alt alta 5, 1, 2, 3 ve 4; saat solda.',
+    'Timeline Peek yalnızca 1. komplikasyonu gösterir.',
+    'Komplikasyonlar: {ready}/{configured} hazır',
+    'Komplikasyonları kullanmak için Pebble’da eklentileri etkinleştirin.',
+    'Komplikasyon hatası: {error}','Açık','Kapalı'
+  ]
+};
+Object.keys(COMPLICATION_ROWS).forEach(function(language) {
+  ROWS[language] = ROWS[language].concat(COMPLICATION_ROWS[language]);
+});
+
 var LANGUAGES = ['en','cs','sk','de','fr','es','it','pt','nl','pl','da','sv','no','fi','hu','ro','tr'];
 var LITERALS = Object.create(null);
 ROWS.en.forEach(function(value, index) { LITERALS[value] = index; });

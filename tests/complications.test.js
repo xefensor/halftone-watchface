@@ -1,0 +1,258 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {test}=require('node:test');
+const createComplications=require('../src/pkjs/complications');
+const NOW=1791893700000;
+const KEY=10021;
+const preference=(slot,category='test',item='reading',index=0,property='value')=>({instanceId:String(slot),properties:{
+  category:{shortText:{text:category}},item:{shortText:{text:item}},property:{shortText:{text:property}},index:{numericValue:{value:index}}
+}});
+const envelope=(property,extra={})=>({pluginUuid:'native-resolved-provider',instances:[{instanceId:'irrelevant-name',properties:{value:property}}],...extra});
+function decode(bytes) {
+  const buffer=Buffer.from(bytes);
+  let at=6;
+  return Array.from({length:5},()=>{
+    const result={flags:buffer[at],status:buffer[at+1],confirmedAt:buffer.readUInt32LE(at+6),
+      validUntil:buffer.readUInt32LE(at+10),timestamp:buffer.readUInt32LE(at+16)};
+    const length=buffer[at+2];
+    const pixelBytes=buffer.readUInt16LE(at+14);
+    result.text=buffer.subarray(at+20,at+20+length).toString('utf8');
+    at+=20+length+(result.flags&2?16+pixelBytes:0);
+    return result;
+  });
+}
+function fixture(overrides={}) {
+  let now=NOW;
+  let sequence=0;
+  let hold=false;
+  const values=overrides.values||new Map();
+  const timers=new Map();
+  const subscriptions=[];
+  const deliveries=[];
+  const callbacks=[];
+  const settings={language:'en',use12Hour:false};
+  const pebble={subscribeToSource:request=>{
+    const handle={request,closed:false,unsubscribe(){this.closed=true;}};
+    subscriptions.push(handle);
+    if(overrides.subscribe) overrides.subscribe(request,handle);
+    return handle;
+  }};
+  const options={pebble,keys:{COMPLICATION_DATA:KEY},storage:{getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value)},
+    now:()=>now,later:(fn,delay)=>{const id=++sequence;timers.set(id,{at:now+delay,fn});return id;},cancelLater:id=>timers.delete(id),
+    getSettings:()=>settings,localizeBoolean:(value,language)=>language==='cs'?(value?'Zapnuto':'Vypnuto'):(value?'On':'Off'),log:()=>{},
+    send:(payload,success,failure)=>{deliveries.push(payload);callbacks.push({success,failure});if(!hold)success();}
+  };
+  if(overrides.unavailable) delete pebble.subscribeToSource;
+  function latest(category,item) {
+    const sub=subscriptions.filter(value=>!value.closed&&value.request.category===category&&value.request.item===item).at(-1);
+    assert.ok(sub,'missing '+category+'/'+item);
+    return sub.request;
+  }
+  const result={values,timers,subscriptions,deliveries,callbacks,settings,pebble,
+    prefs:instances=>latest('preferences','complications').onData({instances}),
+    prefError:code=>latest('preferences','complications').onError({code}),
+    source:(body,category='test',item='reading')=>latest(category,item).onData(body),
+    sourceError:(code,category='test',item='reading')=>latest(category,item).onError({code}),
+    latest,hold:value=>{hold=value;},advance:ms=>{now+=ms;},
+    packet:()=>decode(deliveries.at(-1)[KEY]),
+    tick:ms=>{const end=now+ms;let count=0;for(;;){const next=[...timers].filter(([,timer])=>timer.at<=end).sort((a,b)=>a[1].at-b[1].at)[0];
+      if(!next)break;assert.ok(++count<1000);now=next[1].at;timers.delete(next[0]);next[1].fn();}now=end;},
+    restart:()=>{result.client=createComplications(options);}
+  };
+  result.restart();
+  return result;
+}
+
+test('Global preference IDs preserve holes; source indices are independent and requests group properties without provider pinning',()=>{
+  const f=fixture();
+  f.client.refresh();
+  assert.equal(f.deliveries.length,0,'await actual preferences before replacing offline watch data');
+  assert.equal(f.subscriptions[0].request.plugin,undefined);
+  f.prefs([preference(4,'test','reading',0,'a'),preference(1,'test','reading',1,'b')]);
+  const request=f.latest('test','reading');
+  assert.equal(request.plugin,undefined);
+  assert.deepEqual(request.properties.sort(),['a','b']);
+  assert.deepEqual(request.iconPixelSize,{w:24,h:24});
+  f.source({instances:[{instanceId:'not-slot-4',properties:{a:{shortText:{text:'four'}}}},
+    {instanceId:'not-slot-1',properties:{b:{shortText:{text:'one'}}}}]});
+  assert.deepEqual(f.packet().map(slot=>slot.status),[0,2,0,0,2]);
+  assert.equal(f.packet()[1].text,'one');
+  assert.equal(f.packet()[4].text,'four');
+  assert.equal(f.client.status().configured,2);
+  assert.equal(f.client.status().ready,2);
+});
+
+test('Initial preference errors preserve offline watch data while missing host API explicitly clears it',()=>{
+  const f=fixture();f.client.refresh();f.prefError('PERMISSION_DENIED');
+  assert.equal(f.deliveries.length,0);
+  assert.equal(f.client.status().error,'PERMISSION_DENIED');
+  f.prefs([]);
+  assert.deepEqual(f.packet().map(slot=>slot.status),[0,0,0,0,0]);
+  const missing=fixture({unavailable:true});missing.client.refresh();
+  assert.equal(missing.client.status().available,false);
+  assert.deepEqual(missing.packet().map(slot=>slot.status),[3,3,3,3,3]);
+});
+
+test('A source instance reorder follows the configured ordinal without moving the global slot',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(3,'test','reading',1)]);
+  const first={instanceId:'home',properties:{value:{shortText:{text:'Home'}}}};
+  const second={instanceId:'office',properties:{value:{shortText:{text:'Office'}}}};
+  f.source({instances:[first,second]});
+  assert.equal(f.packet()[3].text,'Office');
+  f.source({instances:[second,first]});
+  assert.equal(f.packet()[3].text,'Home');
+  assert.deepEqual(f.packet().map(s=>s.status),[0,0,0,2,0]);
+  assert.equal(f.client.status().slots[3].index,1);
+});
+
+test('Shape priority preserves supplied units, numeric zero and boolean false; series-only data is explicitly unsupported',()=>{
+  const f=fixture();f.client.refresh();
+  f.prefs(Array.from({length:5},(_,i)=>preference(i,'test','reading',0,'p'+i)));
+  const p={p0:{shortText:{text:'0°C'},numericValue:{value:99,unit:'wrong'}},p1:{numericValue:{value:0,unit:'%'}},
+    p2:{boolean:{value:false}},p3:{timestamp:{value:NOW/1000+3600}},p4:{series:{numericValue:{values:[20]}}}};
+  f.source({instances:[{properties:p}]});
+  const packet=f.packet();
+  assert.equal(packet[0].text,'0°C');assert.equal(packet[1].text,'0 %');assert.equal(packet[2].text,'Off');
+  assert.equal(packet[3].flags,8);assert.equal(packet[3].timestamp,NOW/1000+3600);
+  assert.equal(packet[4].status,5);assert.equal(packet[4].flags,0);
+});
+
+test('Numeric data outranks long text and localized booleans; timestamps remain raw across clock-format changes',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(0)]);
+  f.source(envelope({numericValue:{value:12.5,unit:'kWh'},longText:{text:'less preferred'},boolean:{value:true}}));
+  assert.equal(f.packet()[0].text,'12.5 kWh');
+  f.source(envelope({timestamp:{value:NOW/1000+3600}}));
+  const first=f.packet()[0];f.advance(60000);f.settings.use12Hour=true;f.client.configure();
+  assert.deepEqual(f.packet()[0],first,'watch formats timestamp; settings do not renew source confirmation');
+});
+
+test('Boolean language replay changes only text and never source timestamps',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(0)]);f.source(envelope({boolean:{value:false}}));
+  const first=f.packet()[0];f.advance(60000);f.settings.language='cs';f.client.configure();
+  assert.equal(f.packet()[0].text,'Vypnuto');
+  assert.equal(f.packet()[0].confirmedAt,first.confirmedAt);assert.equal(f.packet()[0].validUntil,first.validUntil);
+});
+
+test('Transient errors retain valid cached readings, while revoked permission, source absence and invalid properties clear',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(0)]);f.source(envelope({shortText:{text:'original'}}));
+  const original=f.packet()[0];f.advance(60000);f.sourceError('NETWORK_ERROR');
+  assert.deepEqual(f.packet()[0],original);
+  for(const [error,status] of [['PERMISSION_DENIED',4],['PLUGIN_UNAVAILABLE',3],['PLUGIN_DISABLED',6]]) {
+    f.sourceError(error);assert.equal(f.packet()[0].status,status);assert.equal(f.packet()[0].flags,0);
+    f.source(envelope({shortText:{text:'recovered'}}));
+  }
+  f.source(envelope({numericValue:{value:NaN,unit:'°C'}}));
+  assert.equal(f.packet()[0].status,3);assert.equal(f.packet()[0].flags,0);
+});
+
+test('Source expiry is exclusive, malformed expiry clears, and expiry timers do not fetch or renew',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(0)]);
+  f.source(envelope({shortText:{text:'limited'}},{validUntilMs:NOW+60000}));
+  const before=f.subscriptions.length;f.tick(60000);
+  assert.equal(f.packet()[0].status,3);assert.equal(f.subscriptions.length,before);
+  f.source(envelope({shortText:{text:'bad expiry'}},{validUntilMs:'tomorrow'}));
+  assert.equal(f.packet()[0].status,3);assert.equal(f.packet()[0].flags,0);
+});
+
+test('Changing global configuration clears all previous values atomically and ignores old callbacks',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(0)]);
+  const old=f.latest('test','reading');f.source(envelope({shortText:{text:'old'}}));
+  f.prefs([preference(4,'new','source',0,'x')]);
+  assert.equal(f.packet()[0].status,0);assert.equal(f.packet()[4].status,1);
+  old.onData(envelope({shortText:{text:'must not return'}}));
+  assert.equal(f.packet()[0].status,0);assert.equal(f.packet()[4].status,1);
+  f.source({instances:[{properties:{x:{shortText:{text:'new'}}}}]},'new','source');
+  assert.equal(f.packet()[4].text,'new');assert.equal(f.packet()[0].text,'');
+});
+
+test('Explicit refresh and the thirty-minute timer rebind providers without replay renewing cached values',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(0)]);f.source(envelope({shortText:{text:'old provider'}}));
+  const old=f.latest('test','reading');const original=f.packet()[0];
+  f.advance(60000);f.client.refresh();
+  assert.notEqual(f.latest('test','reading'),old);
+  assert.deepEqual(f.packet()[0],original);
+  old.onData(envelope({shortText:{text:'late old provider'}}));
+  assert.equal(f.packet()[0].text,'old provider');
+  f.source({...envelope({shortText:{text:'new provider'}}),pluginUuid:'different-native-provider'});
+  assert.equal(f.packet()[0].text,'new provider');
+  const count=f.subscriptions.length;f.tick(30*60000);
+  assert.ok(f.subscriptions.length>count);
+  assert.equal(f.latest('test','reading').plugin,undefined);
+});
+
+test('Matching persisted data is used only after actual preferences; changed preferences never resurrect it',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(0)]);f.source(envelope({shortText:{text:'cached'}}));
+  const restarted=fixture({values:f.values});restarted.advance(60000);restarted.client.refresh();restarted.prefError('TIMEOUT');
+  assert.equal(restarted.deliveries.length,0);
+  restarted.prefs([preference(0)]);assert.equal(restarted.packet()[0].text,'cached');
+  assert.equal(restarted.packet()[0].confirmedAt,NOW/1000);
+  restarted.prefs([preference(1)]);assert.equal(restarted.packet()[0].status,0);assert.equal(restarted.packet()[1].status,1);
+});
+
+test('Invalid or duplicate global slot entries never guess a source index or compress fixed slots',()=>{
+  const f=fixture();f.client.refresh();
+  const missingIndex=preference(3);delete missingIndex.properties.index;
+  f.prefs([preference(0),preference(0),missingIndex,preference(8)]);
+  assert.deepEqual(f.packet().map(slot=>slot.status),[5,0,0,5,0]);
+  assert.equal(f.subscriptions.filter(sub=>sub.request.category==='test').length,0);
+});
+
+test('Icons are preferred over images, invalid visible palette indices are rejected, and image colors remain marked',()=>{
+  const bitmap=(palette,pixel)=>({width:1,height:1,palette:Buffer.from(palette).toString('base64'),pixels:Buffer.from([pixel]).toString('base64')});
+  const f=fixture();f.client.refresh();f.prefs([preference(0)]);
+  f.source(envelope({shortText:{text:'icon'},icon:bitmap([0,255],0x10),image:bitmap([0,192],0x10)}));
+  assert.equal(f.packet()[0].flags,3);
+  f.source(envelope({image:bitmap([255],0x00)}));assert.equal(f.packet()[0].flags,6);
+  f.source(envelope({icon:bitmap([255],0x10)}));assert.equal(f.packet()[0].status,3);assert.equal(f.packet()[0].flags,0);
+});
+
+test('A hung send has bounded retries and old delivery callbacks cannot overwrite a newer full snapshot',()=>{
+  const f=fixture();f.hold(true);f.client.refresh();f.prefs([preference(0)]);
+  const old=f.callbacks[0];f.source(envelope({shortText:{text:'newest'}}));
+  f.tick(10000);old.success();f.hold(false);f.callbacks.at(-1).success();
+  assert.equal(f.packet()[0].text,'newest');
+  assert.equal(f.packet()[0].status,2);
+});
+
+test('A zero timestamp clears only its slot and cannot invalidate another configured reading',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(0,'test','reading',0,'bad'),preference(1,'test','reading',0,'good')]);
+  f.source({instances:[{properties:{bad:{timestamp:{value:0}},good:{shortText:{text:'kept'}}}}]});
+  assert.equal(f.packet()[0].status,3);assert.equal(f.packet()[0].flags,0);
+  assert.equal(f.packet()[1].status,2);assert.equal(f.packet()[1].text,'kept');
+});
+
+test('A failed preferences unsubscribe does not abort a later refresh or its provider rebind',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(0)]);
+  f.subscriptions.find(sub=>sub.request.category==='preferences').unsubscribe=()=>{throw new Error('host failure');};
+  const previous=f.latest('test','reading');
+  assert.doesNotThrow(()=>f.client.refresh());
+  assert.notEqual(f.latest('test','reading'),previous);
+  assert.ok(f.timers.size>0,'backup refresh remains scheduled');
+});
+
+test('A synchronous global preference replacement prevents remaining obsolete source subscriptions',()=>{
+  const f=fixture({subscribe:request=>{
+    if(request.category==='first') f.prefs([preference(4,'replacement','reading')]);
+  }});
+  f.client.refresh();
+  f.prefs([preference(0,'first','reading'),preference(1,'obsolete','reading')]);
+  assert.equal(f.subscriptions.some(sub=>sub.request.category==='obsolete'),false);
+  assert.equal(f.client.status().slots[4].category,'replacement');
+  assert.deepEqual(f.packet().map(slot=>slot.status),[0,0,0,0,1]);
+});
+
+test('Compact source bitmap rows are repacked into the watch stride with zeroed padding',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(0)]);
+  const image={width:3,height:2,palette:Buffer.from([0,255]).toString('base64'),
+    pixels:Buffer.from([0x01,0x1f,0x10,0x0f]).toString('base64')};
+  f.source(envelope({icon:image}));
+  const packet=Buffer.from(f.deliveries.at(-1)[KEY]);
+  const first=6;
+  assert.equal(packet[first+1],2);
+  assert.equal(packet[first+3],3);assert.equal(packet[first+4],2);
+  assert.equal(packet.readUInt16LE(first+14),8);
+  assert.deepEqual([...packet.subarray(first+20+16,first+20+16+8)],[0x01,0x10,0,0,0x10,0,0,0]);
+  // A four-byte-aligned source payload is not the public ImageShape format.
+  f.source(envelope({icon:{...image,pixels:Buffer.from([0x01,0x10,0,0,0x10,0,0,0]).toString('base64')}}));
+  assert.equal(f.packet()[0].status,3);
+});

@@ -1,6 +1,66 @@
 # Halftone beta validation
 
-## 1.5.1 beta 6 — readability and condition checks
+## 1.6.0 beta 7 — five-complication checks
+
+All source data now comes from five fixed global complication slots. Clock and
+date remain native. The active bundle has no weather preset, independent HTTP
+fallback, pinned provider, local temperature-unit rewrite or hourly forecast
+cache. Historical sections below describe the archived versions and their
+matching documentation.
+
+- All **167 JavaScript tests** and **seven standalone C suites** pass. Native
+  helper suites compile with C99 and `-Wall -Wextra -Werror`; JavaScript syntax
+  and `git diff --check` also pass. The packet decoder additionally passed
+  AddressSanitizer/UndefinedBehaviorSanitizer checks.
+- Generic tests cover global IDs with omitted slots, positional source-instance
+  indices and instance reordering; category/item subscription grouping and
+  unpinned routing; actual-preferences cache restoration; source/configuration
+  rebinding, late callbacks and complete-snapshot delivery retries. Known zero,
+  false, negatives and native units remain valid values.
+- Supported scalar, text, boolean, timestamp, icon and image formats are checked.
+  Series-only data is explicitly unsupported. Source bitmaps use compact rows;
+  a 3×2 regression verifies repacking into the watch's padded rows. Invalid
+  epoch-zero timestamps cannot invalidate neighboring slots. Wire checks cover
+  CRC, UTF-8, status/flag combinations, length/bitmap bounds and exclusive expiry.
+- All 17 language catalogs include the five-slot instructions, each layout map,
+  Peek behavior, diagnostic messages and boolean states. Old visual setting IDs,
+  layout values and the app UUID are preserved.
+- A clean native Emery build succeeds with **SDK 4.33.1**: resources **117,903
+  bytes**, RAM footprint **17,449 bytes**, free heap **113,623 bytes**. The
+  permission packager adds manifest version 2 and an empty declared permission
+  list for dynamic selected-source access. It verifies that SDK-built JavaScript,
+  resources and watch binary remain byte-identical. The final bundle contains
+  neither legacy direct-weather endpoint.
+- **70 native emulator captures** cover all layouts with all five values, mixed
+  data, empty holes, denied placeholders, zero/false, negative Fahrenheit,
+  long localized text, icon-only and color-image data, largest packets, normal
+  and extra-large text, shadows/depth and custom text colors.
+- Clock checks include `11:11`, midnight, `23:59`, single-digit 12-hour time and
+  watch-local timestamp formatting. Long Czech/Finnish dates are checked in all
+  three layouts. Peek keeps the date/clock and slot 1, hides slots 2–5 and restores
+  their original positions on dismissal.
+- The exact **1,866-byte maximum packet** survives all eight persistence chunks
+  and relaunch with an exact before/after image match. Advancing the clock past
+  the original receipt expiry shows placeholders instead of renewing data. The
+  border regression has zero changed pixels in all four outer bands against
+  beta 6; the locale tables and dot geometry helpers are unchanged.
+- **12 additional guide captures** show weather, phone-plus-weather and both Peek
+  cases. The numbered map uses native layout coordinates. Guide interactions
+  were checked for slot selection, example switching, Peek and restoration.
+
+Visual fixtures use the released watch binary/resources with an idle phone
+script so live source callbacks cannot overwrite the injected records. The
+Czech/Finnish previews are explicitly locale-only derivatives; the release uses
+its real clock and watch locale. Peek uses the emulator's debug overlay. Native
+provider delivery, permissions and physical phone/watch behavior still need
+on-device checks; these results do not claim live provider accuracy or parity
+with the Weather app.
+
+Permission-packaged PBW SHA-256:
+
+`59c7ae581a2110a6965833e55b0bc36719ef957f9d22c9d3a5e6fbea06d07777`
+
+## 1.5.1 beta 6 — historical readability and condition checks
 
 This update uses high/low ranges such as `19/5` and a larger droplet with a
 precipitation percentage in all three styles. Comic cover's date is plain, and
