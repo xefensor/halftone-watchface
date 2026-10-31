@@ -715,245 +715,262 @@ Object.keys(PANEL_TRANSITION_ROWS).forEach(function(language) {
 // Keep saved catalog indices stable while shortening the active settings page.
 // Clay descriptions are translated too, so inline help has the same coverage
 // as headings and controls.
-var SETTINGS_COPY_KEYS = ["appearance","statusHelp","largeText","adaptiveHelp","complicationsHelp","adaptivePeek","showNotifications","notificationAppsHelp","notificationsHelp","showStatus","statusIndicatorsHelp","panelTransitionsHelp"];
+var SETTINGS_COPY_KEYS = ["appearance","statusHelp","largeText","adaptiveHelp","complicationsHelp","adaptivePeek","showNotifications","notificationAppsHelp","notificationsHelp","showStatus","statusIndicatorsHelp","panelTransitionsHelp","largeTextHelp"];
 var SETTINGS_COPY_ROWS = {
   "en": [
     "Appearance",
     "Status & help",
-    "Extra-large clock",
+    "Big text",
     "Complications 1 and 2 sit side by side. Both shrink above music or notifications.",
     "Choose slots 1 and 2 in Pebble → Settings → Complications.",
-    "Timeline Peek keeps the clock and complication 1.",
+    "Timeline Peek keeps the clock and complications 1 and 2. Its event panel takes priority over music and notifications.",
     "New notifications",
     "Separate app names with commas. Empty means all allowed apps.",
     "Allow notification access in Pebble. Only new notifications appear.",
     "Status indicators",
     "Low watch or phone battery and lost connection.",
-    "Briefly dissolve the lower panel. The clock and border stay still."
+    "Briefly dissolve the lower panel. The clock and border stay still.",
+    "Enlarges the clock, date and both complications. Text fits automatically when Timeline Peek, music or notifications need space."
   ],
   "cs": [
     "Vzhled",
     "Stav a nápověda",
-    "Extra velký čas",
+    "Velký text",
     "Komplikace 1 a 2 jsou vedle sebe. Obě se zmenší nad hudbou nebo oznámením.",
     "Vyberte pozice 1 a 2 v Pebble → Nastavení → Komplikace.",
-    "Timeline Peek zachová čas a komplikaci 1.",
+    "Timeline Peek zachová čas a komplikace 1 a 2. Panel události má přednost před hudbou a oznámeními.",
     "Nová oznámení",
     "Názvy aplikací oddělte čárkami. Prázdné pole povolí všechny povolené aplikace.",
     "Povolte přístup k oznámením v Pebble. Zobrazí se jen nová oznámení.",
     "Ukazatele stavu",
     "Slabá baterie hodinek nebo telefonu a ztráta připojení.",
-    "Krátký tečkovaný přechod dolního panelu. Čas a rámeček zůstanou nehybné."
+    "Krátký tečkovaný přechod dolního panelu. Čas a rámeček zůstanou nehybné.",
+    "Zvětší čas, datum a obě komplikace. Text se automaticky přizpůsobí, když Timeline Peek, hudba nebo oznámení potřebují místo."
   ],
   "sk": [
     "Vzhľad",
     "Stav a pomocník",
-    "Extra veľký čas",
+    "Veľký text",
     "Komplikácie 1 a 2 sú vedľa seba. Obe sa zmenšia nad hudbou alebo oznámením.",
     "Vyberte pozície 1 a 2 v Pebble → Nastavenia → Komplikácie.",
-    "Timeline Peek zachová čas a komplikáciu 1.",
+    "Timeline Peek zachová čas a komplikácie 1 a 2. Panel udalosti má prednosť pred hudbou a oznámeniami.",
     "Nové oznámenia",
     "Názvy aplikácií oddeľte čiarkami. Prázdne pole povolí všetky povolené aplikácie.",
     "Povoľte prístup k oznámeniam v Pebble. Zobrazia sa iba nové oznámenia.",
     "Ukazovatele stavu",
     "Slabá batéria hodiniek alebo telefónu a strata pripojenia.",
-    "Krátky bodkovaný prechod dolného panela. Čas a rámček zostanú nehybné."
+    "Krátky bodkovaný prechod dolného panela. Čas a rámček zostanú nehybné.",
+    "Zväčší čas, dátum a obe komplikácie. Text sa automaticky prispôsobí, keď Timeline Peek, hudba alebo oznámenia potrebujú miesto."
   ],
   "de": [
     "Aussehen",
     "Status und Hilfe",
-    "Extragroße Uhr",
+    "Großer Text",
     "Komplikationen 1 und 2 stehen nebeneinander. Über Musik oder Mitteilungen werden beide kleiner.",
     "Wähle die Plätze 1 und 2 unter Pebble → Einstellungen → Komplikationen.",
-    "Timeline Peek behält Uhr und Komplikation 1 bei.",
+    "Timeline Peek behält die Uhr und die Komplikationen 1 und 2 bei. Das Ereignisfeld hat Vorrang vor Musik und Mitteilungen.",
     "Neue Mitteilungen",
     "App-Namen durch Kommas trennen. Leer lassen für alle zugelassenen Apps.",
     "Erlaube Mitteilungszugriff in Pebble. Nur neue Mitteilungen werden angezeigt.",
     "Statusanzeigen",
     "Niedriger Akku von Uhr oder Telefon und unterbrochene Verbindung.",
-    "Das untere Panel kurz auflösen. Uhr und Rand bleiben unbewegt."
+    "Das untere Panel kurz auflösen. Uhr und Rand bleiben unbewegt.",
+    "Vergrößert Uhrzeit, Datum und beide Komplikationen. Der Text passt sich automatisch an, wenn Timeline Peek, Musik oder Mitteilungen Platz brauchen."
   ],
   "fr": [
     "Apparence",
     "État et aide",
-    "Très grande horloge",
+    "Grand texte",
     "Les complications 1 et 2 sont côte à côte. Elles rétrécissent au-dessus de la musique ou des notifications.",
     "Choisissez les emplacements 1 et 2 dans Pebble → Réglages → Complications.",
-    "Timeline Peek conserve l’heure et la complication 1.",
+    "Timeline Peek conserve l’heure et les complications 1 et 2. Le panneau d’événement est prioritaire sur la musique et les notifications.",
     "Nouvelles notifications",
     "Séparez les noms des apps par des virgules. Vide pour toutes les apps autorisées.",
     "Autorisez l’accès aux notifications dans Pebble. Seules les nouvelles apparaissent.",
     "Indicateurs d’état",
     "Batterie faible de la montre ou du téléphone et perte de connexion.",
-    "Brève transition en points du panneau inférieur. L’heure et la bordure restent fixes."
+    "Brève transition en points du panneau inférieur. L’heure et la bordure restent fixes.",
+    "Agrandit l’heure, la date et les deux complications. Le texte s’adapte automatiquement pour laisser de la place à Timeline Peek, à la musique ou aux notifications."
   ],
   "es": [
     "Apariencia",
     "Estado y ayuda",
-    "Reloj extragrande",
+    "Texto grande",
     "Las complicaciones 1 y 2 están una junto a otra. Ambas se reducen sobre la música o las notificaciones.",
     "Elige las posiciones 1 y 2 en Pebble → Ajustes → Complicaciones.",
-    "Timeline Peek conserva el reloj y la complicación 1.",
+    "Timeline Peek conserva el reloj y las complicaciones 1 y 2. El panel de eventos tiene prioridad sobre la música y las notificaciones.",
     "Nuevas notificaciones",
     "Separa los nombres de las apps con comas. Vacío permite todas las apps autorizadas.",
     "Permite el acceso a notificaciones en Pebble. Solo aparecen las nuevas.",
     "Indicadores de estado",
     "Batería baja del reloj o teléfono y pérdida de conexión.",
-    "Transición breve con puntos en el panel inferior. El reloj y el borde permanecen inmóviles."
+    "Transición breve con puntos en el panel inferior. El reloj y el borde permanecen inmóviles.",
+    "Amplía la hora, la fecha y ambas complicaciones. El texto se ajusta automáticamente cuando Timeline Peek, la música o las notificaciones necesitan espacio."
   ],
   "it": [
     "Aspetto",
     "Stato e aiuto",
-    "Orologio molto grande",
+    "Testo grande",
     "Le complicazioni 1 e 2 sono affiancate. Entrambe si riducono sopra musica o notifiche.",
     "Scegli le posizioni 1 e 2 in Pebble → Impostazioni → Complicazioni.",
-    "Timeline Peek mantiene l’orologio e la complicazione 1.",
+    "Timeline Peek mantiene l’orologio e le complicazioni 1 e 2. Il pannello eventi ha la precedenza su musica e notifiche.",
     "Nuove notifiche",
     "Separa i nomi delle app con virgole. Lascia vuoto per tutte le app autorizzate.",
     "Consenti l’accesso alle notifiche in Pebble. Appaiono solo quelle nuove.",
     "Indicatori di stato",
     "Batteria scarica di orologio o telefono e connessione persa.",
-    "Breve transizione a punti del pannello inferiore. L’orologio e il bordo restano fermi."
+    "Breve transizione a punti del pannello inferiore. L’orologio e il bordo restano fermi.",
+    "Ingrandisce ora, data ed entrambe le complicazioni. Il testo si adatta automaticamente quando Timeline Peek, musica o notifiche richiedono spazio."
   ],
   "pt": [
     "Aparência",
     "Estado e ajuda",
-    "Relógio extragrande",
+    "Texto grande",
     "As complicações 1 e 2 ficam lado a lado. Ambas diminuem acima da música ou das notificações.",
     "Escolha as posições 1 e 2 em Pebble → Configurações → Complicações.",
-    "O Timeline Peek mantém o relógio e a complicação 1.",
+    "O Timeline Peek mantém o relógio e as complicações 1 e 2. O painel de eventos tem prioridade sobre música e notificações.",
     "Novas notificações",
     "Separe os nomes dos apps por vírgulas. Vazio permite todos os apps autorizados.",
     "Permita acesso às notificações no Pebble. Apenas as novas aparecem.",
     "Indicadores de estado",
     "Bateria fraca do relógio ou telefone e perda de conexão.",
-    "Transição breve em pontos no painel inferior. O relógio e a borda ficam parados."
+    "Transição breve em pontos no painel inferior. O relógio e a borda ficam parados.",
+    "Aumenta a hora, a data e ambas as complicações. O texto se ajusta automaticamente quando Timeline Peek, música ou notificações precisam de espaço."
   ],
   "nl": [
     "Uiterlijk",
     "Status en hulp",
-    "Extra grote klok",
+    "Grote tekst",
     "Complicaties 1 en 2 staan naast elkaar. Beide worden kleiner boven muziek of meldingen.",
     "Kies posities 1 en 2 via Pebble → Instellingen → Complicaties.",
-    "Timeline Peek behoudt de klok en complicatie 1.",
+    "Timeline Peek behoudt de klok en complicaties 1 en 2. Het afsprakenpaneel heeft voorrang op muziek en meldingen.",
     "Nieuwe meldingen",
     "Scheid app-namen met komma’s. Leeg betekent alle toegestane apps.",
     "Sta meldingentoegang toe in Pebble. Alleen nieuwe meldingen verschijnen.",
     "Statusindicatoren",
     "Lage batterij van horloge of telefoon en verbroken verbinding.",
-    "Korte rasterovergang in het onderste paneel. Klok en rand blijven stilstaan."
+    "Korte rasterovergang in het onderste paneel. Klok en rand blijven stilstaan.",
+    "Vergroot de tijd, datum en beide complicaties. De tekst past zich automatisch aan als Timeline Peek, muziek of meldingen ruimte nodig hebben."
   ],
   "pl": [
     "Wygląd",
     "Stan i pomoc",
-    "Bardzo duży zegar",
+    "Duży tekst",
     "Komplikacje 1 i 2 są obok siebie. Obie zmniejszają się nad muzyką lub powiadomieniami.",
     "Wybierz pozycje 1 i 2 w Pebble → Ustawienia → Komplikacje.",
-    "Timeline Peek zachowuje zegar i komplikację 1.",
+    "Timeline Peek zachowuje zegar i komplikacje 1 i 2. Panel wydarzenia ma pierwszeństwo przed muzyką i powiadomieniami.",
     "Nowe powiadomienia",
     "Oddziel nazwy aplikacji przecinkami. Puste pole oznacza wszystkie dozwolone aplikacje.",
     "Zezwól na dostęp do powiadomień w Pebble. Pojawiają się tylko nowe.",
     "Wskaźniki stanu",
     "Słaba bateria zegarka lub telefonu i utrata połączenia.",
-    "Krótki rastrowy zanik dolnego panelu. Zegar i obramowanie pozostają nieruchome."
+    "Krótki rastrowy zanik dolnego panelu. Zegar i obramowanie pozostają nieruchome.",
+    "Powiększa godzinę, datę i obie komplikacje. Tekst dopasowuje się automatycznie, gdy Timeline Peek, muzyka lub powiadomienia potrzebują miejsca."
   ],
   "da": [
     "Udseende",
     "Status og hjælp",
-    "Ekstra stort ur",
+    "Stor tekst",
     "Komplikation 1 og 2 står ved siden af hinanden. Begge bliver mindre over musik eller notifikationer.",
     "Vælg plads 1 og 2 i Pebble → Indstillinger → Komplikationer.",
-    "Timeline Peek beholder uret og komplikation 1.",
+    "Timeline Peek beholder uret og komplikation 1 og 2. Begivenhedspanelet har forrang over musik og notifikationer.",
     "Nye notifikationer",
     "Adskil appnavne med kommaer. Tomt felt tillader alle godkendte apps.",
     "Tillad adgang til notifikationer i Pebble. Kun nye vises.",
     "Statusindikatorer",
     "Lavt batteri på ur eller telefon og mistet forbindelse.",
-    "Kort rasterovergang i det nederste panel. Uret og kanten står stille."
+    "Kort rasterovergang i det nederste panel. Uret og kanten står stille.",
+    "Forstørrer klokkeslæt, dato og begge komplikationer. Teksten tilpasses automatisk, når Timeline Peek, musik eller notifikationer kræver plads."
   ],
   "sv": [
     "Utseende",
     "Status och hjälp",
-    "Extra stor klocka",
+    "Stor text",
     "Komplikation 1 och 2 ligger bredvid varandra. Båda krymper ovanför musik eller aviseringar.",
     "Välj plats 1 och 2 i Pebble → Inställningar → Komplikationer.",
-    "Timeline Peek behåller klockan och komplikation 1.",
+    "Timeline Peek behåller klockan och komplikation 1 och 2. Händelsepanelen har företräde framför musik och aviseringar.",
     "Nya aviseringar",
     "Avgränsa appnamn med kommatecken. Tomt fält tillåter alla godkända appar.",
     "Tillåt aviseringsåtkomst i Pebble. Endast nya aviseringar visas.",
     "Statusindikatorer",
     "Lågt batteri i klocka eller telefon och förlorad anslutning.",
-    "Kort rasterövergång i den nedre panelen. Klockan och kanten förblir stilla."
+    "Kort rasterövergång i den nedre panelen. Klockan och kanten förblir stilla.",
+    "Förstorar tiden, datumet och båda komplikationerna. Texten anpassas automatiskt när Timeline Peek, musik eller aviseringar behöver plats."
   ],
   "no": [
     "Utseende",
     "Status og hjelp",
-    "Ekstra stor klokke",
+    "Stor tekst",
     "Komplikasjon 1 og 2 står ved siden av hverandre. Begge krymper over musikk eller varsler.",
     "Velg plass 1 og 2 i Pebble → Innstillinger → Komplikasjoner.",
-    "Timeline Peek beholder klokken og komplikasjon 1.",
+    "Timeline Peek beholder klokken og komplikasjon 1 og 2. Hendelsespanelet prioriteres fremfor musikk og varsler.",
     "Nye varsler",
     "Skill appnavn med komma. Tomt felt tillater alle godkjente apper.",
     "Tillat varseltilgang i Pebble. Bare nye varsler vises.",
     "Statusindikatorer",
     "Lavt batteri på klokke eller telefon og mistet forbindelse.",
-    "Kort rasterovergang i det nedre panelet. Klokken og kanten står stille."
+    "Kort rasterovergang i det nedre panelet. Klokken og kanten står stille.",
+    "Forstørrer klokkeslett, dato og begge komplikasjonene. Teksten tilpasses automatisk når Timeline Peek, musikk eller varsler trenger plass."
   ],
   "fi": [
     "Ulkoasu",
     "Tila ja ohje",
-    "Erittäin suuri kello",
+    "Suuri teksti",
     "Lisätiedot 1 ja 2 ovat vierekkäin. Molemmat pienenevät musiikin tai ilmoitusten yläpuolelle.",
     "Valitse paikat 1 ja 2 kohdasta Pebble → Asetukset → Lisätiedot.",
-    "Timeline Peek säilyttää kellon ja lisätiedon 1.",
+    "Timeline Peek säilyttää kellon ja lisätiedot 1 ja 2. Tapahtumapaneeli on etusijalla musiikkiin ja ilmoituksiin nähden.",
     "Uudet ilmoitukset",
     "Erota sovellusten nimet pilkuilla. Tyhjä kenttä sallii kaikki hyväksytyt sovellukset.",
     "Salli ilmoitusten käyttö Pebblessä. Vain uudet ilmoitukset näkyvät.",
     "Tilailmaisimet",
     "Kellon tai puhelimen vähäinen akku ja katkennut yhteys.",
-    "Lyhyt rasterisiirtymä alapaneelissa. Kello ja reunus pysyvät paikallaan."
+    "Lyhyt rasterisiirtymä alapaneelissa. Kello ja reunus pysyvät paikallaan.",
+    "Suurentaa kellonajan, päivämäärän ja molemmat lisätiedot. Teksti mukautuu automaattisesti, kun Timeline Peek, musiikki tai ilmoitukset tarvitsevat tilaa."
   ],
   "hu": [
     "Megjelenés",
     "Állapot és súgó",
-    "Extra nagy óra",
+    "Nagy szöveg",
     "Az 1. és 2. komplikáció egymás mellett látható. Mindkettő kisebb lesz a zene vagy értesítések felett.",
     "Válaszd az 1. és 2. helyet itt: Pebble → Beállítások → Komplikációk.",
-    "A Timeline Peek megtartja az órát és az 1. komplikációt.",
+    "A Timeline Peek megtartja az órát és az 1. és 2. komplikációt. Az eseménypanel elsőbbséget élvez a zenével és az értesítésekkel szemben.",
     "Új értesítések",
     "Az alkalmazásneveket vesszővel válaszd el. Üresen minden engedélyezett alkalmazás látszik.",
     "Engedélyezd az értesítések elérését a Pebble-ben. Csak az új értesítések jelennek meg.",
     "Állapotjelzők",
     "Az óra vagy telefon alacsony töltöttsége és megszakadt kapcsolat.",
-    "Rövid raszteres átmenet az alsó panelen. Az óra és a keret mozdulatlan marad."
+    "Rövid raszteres átmenet az alsó panelen. Az óra és a keret mozdulatlan marad.",
+    "Nagyobbá teszi az időt, a dátumot és mindkét komplikációt. A szöveg automatikusan igazodik, ha a Timeline Peek, a zene vagy az értesítések helyet igényelnek."
   ],
   "ro": [
     "Aspect",
     "Stare și ajutor",
-    "Ceas foarte mare",
+    "Text mare",
     "Complicațiile 1 și 2 sunt alăturate. Ambele se micșorează deasupra muzicii sau notificărilor.",
     "Alege pozițiile 1 și 2 în Pebble → Setări → Complicații.",
-    "Timeline Peek păstrează ceasul și complicația 1.",
+    "Timeline Peek păstrează ceasul și complicațiile 1 și 2. Panoul evenimentului are prioritate față de muzică și notificări.",
     "Notificări noi",
     "Separă numele aplicațiilor prin virgule. Lasă gol pentru toate aplicațiile permise.",
     "Permite accesul la notificări în Pebble. Apar doar cele noi.",
     "Indicatori de stare",
     "Baterie scăzută la ceas sau telefon și conexiune pierdută.",
-    "Tranziție scurtă cu puncte în panoul inferior. Ceasul și marginea rămân nemișcate."
+    "Tranziție scurtă cu puncte în panoul inferior. Ceasul și marginea rămân nemișcate.",
+    "Mărește ora, data și ambele complicații. Textul se adaptează automat când Timeline Peek, muzica sau notificările au nevoie de spațiu."
   ],
   "tr": [
     "Görünüm",
     "Durum ve yardım",
-    "Çok büyük saat",
+    "Büyük metin",
     "1 ve 2. komplikasyon yan yana durur. İkisi de müzik veya bildirimlerin üstünde küçülür.",
     "Pebble → Ayarlar → Komplikasyonlar bölümünden 1 ve 2 yuvalarını seçin.",
-    "Timeline Peek saati ve 1. komplikasyonu korur.",
+    "Timeline Peek saati ve 1 ve 2. komplikasyonları korur. Etkinlik paneli müzik ve bildirimlerden önce gelir.",
     "Yeni bildirimler",
     "Uygulama adlarını virgülle ayırın. Boş bırakmak izin verilen tüm uygulamaları gösterir.",
     "Pebble’da bildirim erişimine izin verin. Yalnızca yeni bildirimler görünür.",
     "Durum göstergeleri",
     "Saat veya telefonun düşük pili ve kesilen bağlantı.",
-    "Alt panelde kısa noktalı geçiş. Saat ve kenarlık sabit kalır."
+    "Alt panelde kısa noktalı geçiş. Saat ve kenarlık sabit kalır.",
+    "Saati, tarihi ve her iki komplikasyonu büyütür. Timeline Peek, müzik veya bildirimler yer istediğinde metin otomatik olarak sığdırılır."
   ]
 };
 SETTINGS_COPY_KEYS.forEach(function(key) {
@@ -968,6 +985,10 @@ Object.keys(SETTINGS_COPY_ROWS).forEach(function(language) {
 var LANGUAGES = ['en','cs','sk','de','fr','es','it','pt','nl','pl','da','sv','no','fi','hu','ro','tr'];
 var LITERALS = Object.create(null);
 ROWS.en.forEach(function(value, index) { LITERALS[value] = index; });
+// Older settings schemas can still translate their saved English literals.
+LITERALS['Extra-large clock'] = KEYS.indexOf('largeText');
+LITERALS['Extra-large edge-to-edge text'] = KEYS.indexOf('largeText');
+LITERALS['Timeline Peek keeps the clock and complication 1.'] = KEYS.indexOf('adaptivePeek');
 
 function normalizeLanguage(locale) {
   if (typeof locale !== 'string') { return ''; }

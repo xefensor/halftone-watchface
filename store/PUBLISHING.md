@@ -2,7 +2,7 @@
 
 ## Current status
 
-The files in this directory describe the 1.9.0 release candidate 1 build.
+The files in this directory describe the 1.9.0 release candidate 2 build.
 They replace the former 1.3.1 listing, which described a weather client that is
 no longer used.
 
@@ -20,14 +20,17 @@ phone/watch verification. Music and notification sources are currently Android
 features. Current build/emulator results and remaining device checks are in
 [validation](../docs/VALIDATION.md).
 
-The candidate bundle is `Halftone-1.9.0-rc.1-store-package.zip`. The PBW keeps
-the numeric SDK version **1.9.0**; `rc.1` identifies the test package, not a
+The candidate bundle is `Halftone-1.9.0-rc.2-store-package.zip`. The PBW keeps
+the numeric SDK version **1.9.0**; `rc.2` identifies the test package, not a
 separate native version. If another 1.9.0 is already in the dashboard, choose a
 new unused numeric version before uploading.
 
 The normal layout uses two equal horizontal complication columns. Both readings
 condense above music or notification context; neither is replaced. Native
-Timeline Peek keeps only the primary reading.
+Timeline Peek keeps both selected readings in a compact horizontal row above
+Pebble's native panel. Halftone's own contextual panel yields while Peek is open.
+**Big text** enlarges the date, clock, readings and units, and contextual text,
+with fitting for longer content. The halftone dots and rounded border are unchanged.
 
 ## Listing fields
 
@@ -41,7 +44,7 @@ Timeline Peek keeps only the primary reading.
 | UUID | `d4dd5046-53be-4624-99e8-46e0b377fe66` |
 | Description | [description.txt](description.txt) |
 | Release notes | [release-notes.txt](release-notes.txt) |
-| Binary | `Halftone-1.9.0-rc.1.pbw` |
+| Binary | `Halftone-1.9.0-rc.2.pbw` |
 | Website/source URL | https://github.com/xefensor/halftone-watchface |
 | Privacy information | https://github.com/xefensor/halftone-watchface/blob/main/store/PRIVACY.md |
 | Support | https://github.com/xefensor/halftone-watchface/issues |
@@ -62,7 +65,7 @@ native change, keeping the names below:
 | Order | File | Content |
 | --- | --- | --- |
 | 1 | `emery_01_orange.png` | Orange, two balanced complication columns |
-| 2 | `emery_02_blue_large.png` | Blue, extra-large clock |
+| 2 | `emery_02_blue_large.png` | Blue, Big text enabled |
 | 3 | `emery_03_green_shadow.png` | Green theme with text shadow |
 | 4 | `emery_04_music.png` | Dynamic music panel |
 | 5 | `emery_05_notification.png` | Optional notification panel with fictional sample text |
@@ -104,7 +107,7 @@ Pebble mobile app, then check:
   Change a provider and source units in Pebble, then verify the shown values.
 - Confirm source updates while the face remains open, including a source error
   and recovery. Do not infer a failed refresh solely from an unchanged value.
-- Test 12/24-hour time, normal/extra-large text, longest localized dates, negative
+- Test 12/24-hour time, normal/Big text, longest localized dates, negative
   and decimal values, colors, shadow and both border options.
 - Play, change, pause and stop music. Both readings must remain in the compact
   row above it. Test short/long titles and missing artwork.
@@ -114,6 +117,8 @@ Pebble mobile app, then check:
 - Disconnect/reconnect the real phone. Verify data resumes and earlier private
   content cannot replay. The emulator's Bluetooth flag is not proof of this path.
 - Show/dismiss Timeline Peek during normal readings, music and a notification.
+  Both selected readings must remain visible side by side above the native
+  panel in both text sizes. Halftone's contextual panel must yield to Peek.
   A notification that expires while Peek is visible must not return afterward.
 - Confirm the settings translations and chosen source permissions on the phone.
 

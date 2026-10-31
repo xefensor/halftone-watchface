@@ -1,15 +1,12 @@
-Halftone 1.9.0 rc.1 refines the layout around two large complications in balanced side-by-side columns, with a lower panel that adapts to what is happening on your phone.
+Halftone 1.9.0 rc.2 improves readability in the normal, contextual and native Timeline Peek layouts.
 
-- Uses the first two global choices in Pebble's Complications settings
-- Keeps both readings visible in a compact row above music or new notifications
-- Refined spacing, margins and text fitting across the normal and contextual layouts
-- Large numbers, smaller units and a droplet for precipitation probability
-- Music title and artist, with artwork hidden when that lets the whole title fit
-- Optional notification summaries, app-name filters and a separate message-text setting
-- Brief halftone panel transitions that can be turned off
-- Native Timeline Peek support and small low-battery/connection indicators
-- Updated settings translations in all 17 supported languages
-- Source units, signs, decimal punctuation and zero values retained
-- Existing colors, 12/24-hour time, extra-large text, shadow and dot-border options preserved
+- Keeps both selected complications side by side when Timeline Peek is visible
+- Replaces the large-clock option with Big text for the date, clock, readings, units and music/notification text
+- Adds larger reading text with fitting for long values and compact displays
+- Refines spacing above the native timeline panel and around contextual content
+- Preserves the halftone dot pattern, rounded border, colors and text shadow
+- Retains existing saved text-size preferences and localized settings help
 
-This build requires Pebble's plugin preview. Weather and other readings come from the source selected in Pebble; there is no independent weather HTTP fallback or local temperature conversion. Music and notification sources are currently available on Android. Notification summaries and message text are off by default.
+The first two global choices in Pebble's Complications settings remain the two main readings. Music and new notifications use the lower contextual panel when native Timeline Peek is closed. Notification summaries and message text remain off by default.
+
+This build requires Pebble's plugin preview and is prepared for sideloaded testing. Do not submit it to the public appstore while Pebble's plugin-preview publishing restriction remains in place. Weather, units and updates come from the source selected in Pebble; Halftone has no independent weather HTTP fallback or local temperature conversion. Music and notification sources are currently available on Android.

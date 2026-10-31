@@ -9,7 +9,7 @@ const DYNAMIC=['complicationsStatus','complicationsWaiting','complicationsDisabl
   'contextWaiting','contextReady','contextError'];
 const ADAPTIVE_KEYS=['appearance','statusHelp','largeText','adaptiveHelp','adaptivePeek','dynamicContent','showMusic','showNotifications',
   'notificationPreview','notificationApps','notificationAppsHelp','notificationsHelp','showStatus',
-  'panelTransitions','panelTransitionsHelp','statusIndicatorsHelp'];
+  'panelTransitions','panelTransitionsHelp','statusIndicatorsHelp','largeTextHelp'];
 
 function visible(config) {
   const out=[];
@@ -74,11 +74,12 @@ test('Czech settings include established controls, the single layout and dynamic
   for(const text of ['Nastavení Halftone','Barva pozadí','Vzhled','Komplikace','Uložit nastavení']) assert.ok(strings.includes(text));
   assert.ok(strings.some(text=>text.includes('pozice 1 a 2')&&text.includes('Pebble')));
   assert.ok(strings.includes('Stav a nápověda'));
-  assert.ok(strings.includes('Extra velký čas'));
+  assert.ok(strings.includes('Velký text'));
+  assert.ok(strings.some(text=>text.includes('Zvětší čas, datum a obě komplikace')));
   assert.ok(strings.includes('Zobrazit hudbu při přehrávání'));
   assert.ok(strings.includes('Nová oznámení'));
   assert.ok(strings.some(text=>text.includes('Komplikace 1 a 2 jsou vedle sebe')&&text.includes('Obě se zmenší')));
-  assert.ok(strings.some(text=>text.includes('Timeline Peek')&&text.includes('komplikaci 1')));
+  assert.ok(strings.some(text=>text.includes('Timeline Peek')&&text.includes('komplikace 1 a 2')));
   assert.ok(strings.includes('Krátké tečkované přechody'));
   assert.ok(strings.some(text=>text.includes('Čas a rámeček zůstanou nehybné')));
 });
@@ -89,6 +90,9 @@ test('Unknown text and locales fall back safely, and English literals remain tra
   assert.equal(localization.t('Complications','cs'),'Komplikace');
   assert.equal(localization.t('An unknown future setting','cs'),'An unknown future setting');
   assert.equal(localization.t('constructor','cs'),'constructor');
+  assert.equal(localization.t('Extra-large clock','cs'),'Velký text');
+  assert.equal(localization.t('Extra-large edge-to-edge text','cs'),'Velký text');
+  assert.equal(localization.t('Timeline Peek keeps the clock and complication 1.','cs'),localization.t('adaptivePeek','cs'));
   assert.deepEqual(localization.translateConfig(config,'unsupported'),config);
 });
 
@@ -158,7 +162,7 @@ test('Active settings retain appearance controls and add opt-in notification set
   assert.equal(context.messageKey,undefined);
 });
 
-test('Every language explains the adaptive layout and the primary-only Peek behavior',()=>{
+test('Every language explains the adaptive layout and both-reading Peek behavior',()=>{
   for(const language of localization.languages) {
     const help=localization.t('complicationsHelp',language);
     assert.ok(help.includes('1')&&help.includes('2')&&help.includes('Pebble'),language);
@@ -167,7 +171,7 @@ test('Every language explains the adaptive layout and the primary-only Peek beha
     assert.ok(adaptive.includes('1')&&adaptive.includes('2'),language);
     assert.ok(!adaptive.includes('2–5'),language+' must describe only the two selected readings');
     const peek=localization.t('adaptivePeek',language);
-    assert.ok(peek.includes('Timeline Peek')&&peek.includes('1'),language);
+    assert.ok(peek.includes('Timeline Peek')&&peek.includes('1')&&peek.includes('2'),language);
     const rendered=visible(localization.translateConfig(config,language));
     for(const key of ADAPTIVE_KEYS) assert.ok(rendered.includes(localization.t(key,language)),language+' does not display '+key);
     assert.ok(rendered.includes(localization.t('complicationsUnits',language)),language+' must explain source-owned units');
@@ -221,7 +225,7 @@ test('Settings put common appearance controls first, keep diagnostics last and a
     ['complications-status','context-status']);
   assert.ok(!sections.slice(0,-1).some(section=>section.items.some(item=>/-status$/.test(item.id||''))));
   const all=items(config);
-  for(const key of ['SHOW_STATUS','SHOW_NOTIFICATIONS','NOTIFICATION_APPS','PANEL_TRANSITIONS']) {
+  for(const key of ['LARGE_TEXT','SHOW_STATUS','SHOW_NOTIFICATIONS','NOTIFICATION_APPS','PANEL_TRANSITIONS']) {
     assert.ok(all.find(item=>item.messageKey===key).description,key+' keeps help next to the control');
   }
   assert.equal(config[config.length-1].type,'submit');

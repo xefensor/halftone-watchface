@@ -44,20 +44,24 @@ static inline WatchLayoutGeometry watch_layout_geometry(int selected_style,
                                                          bool contextual) {
   WatchLayoutGeometry result = {0};
   (void)selected_style;
-  (void)large;
-  if (height < 215) {
-    result.slots[0] = (WatchSlotGeometry){{14,
-        watch_layout_interpolate(126, 118, height), 172, 38}, 28};
-    return result;
-  }
-  const int y = contextual ? 128 : 126;
-  const int row_height = contextual ? 36 : 76;
-  const int font_size = contextual ? 28 : 38;
-  result.slots[0] = (WatchSlotGeometry){{18, y, 78, row_height}, font_size};
-  result.slots[1] = (WatchSlotGeometry){{104, y, 78, row_height}, font_size};
+  // Timeline Peek owns the lower 57px, but both chosen readings still fit.
+  // Interpolate their bottom clearance through the native Peek animation.
+  const int inset = large ? 14 : 18;
+  const int width = 96 - inset;
+  const int full_y = contextual ? (large ? 116 : 122) : 118;
+  const int full_height = contextual ? (large ? 38 : 40) : 76;
+  const int full_font = contextual ? (large ? 38 : 32) : (large ? 44 : 38);
+  const int y = watch_layout_interpolate(full_y, 110, height);
+  const int row_height = watch_layout_interpolate(full_height, 44, height);
+  const int font_size = watch_layout_interpolate(full_font, large ? 32 : 28, height);
+  result.slots[0] = (WatchSlotGeometry){{inset, y, width, row_height}, font_size};
+  result.slots[1] = (WatchSlotGeometry){{104, y, width, row_height}, font_size};
   // A moving Peek edge brings its bezel upward before the compact threshold.
   // Yield the footer immediately instead of letting text touch that edge.
-  if (height >= 228) { result.context = (WatchLayoutRect){18, 164, 164, 43}; }
+  if (height >= 228) {
+    result.context = (WatchLayoutRect){inset, large ? 156 : 164,
+        200 - inset * 2, large ? 48 : 40};
+  }
   return result;
 }
 

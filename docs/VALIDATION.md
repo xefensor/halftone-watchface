@@ -1,5 +1,56 @@
 # Halftone release validation
 
+## 1.9.0 rc.2 — two readings during Timeline Peek and Big text
+
+- Native Timeline Peek now retains both selected complications in equal left/right
+  columns above the system event panel. Empty choices retain their positions;
+  music/notification context still yields to the native timeline.
+- Big text retains the existing saved setting and enlarges date, clock,
+  complications, units and contextual text. A new 44px complication font is
+  available above the standard 38px preference. Every reading still fits down
+  for long strings and narrow layouts; all seven reading fonts contain a real
+  Unicode minus glyph.
+- Complication rows sit higher to reduce unused space. The contextual panel is
+  raised to clear the bottom dots, and status icons follow the chosen insets.
+  The procedural dots and rounded bezel are unchanged.
+- **225 JavaScript tests and nine strict C99 suites pass.** Layout invariants
+  cover both readings at every visible height from 171 through 228px, either
+  text size, legacy style values, equal columns and footer clearance. The
+  changed geometry suite also passes AddressSanitizer/UndefinedBehaviorSanitizer
+  with unsupported leak scanning disabled.
+- **68 actual Clay browser cases pass:** all 17 languages, 320/390px widths and
+  light/dark themes. Translated Big text/Peek help and actual toggle, save,
+  color and notification controls pass. Both settings previews are refreshed.
+- Compiled-font analysis fits **43,554 weekday/date strings** from all 17
+  languages within the conservative 166px standard date budget. Clock font
+  metrics cover **2,160 formatted 12/24-hour values**; focused native captures
+  check the actual layout.
+- **44 focused native screenshots pass** across both text sizes,
+  full/Peek/music/notification layouts, wide and narrow clocks, signed extreme
+  values, ranges and low watch/phone batteries. Earlier exploratory captures
+  informed spacing. Four attempted emulator Bluetooth-disconnect captures did
+  not trigger the real connection callback and are excluded from that count;
+  the disconnect icon still needs a physical-device check.
+- Final Peek interpolation targets the actual full/contextual row, with no
+  last-frame position/size jump. Tests bound each geometry step to one pixel.
+  **Eight final-build full/Peek endpoints and five Store captures** pass and
+  are RGB-identical to the corresponding verified endpoint images. Earlier
+  edge cases remain separately recorded against their prior native build.
+- The native emulator uses an idle phone-script derivative and production-packed
+  fixture messages. The final phone-side diagnostic version-label correction
+  leaves native binary/resources byte-identical to those final captures.
+  This is not physical phone/plugin/Bluetooth verification.
+- SDK 4.33.1 builds the Emery candidate with **149,964 resource bytes**. All 31
+  C/JS message keys, eight active source modules, original UUID/platform and
+  ReadMusic permission are retained. Permission packaging preserves SDK native
+  payloads. No legacy weather client is active.
+
+PBW SHA-256:
+
+`2037ec0af28197f8f73f8f28062c2e9d024288d4534638ccc38f5fc7265c58e5`
+
+Earlier sections describe their named historical builds.
+
 ## 1.9.0 rc.1 — horizontal readings, spacing and settings
 
 The checks below use the final release candidate, deterministic fixtures and

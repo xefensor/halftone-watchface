@@ -1,6 +1,6 @@
 # Two complications in the adaptive layout
 
-**Halftone 1.9.0 rc.1** uses the first two global complication choices in the
+**Halftone 1.9.0 rc.2** uses the first two global complication choices in the
 Pebble phone app. A complication is a source reading: a temperature, phone
 battery level, calendar time, condition or another plugin property. Clock and
 date remain native watch functions and do not consume a slot.
@@ -33,7 +33,7 @@ format shows `--`.
 
 The date stays plain and the wide clock stays anchored while the lower content
 changes. During **Timeline Peek / Quick View**, the clock and date compress
-around Pebble's native area with **complication 1 only**. Complication 2, music
+around Pebble's native area with **both complications side by side**. Music
 and notification summaries stay hidden until Peek closes. Halftone does not
 read or duplicate Timeline's own events. Small battery/connection indicators
 sit beside the reading row when enabled.
@@ -41,8 +41,8 @@ sit beside the reading row when enabled.
 ![Normal and contextual reading positions](images/horizontal-layout-states.png)
 
 Both complications remain visible during music and notification panels. They
-return to their larger size when the panel clears. Timeline Peek is the native
-exception: only complication 1 remains while Pebble owns the lower screen.
+return to their larger size when the panel clears. Timeline Peek keeps both
+readings in a compact row above Pebble's event panel.
 
 ## Numbers, units and artwork
 

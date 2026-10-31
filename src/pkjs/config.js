@@ -32,7 +32,8 @@ module.exports = [
         "type": "toggle",
         "messageKey": "LARGE_TEXT",
         "defaultValue": false,
-        "label": "Extra-large clock"
+        "label": "Big text",
+        "description": "Enlarges the clock, date and both complications. Text fits automatically when Timeline Peek, music or notifications need space."
       },
       {
         "type": "toggle",
@@ -150,7 +151,7 @@ module.exports = [
       },
       {
         "type": "text",
-        "defaultValue": "Timeline Peek keeps the clock and complication 1."
+        "defaultValue": "Timeline Peek keeps the clock and complications 1 and 2. Its event panel takes priority over music and notifications."
       }
     ]
   },

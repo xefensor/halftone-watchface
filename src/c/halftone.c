@@ -29,7 +29,7 @@
 #define TIMELINE_DATE_Y 25
 #define TIMELINE_TIME_Y 45
 #define LARGE_TIME_FONT_COUNT 8
-#define COMPLICATION_FONT_COUNT 6
+#define COMPLICATION_FONT_COUNT 7
 
 static Window *s_window;
 static Layer *s_window_layer;
@@ -51,7 +51,7 @@ static GFont s_large_date_font;
 static GFont s_large_time_fonts[LARGE_TIME_FONT_COUNT];
 static GFont s_large_compact_time_font;
 static GFont s_complication_fonts[COMPLICATION_FONT_COUNT];
-static const uint8_t s_complication_font_sizes[COMPLICATION_FONT_COUNT] = {38, 32, 28, 24, 20, 18};
+static const uint8_t s_complication_font_sizes[COMPLICATION_FONT_COUNT] = {44, 38, 32, 28, 24, 20, 18};
 static GColor s_background_color;
 static GColor s_text_color;
 static bool s_compact_layout;
@@ -604,6 +604,13 @@ static void prv_draw_number_text(GContext *ctx, const char *text, GFont font,
   graphics_draw_text(ctx, text, font, rect, GTextOverflowModeFill, GTextAlignmentLeft, NULL);
 }
 
+static GFont prv_complication_font_at_most(int size) {
+  for (unsigned i = 0; i < COMPLICATION_FONT_COUNT; ++i) {
+    if (s_complication_font_sizes[i] <= size) { return s_complication_fonts[i]; }
+  }
+  return s_complication_fonts[COMPLICATION_FONT_COUNT - 1];
+}
+
 static bool prv_draw_number_reading(GContext *ctx, const ComplicationSlot *slot,
                                     const ReadingParts *parts, GRect bounds,
                                     int preferred, bool bitmap) {
@@ -616,7 +623,9 @@ static bool prv_draw_number_reading(GContext *ctx, const ComplicationSlot *slot,
     const int icon_gap = icon_width ? 5 : 0;
     const int droplet_height = small_droplet ? 18 : 22;
     const GFont font = s_complication_fonts[i];
-    const GFont unit_font = s_complication_fonts[s_complication_font_sizes[i] >= 38 ? 4 : 5];
+    const int unit_size = s_complication_font_sizes[i] >= 44 ? 24
+        : s_complication_font_sizes[i] >= 32 ? 20 : 18;
+    const GFont unit_font = prv_complication_font_at_most(unit_size);
     const GSize unit = parts->unit[0] ? graphics_text_layout_get_content_size(parts->unit,
         unit_font, GRect(0, 0, 2048, 100), GTextOverflowModeFill, GTextAlignmentLeft) : GSize(0, 0);
     const GSize number = graphics_text_layout_get_content_size(parts->number, font,
@@ -732,7 +741,8 @@ static void prv_draw_context_text(GContext *ctx, const ComplicationSlot *slot,
 static bool prv_context_bitmap_visible(const ComplicationSlot *title, ContextMode mode,
                                        GRect bounds, bool has_subtitle) {
   const int line_height = has_subtitle ? bounds.size.h / 2 : bounds.size.h;
-  const int preferred = has_subtitle ? 20 : 24;
+  const int preferred = has_subtitle ? (s_large_text_enabled ? 24 : 20)
+      : (s_large_text_enabled ? 28 : 24);
   bool bitmap = title->flags & COMPLICATION_FLAG_BITMAP;
   if (bitmap && mode == CONTEXT_MUSIC) {
     GFont title_font = s_complication_fonts[COMPLICATION_FONT_COUNT - 1];
@@ -759,7 +769,8 @@ static void prv_draw_context(Layer *layer, GContext *ctx) {
   const bool has_subtitle = context_slot_fresh(subtitle, time(NULL)) &&
       (subtitle->flags & COMPLICATION_FLAG_TEXT);
   const int line_height = has_subtitle ? bounds.size.h / 2 : bounds.size.h;
-  const int preferred = has_subtitle ? 20 : 24;
+  const int preferred = has_subtitle ? (s_large_text_enabled ? 24 : 20)
+      : (s_large_text_enabled ? 28 : 24);
   const bool bitmap = prv_context_bitmap_visible(title, mode, bounds, has_subtitle);
   const int text_x = bitmap ? 30 : 0;
   if (bitmap) { prv_draw_bitmap(ctx, title, 0, (bounds.size.h - 24) / 2, 24, false); }
@@ -768,7 +779,7 @@ static void prv_draw_context(Layer *layer, GContext *ctx) {
     prv_draw_context_text(ctx, subtitle, GRect(text_x, line_height,
         bounds.size.w - text_x, bounds.size.h - line_height), preferred);
   } else {
-    prv_draw_context_text(ctx, title, GRect(text_x, 0, bounds.size.w - text_x, bounds.size.h), 24);
+    prv_draw_context_text(ctx, title, GRect(text_x, 0, bounds.size.w - text_x, bounds.size.h), preferred);
   }
 }
 
@@ -880,7 +891,7 @@ static void prv_draw_status(Layer *layer, GContext *ctx) {
   if (!s_show_status) { return; }
   const WatchLayoutGeometry geometry = prv_current_geometry();
   const int y = geometry.slots[0].rect.y + (geometry.slots[0].rect.height - 10) / 2;
-  int x = 18;
+  int x = geometry.slots[0].rect.x;
   graphics_context_set_stroke_color(ctx, s_text_color);
   graphics_context_set_fill_color(ctx, s_text_color);
   graphics_context_set_stroke_width(ctx, 1);
@@ -895,7 +906,7 @@ static void prv_draw_status(Layer *layer, GContext *ctx) {
     graphics_fill_rect(ctx, GRect(x + 3, y + 7, 2, 1), 0, GCornerNone);
   }
   if (!s_phone_connected) {
-    const int bx = 173;
+    const int bx = geometry.slots[1].rect.x + geometry.slots[1].rect.width - 9;
     graphics_draw_line(ctx, GPoint(bx + 3, y), GPoint(bx + 3, y + 10));
     graphics_draw_line(ctx, GPoint(bx + 3, y), GPoint(bx + 7, y + 3));
     graphics_draw_line(ctx, GPoint(bx + 7, y + 3), GPoint(bx, y + 8));
@@ -953,12 +964,12 @@ static void prv_apply_unobstructed_layout(void) {
   const int visible_height = layer_get_unobstructed_bounds(s_window_layer).size.h;
   if (!s_compact_layout && visible_height <= COMPACT_FONT_ENTER_HEIGHT) { s_compact_layout = true; }
   else if (s_compact_layout && visible_height >= COMPACT_FONT_EXIT_HEIGHT) { s_compact_layout = false; }
-  const int date_x = 16;
+  const int date_x = s_large_text_enabled ? 12 : 16;
   const int date_width = root_bounds.size.w - date_x * 2;
   const int time_x = s_large_text_enabled ? 4 : 16;
   const int time_width = root_bounds.size.w - time_x * 2;
   const GFont preferred_date = s_compact_layout
-      ? (s_large_text_enabled ? s_date_font : s_compact_date_font)
+      ? (s_large_text_enabled ? s_large_date_font : s_date_font)
       : (s_large_text_enabled ? s_large_date_font : s_date_font);
   const GFont date_font = prv_get_date_font(preferred_date, date_width - (s_text_shadow_enabled ? 2 : 0));
   const GFont time_font = s_compact_layout
@@ -967,10 +978,10 @@ static void prv_apply_unobstructed_layout(void) {
           (s_text_shadow_enabled ? 10 : 8)) :
           prv_get_standard_time_font(time_width - (s_text_shadow_enabled ? 4 : 2)));
   const int full_time_y = s_large_text_enabled
-      ? (time_font == s_large_compact_time_font ? 34 : 26) : 52;
+      ? (time_font == s_large_compact_time_font ? 34 : 26) : 46;
   prv_set_text_pair_layout(s_date_shadow_layer, s_date_layer,
-      GRect(date_x, prv_layout_value(s_large_text_enabled ? 24 : 28,
-          s_large_text_enabled ? 24 : TIMELINE_DATE_Y, visible_height), date_width,
+      GRect(date_x, prv_layout_value(s_large_text_enabled ? 22 : 26,
+          s_large_text_enabled ? 20 : 22, visible_height), date_width,
           prv_layout_value(s_large_text_enabled ? 44 : 38,
           s_large_text_enabled ? 34 : 30, visible_height)), date_font, 1);
   prv_set_text_pair_layout(s_time_shadow_layer, s_time_layer,
@@ -1282,12 +1293,13 @@ static void prv_window_load(Window *window) {
   s_large_time_fonts[6] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_104));
   s_large_time_fonts[7] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_108));
   s_large_compact_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_72));
-  s_complication_fonts[0] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_38));
-  s_complication_fonts[1] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_32));
-  s_complication_fonts[2] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_28));
-  s_complication_fonts[3] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_24));
-  s_complication_fonts[4] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_20));
-  s_complication_fonts[5] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_18));
+  s_complication_fonts[0] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_44));
+  s_complication_fonts[1] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_38));
+  s_complication_fonts[2] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_32));
+  s_complication_fonts[3] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_28));
+  s_complication_fonts[4] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_24));
+  s_complication_fonts[5] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_20));
+  s_complication_fonts[6] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_18));
   s_drop_path = gpath_create(&s_drop_info);
   s_small_drop_path = gpath_create(&s_small_drop_info);
   s_date_shadow_layer = text_layer_create(GRect(9, 29, bounds.size.w - 16, 38));

@@ -1,15 +1,16 @@
 # Halftone
 
-## Side-by-side release candidate — 1.9.0 rc.1
+## Side-by-side release candidate — 1.9.0 rc.2
 
 Halftone pairs a plain date and wide clock with two large readings side by
 side. When music or a new notification appears, both readings become smaller
 and stay visible above the contextual panel. Its procedural black halftone
-border continues the PT2 bezel.
+border continues the PT2 bezel. Both readings also stay visible when Pebble
+opens Timeline Peek.
 
-Install [Halftone-1.9.0-rc.1.pbw](dist/Halftone-1.9.0-rc.1.pbw).
-[Source archive](dist/Halftone-1.9.0-rc.1-source.zip) and
-[prepared store package](dist/Halftone-1.9.0-rc.1-store-package.zip) are included.
+Install [Halftone-1.9.0-rc.2.pbw](dist/Halftone-1.9.0-rc.2.pbw).
+[Source archive](dist/Halftone-1.9.0-rc.2-source.zip) and
+[prepared store package](dist/Halftone-1.9.0-rc.2-store-package.zip) are included.
 This candidate is for sideloading with Pebble's plugin preview enabled. Pebble's
 [current plugin guide](https://developer.repebble.com/guides/plugins/) says not
 to publish apps using plugins to the public appstore yet. Public submission
@@ -63,11 +64,13 @@ Read the [complication layout and format guide](docs/COMPLICATIONS.md),
 | Normal | Two equally sized columns: complication 1 on the left and complication 2 on the right |
 | Music playing | Both readings shrink into a horizontal row above two left-aligned title/artist lines |
 | New notification | Both compact readings remain above the app/title and optional message text; the notification briefly takes priority over music |
-| Timeline Peek / Quick View | The layout compresses around Pebble's native area; only clock, date and complication 1 remain |
+| Timeline Peek / Quick View | Clock and date compress above two compact horizontal readings; Pebble owns the lower native panel |
 
 Notifications have priority over music and last at most 12 seconds. Paused
 music yields after a five-second grace period. Both readings return to their
-large presentation when neither panel is active. Missing slots keep their
+large presentation when neither panel is active. Timeline Peek temporarily
+hides Halftone's own contextual panel while keeping both selected readings
+above Pebble's panel. Missing slots keep their
 left/right positions; a selected reading without a usable value shows `--`.
 
 Low watch battery (10% or less while not charging), low phone battery (15% or
@@ -92,8 +95,14 @@ Peek do not delay hiding content for an animation.
 
 Date margins and clock fitting keep text clear of the border. The compact
 date uses the full localized weekday and day/month, such as `SATURDAY · 31.10.`.
-The time format, colors, extra-large clock, text shadow and three-step/four-step
-border remain configurable. Source icons use the chosen text color; source
+**Big text** enlarges the weekday/date, clock, both readings and their units,
+and music or notification text. At full height, short readings can use a
+44-pixel font instead of the standard 38-pixel font. Text fits down when a long
+value or title needs more room; Timeline Peek keeps both compact readings
+visible. The setting retains its existing saved preference when upgrading.
+
+The time format, colors, text shadow and three-step/four-step border remain
+configurable. The dot pattern and rounded border geometry are unchanged. Source icons use the chosen text color; source
 images retain their own palette. Upgrading from an earlier Classic, Comic or
 Stacked setting uses the same single adaptive layout.
 
@@ -145,21 +154,21 @@ python3 scripts/package-beta.py
 
 The build includes message-key inputs and complete font definitions in SDK cache
 signatures, avoiding stale C/JavaScript keys or missing newly requested glyphs.
-The final step produces `dist/Halftone-1.9.0-rc.1.pbw` with manifest version 2 and verifies the existing
+The final step produces `dist/Halftone-1.9.0-rc.2.pbw` with manifest version 2 and verifies the existing
 UUID and unchanged SDK-built payloads. Halftone consumes plugin data; it does
 not install a plugin of its own or need a plugin-only SDK project.
 
 Install the packaged build in the Emery emulator:
 
 ```sh
-pebble install --emulator emery dist/Halftone-1.9.0-rc.1.pbw
+pebble install --emulator emery dist/Halftone-1.9.0-rc.2.pbw
 ```
 
 For a real PT2, enable Dev Connection in the Pebble phone app and use:
 
 ```sh
 pebble login
-pebble install --cloudpebble dist/Halftone-1.9.0-rc.1.pbw
+pebble install --cloudpebble dist/Halftone-1.9.0-rc.2.pbw
 ```
 
 See [version-specific validation and remaining device checks](docs/VALIDATION.md).
@@ -184,7 +193,10 @@ package.json          Emery target, permissions and message keys
 
 ## Earlier releases
 
-Previous PBWs and source archives remain in `dist/`. Beta 10 used two stacked
+Previous PBWs and source archives remain in `dist/`. Candidate 1 used two
+horizontal readings but kept only the primary reading during Timeline Peek;
+its large-clock option did not enlarge complication text. See [the
+changelog](CHANGELOG.md) for candidate changes. Beta 10 used two stacked
 full-width readings and temporarily replaced the second with context. Beta 9
 used five global complications in one adaptive layout. The 1.6.x betas used five fixed global
 complications in three layout styles. The 1.4.x–1.5.x betas used a

@@ -1,6 +1,6 @@
 # Dynamic content
 
-Halftone 1.9.0 rc.1 uses one adaptive layout. Two large complications sit side
+Halftone 1.9.0 rc.2 uses one adaptive layout. Two large complications sit side
 by side below the clock and plain date. When music or a brief new-notification
 summary appears, both readings shrink into a compact horizontal row above it.
 Neither selected reading is replaced by contextual content.
@@ -14,8 +14,8 @@ Neither selected reading is replaced by contextual content.
 | Neither | No contextual panel; the two global readings use their larger side-by-side presentation |
 
 Both complications remain visible above these panels. During Timeline Peek /
-Quick View, the panel and complication 2 hide; the clock, date and
-complication 1 adapt to the space Pebble leaves available. Calendar events and other Timeline items
+Quick View, the contextual panel hides; the clock, date and both horizontal
+complications adapt to the space Pebble leaves available. Calendar events and other Timeline items
 remain Pebble's responsibility; Halftone does not duplicate them in another
 panel.
 

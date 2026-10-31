@@ -1,18 +1,18 @@
 {
   "version": "1.9.0",
-  "releaseCandidate": 1,
+  "releaseCandidate": 2,
   "pbw": {
-    "file": "Halftone-1.9.0-rc.1.pbw",
-    "sha256": "51a91538f4fbb52cc85b6b0e8d4645efdc5666724c595d42da90045af94bf2f7",
-    "nativeBinarySha256": "8173c5e205a6129b1ffdb6abae2acfd02b9cb33b86718932716e4eea133f470b",
-    "resourcesSha256": "b1e4e5b5e75f3a217f93b8664d925fd8c8310904d88d0d4aaaa35b1e48ff59ec"
+    "file": "Halftone-1.9.0-rc.2.pbw",
+    "sha256": "2037ec0af28197f8f73f8f28062c2e9d024288d4534638ccc38f5fc7265c58e5",
+    "nativeBinarySha256": "68f768fdf6c422ce5794aececfcfeaaba3fc348466d9c00cd826a212dd9d4542",
+    "resourcesSha256": "b52b3456e45f5bdeb4e97ecec2ddf188953f6cdade42aa33feaf58070433e803"
   },
   "screenshots": {
     "provenance": "Unretouched Emery emulator captures using the final release native binary/resources. Phone-side JavaScript is an idle test derivative; production-encoded sample data is injected over AppMessage. These are illustrative fixtures, not live phone/provider verification.",
     "files": [
       {
         "file": "emery_01_orange.png",
-        "sha256": "4bc90ee61c55955bf812acc9d8d679978fb5f4405807f4ef8f5b48bd896ab10e",
+        "sha256": "fff0674e823ab6528b258245771ea49450b5b6447a669ebcec701e965b7d0b76",
         "pixels": [
           200,
           228
@@ -20,7 +20,7 @@
       },
       {
         "file": "emery_02_blue_large.png",
-        "sha256": "6cc7c3ca9851c3f2eeab1ae4c53bb209a827308af7509a383a259c5502e98406",
+        "sha256": "77820f4a9982637bd444be7cd43076ac409924a50573451a4fed20cc11b825fd",
         "pixels": [
           200,
           228
@@ -28,7 +28,7 @@
       },
       {
         "file": "emery_03_green_shadow.png",
-        "sha256": "1e7177ee9ddac03eefd966fa3f8b452f87122c9560cc72b82df93a0242ba1c34",
+        "sha256": "4c33a467400ccc8254ac35f261c468675cb9d0a3556bc73dd0afa569faa7dda8",
         "pixels": [
           200,
           228
@@ -36,7 +36,7 @@
       },
       {
         "file": "emery_04_music.png",
-        "sha256": "d573072ddfcc23a7d77ed3d54c82c9985e75a1197303d4d557da778b2837c533",
+        "sha256": "5848ac17b8b043d604e4b8b73d21b67172d6012eee3d9560279146a290a6b757",
         "pixels": [
           200,
           228
@@ -44,7 +44,7 @@
       },
       {
         "file": "emery_05_notification.png",
-        "sha256": "96a44a7f23a9f1c278a5d3046bc7e75637ad1490f88f99df30f36765243ec386",
+        "sha256": "5f5042f474c583ae199e3ec43222062c272f570be0aa0d4a644e42d33056cd37",
         "pixels": [
           200,
           228
@@ -54,7 +54,7 @@
   },
   "banner": {
     "file": "halftone-banner-720x320.png",
-    "sha256": "eb982445e22d445873d60502d9959ebffaf4d40f624659a0d189b40319cdce33",
+    "sha256": "2865103be9c9041859da0b06fcb599b49631393c73600270d0b704c3b169ab1c",
     "pixels": [
       720,
       320
@@ -62,5 +62,26 @@
     "source": "banner-source.svg",
     "watchScreenshot": "emery_01_orange.png",
     "render": "Chromium 138 with the bundled Fira Sans Condensed Bold font"
+  },
+  "settingsPreviews": {
+    "provenance": "Actual Clay form with illustrative bridge state, Chromium 138; not a physical-phone screenshot.",
+    "files": [
+      {
+        "file": "docs/images/settings-light.png",
+        "sha256": "253c2998ea7f940bcd6868ac8a15ac4efb42424e18172828829080a8bebb8e83",
+        "pixels": [
+          390,
+          1808
+        ]
+      },
+      {
+        "file": "docs/images/settings-dark.png",
+        "sha256": "0e7479eae7b8fc3b11c5b50153771b46b52f9daaebd7833448d6ae6fbbad6f45",
+        "pixels": [
+          390,
+          1827
+        ]
+      }
+    ]
   }
 }

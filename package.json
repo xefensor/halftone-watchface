@@ -255,9 +255,18 @@
           "targetPlatforms": [
             "emery"
           ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_44",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
+          "targetPlatforms": [
+            "emery"
+          ]
         }
       ]
     }
   },
-  "halftoneReleaseCandidate": 1
+  "halftoneReleaseCandidate": 2
 }

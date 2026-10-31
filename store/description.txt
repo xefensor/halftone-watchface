@@ -1,6 +1,6 @@
 Halftone brings comic-book halftone dots to Pebble Time 2. Its rounded black border blends into the bezel, with a wide digital clock and two large complications in balanced side-by-side columns.
 
-Choose the first two entries in Pebble's Complications settings: temperature and rain chance, phone battery, or other supported plugin readings. Both readings condense above the lower panel when music or a new notification appears.
+Choose the first two entries in Pebble's Complications settings: temperature and rain chance, phone battery, or other supported plugin readings. Both readings condense above music, new notifications or native Timeline Peek.
 
 Features:
 - Large digital time with 12-hour and 24-hour options
@@ -9,8 +9,9 @@ Features:
 - Rain droplet for precipitation probability
 - Music title and artist, with artwork when it fits
 - Optional notification summaries, app filtering and separate message-text control
-- Native Timeline Peek support
-- Configurable colors, extra-large text, text shadow and three/four-step dot border
+- Both readings remain visible above native Timeline Peek
+- Big text enlarges the date, time, readings, units and contextual text
+- Configurable colors, text shadow and three/four-step dot border
 - Optional brief halftone panel transitions
 
 Requires Pebble Time 2 and a Pebble mobile app supporting the 1.16 plugin preview, with plugins enabled. Music and notification sources are currently available on Android. Set up and allow access to the sources you choose in Pebble. Weather, units and updates come from your selected provider; Halftone does not fetch its own weather.
