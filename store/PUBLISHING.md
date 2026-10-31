@@ -2,7 +2,7 @@
 
 ## Current status
 
-The files in this directory describe the 1.9.0 release candidate 5 build.
+The files in this directory describe the 1.9.0 release candidate 6 build.
 They replace the former 1.3.1 listing, which described a weather client that is
 no longer used.
 
@@ -20,8 +20,8 @@ phone/watch verification. Music and notification sources are currently Android
 features. Current build/emulator results and remaining device checks are in
 [validation](../docs/VALIDATION.md).
 
-The candidate bundle is `Halftone-1.9.0-rc.5-store-package.zip`. The PBW keeps
-the numeric SDK version **1.9.0**; `rc.5` identifies the test package, not a
+The candidate bundle is `Halftone-1.9.0-rc.6-store-package.zip`. The PBW keeps
+the numeric SDK version **1.9.0**; `rc.6` identifies the test package, not a
 separate native version. If another 1.9.0 is already in the dashboard, choose a
 new unused numeric version before uploading.
 
@@ -56,7 +56,7 @@ are unchanged from rc.4.
 | UUID | `d4dd5046-53be-4624-99e8-46e0b377fe66` |
 | Description | [description.txt](description.txt) |
 | Release notes | [release-notes.txt](release-notes.txt) |
-| Binary | `Halftone-1.9.0-rc.5.pbw` |
+| Binary | `Halftone-1.9.0-rc.6.pbw` |
 | Website/source URL | https://github.com/xefensor/halftone-watchface |
 | Privacy information | https://github.com/xefensor/halftone-watchface/blob/main/store/PRIVACY.md |
 | Support | https://github.com/xefensor/halftone-watchface/issues |

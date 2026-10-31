@@ -1,6 +1,6 @@
 # Halftone
 
-## Side-by-side release candidate — 1.9.0 rc.5
+## Shared-core release candidate — 1.9.0 rc.6
 
 Halftone pairs a plain date and wide clock with two large readings side by
 side. When music or a new notification appears, both readings become smaller
@@ -8,9 +8,9 @@ and stay visible above the contextual panel. Its procedural black halftone
 border continues the PT2 bezel. Both readings also stay visible when Pebble
 opens Timeline Peek.
 
-Install [Halftone-1.9.0-rc.5.pbw](dist/Halftone-1.9.0-rc.5.pbw).
-[Source archive](dist/Halftone-1.9.0-rc.5-source.zip) and
-[prepared store package](dist/Halftone-1.9.0-rc.5-store-package.zip) are included.
+Install [Halftone-1.9.0-rc.6.pbw](dist/Halftone-1.9.0-rc.6.pbw).
+[Source archive](dist/Halftone-1.9.0-rc.6-source.zip) and
+[prepared store package](dist/Halftone-1.9.0-rc.6-store-package.zip) are included.
 This candidate is for sideloading with Pebble's plugin preview enabled. Pebble's
 [current plugin guide](https://developer.repebble.com/guides/plugins/) says not
 to publish apps using plugins to the public appstore yet. Public submission
@@ -25,6 +25,17 @@ battery use additional Pebble plugin subscriptions. There is no independent
 weather HTTP client, pinned weather provider, temperature-unit override or
 hourly forecast cache. Clock, date, watch battery and phone-connection state
 remain native watch functions.
+
+## Shared engine
+
+Halftone uses [Pebble Watchface Core](https://github.com/xefensor/pebble-watchface-core)
+0.1.0 for complication subscriptions, phone communication and native
+freshness/cache/context state. The exact release archive is pinned in `vendor/`
+and recorded in `package-lock.json` and `vendor/CORE.json`. Halftone still owns
+its dot border, layout, fonts, settings presentation and app identity. Users
+install the PBW as usual; there is no separate core app to install.
+
+See [the migration and dependency-update notes](docs/SHARED-CORE.md).
 
 ## Set up
 
@@ -110,8 +121,8 @@ Incoming source artwork remains capped at 24 pixels; scaling adds no image
 detail. Rectangular music images are center-cropped to a square without
 stretching. Generic complication images and notification icons fit inside
 their boxes without cropping. Music artwork remains optional and can be
-hidden to let a full title fit. This candidate changes artwork/icon placement
-from rc.4; the box sizes, clock and text positions are unchanged.
+hidden to let a full title fit. This candidate retains the artwork/icon
+placement, box sizes, clock and text positions introduced in rc.5.
 
 Date margins and clock fitting keep text clear of the border. The compact
 date uses the full localized weekday and day/month, such as `SATURDAY · 31.10.`.
@@ -170,12 +181,12 @@ npm test
 pebble clean
 pebble build
 python3 scripts/package-beta.py
-python3 scripts/check-clock-fonts.py --pbw dist/Halftone-1.9.0-rc.5.pbw
+python3 scripts/check-clock-fonts.py --pbw dist/Halftone-1.9.0-rc.6.pbw
 ```
 
 The build includes message-key inputs and complete font definitions in SDK cache
 signatures, avoiding stale C/JavaScript keys or missing newly requested glyphs.
-Packaging produces `dist/Halftone-1.9.0-rc.5.pbw` with manifest version 2 and verifies the existing
+Packaging produces `dist/Halftone-1.9.0-rc.6.pbw` with manifest version 2 and verifies the existing
 UUID and unchanged SDK-built payloads. Halftone consumes plugin data; it does
 not install a plugin of its own or need a plugin-only SDK project.
 
@@ -186,14 +197,14 @@ the final check.
 Install the packaged build in the Emery emulator:
 
 ```sh
-pebble install --emulator emery dist/Halftone-1.9.0-rc.5.pbw
+pebble install --emulator emery dist/Halftone-1.9.0-rc.6.pbw
 ```
 
 For a real PT2, enable Dev Connection in the Pebble phone app and use:
 
 ```sh
 pebble login
-pebble install --cloudpebble dist/Halftone-1.9.0-rc.5.pbw
+pebble install --cloudpebble dist/Halftone-1.9.0-rc.6.pbw
 ```
 
 See [version-specific validation and remaining device checks](docs/VALIDATION.md).
@@ -201,18 +212,20 @@ See [version-specific validation and remaining device checks](docs/VALIDATION.md
 ## Project structure
 
 ```text
-src/c/halftone.c       Rendering, clock, native state and AppMessage
-src/c/context_data.h   Ephemeral context validation and panel selection
+src/c/halftone.c       Rendering, clock and SDK event routing
+src/c/context_data.h   Compatibility include for the shared context helpers
 src/pkjs/index.js      Source coordination and Clay initialization
-src/pkjs/complications.js Global slot subscriptions and receipt cache
-src/pkjs/context.js    Music, new notifications and low phone battery
-src/pkjs/message-queue.js Shared serialized AppMessage transport
-src/pkjs/complication-data.js Bounded text, artwork and five-slot packet
+src/pkjs/complications.js Shared-core adapter preserving the legacy cache key
+src/pkjs/context.js    Shared-core context adapter
+src/pkjs/message-queue.js Shared-core transport adapter
+src/pkjs/complication-data.js Shared-core wire adapter
+vendor/               Pinned core archive and provenance
 src/pkjs/config.js     Halftone phone-app settings
 src/pkjs/settings-page.js Compact light/dark settings presentation
 resources/fonts/      Custom date, clock and reading fonts
 docs/COMPLICATIONS.md  Fixed slot map, formats and data limits
 docs/DYNAMIC-CONTENT.md Context behavior, privacy and source contract
+docs/SHARED-CORE.md    Engine extraction and dependency updates
 package.json          Emery target, permissions and message keys
 ```
 

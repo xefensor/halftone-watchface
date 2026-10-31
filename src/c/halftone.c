@@ -1,6 +1,7 @@
 #include <pebble.h>
 #include "complication_data.h"
 #include "context_data.h"
+#include <pebble-watchface-core/pebble-watchface-core.h>
 #include "watch_layout.h"
 #include "reading_presentation.h"
 #include "context_text_metrics.h"
@@ -16,8 +17,6 @@
 #define PERSIST_KEY_COMPLICATION_FIRST 20
 #define PERSIST_KEY_CONTEXT_SESSION 61
 #define PERSIST_KEY_PANEL_TRANSITIONS 62
-#define COMPLICATION_CACHE_CHUNKS 8
-#define COMPLICATION_CACHE_CHUNK_BYTES 256
 
 #define DOT_OUTER_CORNER_RADIUS 30
 #define DOT_SPACING 10
@@ -63,9 +62,12 @@ static bool s_large_text_enabled;
 static bool s_use_12_hour;
 static bool s_show_status;
 static bool s_panel_transitions;
-static bool s_phone_connected;
 static BatteryChargeState s_battery;
-static ComplicationSet s_context;
+static WatchfaceCore s_core;
+#define s_context s_core.context
+#define s_complications s_core.complications
+#define s_has_complications s_core.has_complications
+#define s_phone_connected s_core.phone_connected
 static AppTimer *s_context_timer;
 static AppTimer *s_transition_timer;
 static uint8_t s_transition_frame = 3;
@@ -79,18 +81,6 @@ static GPoint s_drop_points[] = {{0, -10}, {-7, 2}, {7, 2}};
 static const GPathInfo s_drop_info = {.num_points = 3, .points = s_drop_points};
 static GPoint s_small_drop_points[] = {{0, -8}, {-5, 1}, {5, 1}};
 static const GPathInfo s_small_drop_info = {.num_points = 3, .points = s_small_drop_points};
-static bool s_context_rebaseline = true;
-static bool s_context_awaiting_baseline = true;
-static bool s_context_rebaseline_in_flight;
-static uint32_t s_context_session_token;
-static uint32_t s_connection_generation;
-static uint32_t s_request_generation;
-static time_t s_last_request_at;
-static ComplicationSet s_complications;
-static bool s_has_complications;
-static bool s_was_fresh[COMPLICATION_SLOT_COUNT];
-static uint8_t s_complication_packet[COMPLICATION_MAX_BYTES];
-static size_t s_complication_packet_length;
 static AppTimer *s_startup_timer;
 static char s_date_buffer[40];
 static char s_time_buffer[6];
@@ -470,65 +460,21 @@ static WatchLayoutGeometry prv_current_geometry(void) {
       context_mode(&s_context, time(NULL)) != CONTEXT_NONE);
 }
 
-static void prv_clear_complication_cache(void) {
-  for (unsigned i = 0; i < COMPLICATION_CACHE_CHUNKS; ++i) {
-    persist_delete(PERSIST_KEY_COMPLICATION_FIRST + i);
-  }
+static int prv_storage_size(void *context, uint32_t key) {
+  (void)context;
+  return persist_get_size(key);
 }
-
-static void prv_record_freshness(void) {
-  const time_t now = time(NULL);
-  for (unsigned i = 0; i < COMPLICATION_SLOT_COUNT; ++i) {
-    s_was_fresh[i] = s_has_complications && complication_is_fresh(&s_complications.slots[i], now);
-  }
+static int prv_storage_read(void *context, uint32_t key, void *buffer, size_t length) {
+  (void)context;
+  return persist_read_data(key, buffer, length);
 }
-
-static void prv_save_complications(void) {
-  const size_t count = (s_complication_packet_length + COMPLICATION_CACHE_CHUNK_BYTES - 1) /
-      COMPLICATION_CACHE_CHUNK_BYTES;
-  // Commit the header chunk last. Any interrupted write is rejected by the
-  // packet length and CRC on relaunch instead of displaying a mixed snapshot.
-  for (size_t pass = 1; pass <= count; ++pass) {
-    const size_t index = pass == count ? 0 : pass;
-    const size_t offset = index * COMPLICATION_CACHE_CHUNK_BYTES;
-    const size_t remaining = s_complication_packet_length - offset;
-    const size_t length = remaining < COMPLICATION_CACHE_CHUNK_BYTES
-        ? remaining : COMPLICATION_CACHE_CHUNK_BYTES;
-    if (persist_write_data(PERSIST_KEY_COMPLICATION_FIRST + index,
-                           s_complication_packet + offset, length) != (int)length) {
-      prv_clear_complication_cache();
-      return;
-    }
-  }
-  for (size_t i = count; i < COMPLICATION_CACHE_CHUNKS; ++i) {
-    persist_delete(PERSIST_KEY_COMPLICATION_FIRST + i);
-  }
+static int prv_storage_write(void *context, uint32_t key, const void *buffer, size_t length) {
+  (void)context;
+  return persist_write_data(key, buffer, length);
 }
-
-static void prv_load_complications(void) {
-  const int first_length = persist_get_size(PERSIST_KEY_COMPLICATION_FIRST);
-  if (first_length < COMPLICATION_HEADER_BYTES || first_length > COMPLICATION_CACHE_CHUNK_BYTES ||
-      persist_read_data(PERSIST_KEY_COMPLICATION_FIRST, s_complication_packet,
-                        COMPLICATION_CACHE_CHUNK_BYTES) != first_length) { return; }
-  const size_t length = complications_u16(s_complication_packet + 2);
-  if (length < COMPLICATION_HEADER_BYTES || length > COMPLICATION_MAX_BYTES ||
-      first_length != (int)(length < COMPLICATION_CACHE_CHUNK_BYTES
-          ? length : COMPLICATION_CACHE_CHUNK_BYTES)) { return; }
-  const size_t count = (length + COMPLICATION_CACHE_CHUNK_BYTES - 1) / COMPLICATION_CACHE_CHUNK_BYTES;
-  for (size_t i = 1; i < count; ++i) {
-    const size_t offset = i * COMPLICATION_CACHE_CHUNK_BYTES;
-    const size_t remaining = length - offset;
-    const size_t chunk = remaining < COMPLICATION_CACHE_CHUNK_BYTES
-        ? remaining : COMPLICATION_CACHE_CHUNK_BYTES;
-    if (persist_get_size(PERSIST_KEY_COMPLICATION_FIRST + i) != (int)chunk ||
-        persist_read_data(PERSIST_KEY_COMPLICATION_FIRST + i, s_complication_packet + offset,
-                          chunk) != (int)chunk) { return; }
-  }
-  if (complications_read(s_complication_packet, length, &s_complications)) {
-    s_has_complications = true;
-    s_complication_packet_length = length;
-    prv_record_freshness();
-  }
+static void prv_storage_remove(void *context, uint32_t key) {
+  (void)context;
+  persist_delete(key);
 }
 
 static void prv_remove_legacy_data(void) {
@@ -1009,12 +955,7 @@ static void prv_context_expired(void *context);
 static void prv_schedule_context_expiry(void) {
   if (s_context_timer != NULL) { app_timer_cancel(s_context_timer); s_context_timer = NULL; }
   const time_t now = time(NULL);
-  for (unsigned i = 0; i < COMPLICATION_SLOT_COUNT; ++i) {
-    if (!context_slot_fresh(&s_context.slots[i], now)) {
-      memset(&s_context.slots[i], 0, sizeof(s_context.slots[i]));
-    }
-  }
-  const uint32_t next = context_next_expiry(&s_context, now);
+  const uint32_t next = wfc_prune_context(&s_core, now);
   if (next > (uint32_t)now) {
     s_context_timer = app_timer_register((next - (uint32_t)now) * 1000,
         prv_context_expired, NULL);
@@ -1146,15 +1087,12 @@ static void prv_request_complications(void) {
     return;
   }
   dict_write_uint8(iterator, MESSAGE_KEY_REQUEST_COMPLICATIONS, 1);
-  dict_write_uint32(iterator, MESSAGE_KEY_REQUEST_CONTEXT,
-      s_context_rebaseline || s_context_awaiting_baseline ? s_context_session_token : 1);
-  s_context_rebaseline_in_flight = s_context_rebaseline;
-  s_request_generation = s_connection_generation;
+  dict_write_uint32(iterator, MESSAGE_KEY_REQUEST_CONTEXT, wfc_request_marker(&s_core));
   const AppMessageResult sent = app_message_outbox_send();
   if (sent != APP_MSG_OK) {
-    s_context_rebaseline_in_flight = false;
+    wfc_request_failed(&s_core);
     APP_LOG(APP_LOG_LEVEL_WARNING, "Complication request failed: %d", sent);
-  } else { s_last_request_at = time(NULL); }
+  } else { wfc_request_accepted(&s_core, time(NULL)); }
 }
 
 static void prv_startup_request(void *context) {
@@ -1163,17 +1101,11 @@ static void prv_startup_request(void *context) {
 }
 
 static void prv_phone_connection_changed(bool connected) {
-  if (connected == s_phone_connected) { return; }
-  s_phone_connected = connected;
-  ++s_connection_generation;
-  s_context_rebaseline = true;
-  s_context_awaiting_baseline = true;
-  memset(&s_context, 0, sizeof(s_context));
+  if (!wfc_connection_changed(&s_core, connected)) { return; }
   prv_schedule_context_expiry();
   prv_apply_unobstructed_layout();
   if (connected) {
-    s_context_session_token = context_next_session_token(s_context_session_token);
-    persist_write_int(PERSIST_KEY_CONTEXT_SESSION, (int32_t)s_context_session_token);
+    persist_write_int(PERSIST_KEY_CONTEXT_SESSION, (int32_t)s_core.session_token);
     if (s_startup_timer != NULL) { app_timer_cancel(s_startup_timer); }
     s_startup_timer = app_timer_register(1000, prv_startup_request, NULL);
   }
@@ -1185,19 +1117,11 @@ static void prv_battery_changed(BatteryChargeState charge) {
 }
 
 static void prv_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-  bool expired = false;
-  const time_t now = time(NULL);
-  for (unsigned i = 0; i < COMPLICATION_SLOT_COUNT; ++i) {
-    const bool fresh = s_has_complications && complication_is_fresh(&s_complications.slots[i], now);
-    if (s_was_fresh[i] && !fresh && s_complications.slots[i].status == COMPLICATION_STATUS_READY) {
-      expired = true;
-    }
-    s_was_fresh[i] = fresh;
-  }
+  const bool request_due = wfc_tick(&s_core, time(NULL));
   prv_update_clock();
   // One request on the freshness transition; denied/unavailable slots do not
   // cause a polling loop. Provider refresh policies belong to the phone host.
-  if (expired || (s_phone_connected && now >= s_last_request_at + 30 * 60)) {
+  if (request_due) {
     prv_request_complications();
   }
   prv_schedule_context_expiry();
@@ -1252,36 +1176,22 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
   if (context_data == NULL && marker_value == 1) {
     // PKJS may become ready after the first native request was acknowledged.
     // Answer its query with the current epoch; querying never advances it.
-    s_context_rebaseline = true;
+    wfc_context_query(&s_core);
     if (s_startup_timer != NULL) { app_timer_cancel(s_startup_timer); }
     s_startup_timer = app_timer_register(100, prv_startup_request, NULL);
   }
   if (context_data != NULL) {
-    const bool baseline = context_session_token_matches(marker_value, s_context_session_token);
-    if (!s_phone_connected || context_data->type != TUPLE_BYTE_ARRAY || context_data->length > COMPLICATION_MAX_BYTES ||
-        !context_receive(context_data->value->data, context_data->length, &s_context,
-            &s_context_awaiting_baseline, baseline)) {
-      // A malformed update must not leave an earlier private preview visible.
-      memset(&s_context, 0, sizeof(s_context));
-    }
+    const bool bytes = context_data->type == TUPLE_BYTE_ARRAY;
+    wfc_receive_context(&s_core, bytes ? context_data->value->data : NULL,
+        bytes ? context_data->length : 0, marker_value);
     prv_schedule_context_expiry();
   }
   Tuple *data = dict_find(iterator, MESSAGE_KEY_COMPLICATION_DATA);
   if (data != NULL) {
-    if (data->type == TUPLE_BYTE_ARRAY && data->length <= COMPLICATION_MAX_BYTES &&
-        complications_read(data->value->data, data->length, &s_complications)) {
-      s_has_complications = true;
-      s_complication_packet_length = data->length;
-      memcpy(s_complication_packet, data->value->data, s_complication_packet_length);
-      prv_record_freshness();
-      prv_save_complications();
+    const bool bytes = data->type == TUPLE_BYTE_ARRAY;
+    if (wfc_receive_complications(&s_core, bytes ? data->value->data : NULL,
+        bytes ? data->length : 0, time(NULL))) {
       prv_remove_legacy_data();
-    } else {
-      s_has_complications = false;
-      s_complication_packet_length = 0;
-      memset(&s_complications, 0, sizeof(s_complications));
-      memset(s_was_fresh, 0, sizeof(s_was_fresh));
-      prv_clear_complication_cache();
     }
   }
   Tuple *background = dict_find(iterator, MESSAGE_KEY_BACKGROUND_COLOR);
@@ -1334,14 +1244,11 @@ static void prv_inbox_dropped(AppMessageResult reason, void *context) {
   APP_LOG(APP_LOG_LEVEL_WARNING, "Complication message dropped: %d", reason);
 }
 static void prv_outbox_failed(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
-  s_context_rebaseline_in_flight = false;
+  wfc_request_failed(&s_core);
   APP_LOG(APP_LOG_LEVEL_WARNING, "Complication request failed: %d", reason);
 }
 static void prv_outbox_sent(DictionaryIterator *iterator, void *context) {
-  if (s_context_rebaseline_in_flight && s_request_generation == s_connection_generation) {
-    s_context_rebaseline = false;
-  }
-  s_context_rebaseline_in_flight = false;
+  wfc_request_acknowledged(&s_core);
 }
 
 static void prv_configure_text_layer(TextLayer *layer, GFont font) {
@@ -1465,11 +1372,15 @@ static void prv_init(void) {
   s_use_12_hour = false;
   s_show_status = true;
   s_panel_transitions = true;
-  s_context_session_token = context_next_session_token(
+  const WfcConfig core_config = {
+    .storage = {.size = prv_storage_size, .read = prv_storage_read,
+      .write = prv_storage_write, .remove = prv_storage_remove},
+    .cache_first_key = PERSIST_KEY_COMPLICATION_FIRST
+  };
+  wfc_init(&s_core, &core_config, connection_service_peek_pebble_app_connection(),
       persist_exists(PERSIST_KEY_CONTEXT_SESSION)
           ? (uint32_t)persist_read_int(PERSIST_KEY_CONTEXT_SESSION) : 0);
-  persist_write_int(PERSIST_KEY_CONTEXT_SESSION, (int32_t)s_context_session_token);
-  s_phone_connected = connection_service_peek_pebble_app_connection();
+  persist_write_int(PERSIST_KEY_CONTEXT_SESSION, (int32_t)s_core.session_token);
   s_battery = battery_state_service_peek();
   if (persist_exists(PERSIST_KEY_BACKGROUND_COLOR)) {
     s_background_color = GColorFromHEX(persist_read_int(PERSIST_KEY_BACKGROUND_COLOR));
@@ -1482,7 +1393,7 @@ static void prv_init(void) {
   if (persist_exists(PERSIST_KEY_SHOW_STATUS)) { s_show_status = persist_read_bool(PERSIST_KEY_SHOW_STATUS); }
   if (persist_exists(PERSIST_KEY_PANEL_TRANSITIONS)) { s_panel_transitions = persist_read_bool(PERSIST_KEY_PANEL_TRANSITIONS); }
   persist_delete(PERSIST_KEY_LAYOUT_STYLE);
-  prv_load_complications();
+  wfc_load_cache(&s_core, time(NULL));
   s_window = window_create();
   window_set_background_color(s_window, s_background_color);
   window_set_window_handlers(s_window, (WindowHandlers){.load = prv_window_load, .unload = prv_window_unload});

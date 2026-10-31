@@ -1,4 +1,8 @@
-Halftone 1.9.0 rc.5 aligns the visible bottom of contextual artwork and notification icons with their text.
+Halftone 1.9.0 rc.6 adopts the shared Pebble Watchface Core used by Dynamic.
+
+- Preserves the existing appearance, colors, source choices, saved settings and complication cache
+- Preserves transient music and notification privacy, expiry and reconnect handling
+- Keeps bottom-aligned artwork, both readings during Timeline Peek and the existing text sizing
 
 - Aligns artwork/icons with the actual fitted foreground text, including an ellipsis when needed and excluding the text shadow
 - Uses compiled-font glyph measurements and accounts for transparent icon padding and empty space around fitted icons

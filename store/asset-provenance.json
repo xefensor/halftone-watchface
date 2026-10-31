@@ -1,14 +1,14 @@
 {
   "version": "1.9.0",
-  "releaseCandidate": 5,
+  "releaseCandidate": 6,
   "pbw": {
-    "file": "Halftone-1.9.0-rc.5.pbw",
-    "sha256": "5caec4ca5464ff8de5aca8d63eb1431e4ad4b6a3ba48b23aabf38780fc60dae0",
-    "nativeBinarySha256": "65740ee124dd74f17a56fe47626220abdc4d0baf67c5636370fcc399f068f51d",
+    "file": "Halftone-1.9.0-rc.6.pbw",
+    "sha256": "c2b4a629c9ad00b8244ada66e0d224a40bd57680a3a4014e14a997b613c4959c",
+    "nativeBinarySha256": "f879373427e69f698018d1bc4953ecb589d079ed0887809e55e6b1ad30eda0d7",
     "resourcesSha256": "b52b3456e45f5bdeb4e97ecec2ddf188953f6cdade42aa33feaf58070433e803"
   },
   "screenshots": {
-    "provenance": "Unretouched Emery emulator captures using the final release native binary/resources. Phone-side JavaScript is an idle test derivative; production-encoded sample data is injected over AppMessage. These are illustrative fixtures, not live phone/provider verification.",
+    "provenance": "Unretouched Emery fixture captures. All five listing states are pixel-identical between rc.5 and the rc.6 shared-core migration; native comparison captures use final rc.6 binary/resources with idle phone JavaScript and production-packed fixtures. This verifies rendering, not live phone/provider delivery.",
     "files": [
       {
         "file": "emery_01_orange.png",

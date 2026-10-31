@@ -3,7 +3,9 @@
   "author": "Xef",
   "version": "1.9.0",
   "scripts": {
-    "test": "node --test tests/*.test.js"
+    "test": "python3 scripts/verify-core.py && node --test tests/*.test.js && python3 scripts/test-native.py",
+    "test:js": "node --test tests/*.test.js",
+    "test:native": "python3 scripts/test-native.py"
   },
   "license": "SEE LICENSE IN LICENSE",
   "keywords": [
@@ -13,7 +15,8 @@
   ],
   "private": true,
   "dependencies": {
-    "@rebble/clay": "^1.0.0"
+    "@rebble/clay": "^1.0.0",
+    "pebble-watchface-core": "file:vendor/pebble-watchface-core-0.1.0.tgz"
   },
   "pebble": {
     "displayName": "Halftone",
@@ -71,7 +74,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_24",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9A-ZÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽ·. °C-]",
+          "characterRegex": "[0-9A-Z\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u0104\u0102\u00c6\u00c7\u0106\u010c\u010e\u00c9\u011a\u0118\u00cd\u00cc\u00ce\u0130\u0139\u013d\u0141\u0147\u00d1\u00d3\u00d4\u00d5\u00d6\u0150\u00d8\u0154\u0158\u015a\u0160\u015e\u0218\u0164\u021a\u00da\u016e\u00dc\u0170\u00dd\u0179\u017b\u017d\u00b7. \u00b0C-]",
           "targetPlatforms": [
             "emery"
           ]
@@ -89,7 +92,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_22",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9A-ZÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽ·. °C-]",
+          "characterRegex": "[0-9A-Z\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u0104\u0102\u00c6\u00c7\u0106\u010c\u010e\u00c9\u011a\u0118\u00cd\u00cc\u00ce\u0130\u0139\u013d\u0141\u0147\u00d1\u00d3\u00d4\u00d5\u00d6\u0150\u00d8\u0154\u0158\u015a\u0160\u015e\u0218\u0164\u021a\u00da\u016e\u00dc\u0170\u00dd\u0179\u017b\u017d\u00b7. \u00b0C-]",
           "targetPlatforms": [
             "emery"
           ]
@@ -98,7 +101,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_20",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9A-ZÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽ·. °C-]",
+          "characterRegex": "[0-9A-Z\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u0104\u0102\u00c6\u00c7\u0106\u010c\u010e\u00c9\u011a\u0118\u00cd\u00cc\u00ce\u0130\u0139\u013d\u0141\u0147\u00d1\u00d3\u00d4\u00d5\u00d6\u0150\u00d8\u0154\u0158\u015a\u0160\u015e\u0218\u0164\u021a\u00da\u016e\u00dc\u0170\u00dd\u0179\u017b\u017d\u00b7. \u00b0C-]",
           "targetPlatforms": [
             "emery"
           ]
@@ -116,7 +119,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_28",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[0-9A-ZÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽ·. °C-]",
+          "characterRegex": "[0-9A-Z\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u0104\u0102\u00c6\u00c7\u0106\u010c\u010e\u00c9\u011a\u0118\u00cd\u00cc\u00ce\u0130\u0139\u013d\u0141\u0147\u00d1\u00d3\u00d4\u00d5\u00d6\u0150\u00d8\u0154\u0158\u015a\u0160\u015e\u0218\u0164\u021a\u00da\u016e\u00dc\u0170\u00dd\u0179\u017b\u017d\u00b7. \u00b0C-]",
           "targetPlatforms": [
             "emery"
           ]
@@ -206,7 +209,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_38",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
+          "characterRegex": "[ -~\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u0104\u0102\u00c6\u00c7\u0106\u010c\u010e\u00c9\u011a\u0118\u00cd\u00cc\u00ce\u0130\u0139\u013d\u0141\u0147\u00d1\u00d3\u00d4\u00d5\u00d6\u0150\u00d8\u0154\u0158\u015a\u0160\u015e\u0218\u0164\u021a\u00da\u016e\u00dc\u0170\u00dd\u0179\u017b\u017d\u00e1\u00e0\u00e2\u00e3\u00e4\u00e5\u0105\u0103\u00e6\u00e7\u0107\u010d\u010f\u00e9\u011b\u0119\u00ed\u00ec\u00ee\u0131\u013a\u013e\u0142\u0148\u00f1\u00f3\u00f4\u00f5\u00f6\u0151\u00f8\u0155\u0159\u015b\u0161\u015f\u0219\u0165\u021b\u00fa\u016f\u00fc\u0171\u00fd\u017a\u017c\u017e\u00df\u1e9e\u00b0\u00b5\u00b2\u00b3\u2026\u00b7\u2018\u2019\u201c\u201d\u20ac\u00a3\u2212]",
           "targetPlatforms": [
             "emery"
           ]
@@ -215,7 +218,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_28",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
+          "characterRegex": "[ -~\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u0104\u0102\u00c6\u00c7\u0106\u010c\u010e\u00c9\u011a\u0118\u00cd\u00cc\u00ce\u0130\u0139\u013d\u0141\u0147\u00d1\u00d3\u00d4\u00d5\u00d6\u0150\u00d8\u0154\u0158\u015a\u0160\u015e\u0218\u0164\u021a\u00da\u016e\u00dc\u0170\u00dd\u0179\u017b\u017d\u00e1\u00e0\u00e2\u00e3\u00e4\u00e5\u0105\u0103\u00e6\u00e7\u0107\u010d\u010f\u00e9\u011b\u0119\u00ed\u00ec\u00ee\u0131\u013a\u013e\u0142\u0148\u00f1\u00f3\u00f4\u00f5\u00f6\u0151\u00f8\u0155\u0159\u015b\u0161\u015f\u0219\u0165\u021b\u00fa\u016f\u00fc\u0171\u00fd\u017a\u017c\u017e\u00df\u1e9e\u00b0\u00b5\u00b2\u00b3\u2026\u00b7\u2018\u2019\u201c\u201d\u20ac\u00a3\u2212]",
           "targetPlatforms": [
             "emery"
           ]
@@ -224,7 +227,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_24",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
+          "characterRegex": "[ -~\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u0104\u0102\u00c6\u00c7\u0106\u010c\u010e\u00c9\u011a\u0118\u00cd\u00cc\u00ce\u0130\u0139\u013d\u0141\u0147\u00d1\u00d3\u00d4\u00d5\u00d6\u0150\u00d8\u0154\u0158\u015a\u0160\u015e\u0218\u0164\u021a\u00da\u016e\u00dc\u0170\u00dd\u0179\u017b\u017d\u00e1\u00e0\u00e2\u00e3\u00e4\u00e5\u0105\u0103\u00e6\u00e7\u0107\u010d\u010f\u00e9\u011b\u0119\u00ed\u00ec\u00ee\u0131\u013a\u013e\u0142\u0148\u00f1\u00f3\u00f4\u00f5\u00f6\u0151\u00f8\u0155\u0159\u015b\u0161\u015f\u0219\u0165\u021b\u00fa\u016f\u00fc\u0171\u00fd\u017a\u017c\u017e\u00df\u1e9e\u00b0\u00b5\u00b2\u00b3\u2026\u00b7\u2018\u2019\u201c\u201d\u20ac\u00a3\u2212]",
           "targetPlatforms": [
             "emery"
           ]
@@ -233,7 +236,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_20",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
+          "characterRegex": "[ -~\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u0104\u0102\u00c6\u00c7\u0106\u010c\u010e\u00c9\u011a\u0118\u00cd\u00cc\u00ce\u0130\u0139\u013d\u0141\u0147\u00d1\u00d3\u00d4\u00d5\u00d6\u0150\u00d8\u0154\u0158\u015a\u0160\u015e\u0218\u0164\u021a\u00da\u016e\u00dc\u0170\u00dd\u0179\u017b\u017d\u00e1\u00e0\u00e2\u00e3\u00e4\u00e5\u0105\u0103\u00e6\u00e7\u0107\u010d\u010f\u00e9\u011b\u0119\u00ed\u00ec\u00ee\u0131\u013a\u013e\u0142\u0148\u00f1\u00f3\u00f4\u00f5\u00f6\u0151\u00f8\u0155\u0159\u015b\u0161\u015f\u0219\u0165\u021b\u00fa\u016f\u00fc\u0171\u00fd\u017a\u017c\u017e\u00df\u1e9e\u00b0\u00b5\u00b2\u00b3\u2026\u00b7\u2018\u2019\u201c\u201d\u20ac\u00a3\u2212]",
           "targetPlatforms": [
             "emery"
           ]
@@ -242,7 +245,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_18",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
+          "characterRegex": "[ -~\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u0104\u0102\u00c6\u00c7\u0106\u010c\u010e\u00c9\u011a\u0118\u00cd\u00cc\u00ce\u0130\u0139\u013d\u0141\u0147\u00d1\u00d3\u00d4\u00d5\u00d6\u0150\u00d8\u0154\u0158\u015a\u0160\u015e\u0218\u0164\u021a\u00da\u016e\u00dc\u0170\u00dd\u0179\u017b\u017d\u00e1\u00e0\u00e2\u00e3\u00e4\u00e5\u0105\u0103\u00e6\u00e7\u0107\u010d\u010f\u00e9\u011b\u0119\u00ed\u00ec\u00ee\u0131\u013a\u013e\u0142\u0148\u00f1\u00f3\u00f4\u00f5\u00f6\u0151\u00f8\u0155\u0159\u015b\u0161\u015f\u0219\u0165\u021b\u00fa\u016f\u00fc\u0171\u00fd\u017a\u017c\u017e\u00df\u1e9e\u00b0\u00b5\u00b2\u00b3\u2026\u00b7\u2018\u2019\u201c\u201d\u20ac\u00a3\u2212]",
           "targetPlatforms": [
             "emery"
           ]
@@ -251,7 +254,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_32",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
+          "characterRegex": "[ -~\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u0104\u0102\u00c6\u00c7\u0106\u010c\u010e\u00c9\u011a\u0118\u00cd\u00cc\u00ce\u0130\u0139\u013d\u0141\u0147\u00d1\u00d3\u00d4\u00d5\u00d6\u0150\u00d8\u0154\u0158\u015a\u0160\u015e\u0218\u0164\u021a\u00da\u016e\u00dc\u0170\u00dd\u0179\u017b\u017d\u00e1\u00e0\u00e2\u00e3\u00e4\u00e5\u0105\u0103\u00e6\u00e7\u0107\u010d\u010f\u00e9\u011b\u0119\u00ed\u00ec\u00ee\u0131\u013a\u013e\u0142\u0148\u00f1\u00f3\u00f4\u00f5\u00f6\u0151\u00f8\u0155\u0159\u015b\u0161\u015f\u0219\u0165\u021b\u00fa\u016f\u00fc\u0171\u00fd\u017a\u017c\u017e\u00df\u1e9e\u00b0\u00b5\u00b2\u00b3\u2026\u00b7\u2018\u2019\u201c\u201d\u20ac\u00a3\u2212]",
           "targetPlatforms": [
             "emery"
           ]
@@ -260,7 +263,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_44",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
+          "characterRegex": "[ -~\u00c1\u00c0\u00c2\u00c3\u00c4\u00c5\u0104\u0102\u00c6\u00c7\u0106\u010c\u010e\u00c9\u011a\u0118\u00cd\u00cc\u00ce\u0130\u0139\u013d\u0141\u0147\u00d1\u00d3\u00d4\u00d5\u00d6\u0150\u00d8\u0154\u0158\u015a\u0160\u015e\u0218\u0164\u021a\u00da\u016e\u00dc\u0170\u00dd\u0179\u017b\u017d\u00e1\u00e0\u00e2\u00e3\u00e4\u00e5\u0105\u0103\u00e6\u00e7\u0107\u010d\u010f\u00e9\u011b\u0119\u00ed\u00ec\u00ee\u0131\u013a\u013e\u0142\u0148\u00f1\u00f3\u00f4\u00f5\u00f6\u0151\u00f8\u0155\u0159\u015b\u0161\u015f\u0219\u0165\u021b\u00fa\u016f\u00fc\u0171\u00fd\u017a\u017c\u017e\u00df\u1e9e\u00b0\u00b5\u00b2\u00b3\u2026\u00b7\u2018\u2019\u201c\u201d\u20ac\u00a3\u2212]",
           "targetPlatforms": [
             "emery"
           ]
@@ -268,5 +271,5 @@
       ]
     }
   },
-  "halftoneReleaseCandidate": 5
+  "halftoneReleaseCandidate": 6
 }

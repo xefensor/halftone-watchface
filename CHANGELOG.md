@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.9.0 rc.6
+
+- Moves complication/context source handling, message transport and native
+  cache/freshness/reconnect state into Pebble Watchface Core 0.1.0.
+- Pins the shared package archive and lockfile, with upstream/checksum
+  provenance in `vendor/CORE.json`; users still install one Halftone PBW.
+- Keeps Halftone's UUID, saved settings, legacy phone cache key and native
+  persistence range, notification baselines and short-lived context policy.
+- Keeps the rc.5 dot border, fonts, text/artwork placement and Timeline Peek
+  layout. Shared engine changes can be tested separately from this renderer.
+
 ## 1.9.0 rc.5
 
 - Bottom-aligns visible music artwork and notification icons with the actual

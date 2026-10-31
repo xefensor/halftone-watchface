@@ -1,5 +1,44 @@
 # Halftone release validation
 
+## 1.9.0 rc.6 — shared core migration
+
+- The data, transport and native cache/lifecycle engine is now supplied by the
+  pinned **Pebble Watchface Core 0.1.0** package, shared with Dynamic. The same
+  committed tarball, SHA-256, npm integrity and source commit are recorded in
+  `vendor/CORE.json`; `npm ci` installs it without a registry publication.
+- Halftone retains its UUID, all 31 AppMessage keys, persistent settings/cache
+  keys and legacy phone cache namespace. Native rendering and fonts are local.
+  No dot, layout, font or color change is part of this migration.
+- **225 JavaScript tests and nine strict C99 suites pass** through the actual
+  installed dependency. Core's own **83 JS tests + three native suites** cover
+  packet fixtures, queues, expiry, reconnect handshakes, cache failures and
+  privacy clearing; the core-state suite also passes sanitizers.
+- **14 exact native visual comparisons to rc.5 pass**, including both text
+  sizes, music/notifications/Peek and all five listing themes. Five native
+  upgrade/lifecycle checks pass: saved settings and cached readings survive
+  installation, session tokens advance, music/notification expiry works without
+  menu navigation, Peek restoration uses fresh context and relaunch clears
+  transient private content. The run has 22 screenshots (21 candidate, one
+  legacy seed); 204 fixture packets also match the extracted JS encoder byte
+  for byte. These are emulator checks, not physical phone/plugin verification.
+- Final core repackaging leaves the tested native binary/resources and exact
+  PBW hash unchanged. The compiled-font verifier retains **25,920 clock +
+  522,648 date + 820 context-glyph checks**. The active phone dependency graph
+  contains seven local modules and five core modules; no legacy weather client
+  is active. Native identity and permission packaging remain unchanged.
+
+PBW SHA-256:
+
+`c2b4a629c9ad00b8244ada66e0d224a40bd57680a3a4014e14a997b613c4959c`
+
+Native binary SHA-256:
+
+`f879373427e69f698018d1bc4953ecb589d079ed0887809e55e6b1ad30eda0d7`
+
+Resources SHA-256 remains:
+
+`b52b3456e45f5bdeb4e97ecec2ddf188953f6cdade42aa33feaf58070433e803`
+
 ## 1.9.0 rc.5 — artwork aligned to the text bottom
 
 - Artwork keeps the rc.4 sizes (32px standard / 40px Big for two lines; 28px
