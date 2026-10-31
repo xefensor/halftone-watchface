@@ -1,13 +1,13 @@
-Halftone 1.9.0 rc.3 balances the clock and makes music artwork fit its panel.
+Halftone 1.9.0 rc.4 makes contextual artwork smaller and aligns notification icons with it.
 
-- Centers the visible clock digits using compiled font bounds, rather than the font line box
-- Fits the clock above active context, keeping shorter and taller times balanced and clear of the readings
-- Center-crops rectangular album art to a square without stretching, then scales it to the music block: 40 pixels normally or 48 with Big text; single-line music art uses 32 pixels
-- Adjusts the title inset to the displayed art and preserves artwork hiding when it lets the full title fit
-- Keeps incoming source images capped at 24 pixels; notification icons remain 24 pixels
-- Retains both complications above native Timeline Peek and Big text for the date, clock, readings, units and contextual text
-- Preserves the halftone dot pattern, rounded border, colors, source choices and notification privacy defaults
+- Uses matching compact boxes for music artwork and notification icons: 32 pixels normally or 40 with Big text for two-line panels, and 28 pixels for a single line
+- Moves both artwork and icons 2 pixels below the panel's vertical center, leaving more breathing room above them
+- Keeps rectangular album art center-cropped to a square without stretching; notification icons and generic reading images stay fully visible inside their boxes
+- Preserves the title inset and artwork hiding when removing it lets the full title fit
+- Keeps incoming source artwork capped at 24 pixels
+- Leaves the balanced clock, accented date clearance, both complications above Timeline Peek and text sizing unchanged from rc.3
+- Preserves the halftone dot pattern, rounded border, source choices and notification privacy defaults
 
-Clock size and position adapt to available space when context changes, then remain still during the brief dissolve frames. The first two global choices in Pebble's Complications settings remain the two main readings. Notification summaries and message text remain off by default.
+The first two global choices in Pebble's Complications settings remain the two main readings. Notification summaries and message text remain off by default.
 
 This build requires Pebble's plugin preview and is prepared for sideloaded testing. Do not submit it to the public appstore while Pebble's plugin-preview publishing restriction remains in place. Weather, units and updates come from the source selected in Pebble; Halftone has no independent weather HTTP fallback or local temperature conversion. Music and notification sources are currently available on Android.

@@ -75,10 +75,12 @@ static inline bool reading_hide_artwork(int title_width, int full_width, int art
   return title_width > full_width - artwork_inset && title_width <= full_width;
 }
 
-static inline int reading_context_artwork_size(bool music, bool image,
-                                               bool two_lines, int panel_height) {
-  if (music && image) { return two_lines ? panel_height : 32; }
-  return 24;
+static inline int reading_context_artwork_size(bool two_lines, int panel_height) {
+  return two_lines ? panel_height - 8 : 28;
+}
+
+static inline int reading_context_artwork_y(int panel_height, int artwork_size) {
+  return (panel_height - artwork_size) / 2 + 2;
 }
 
 typedef struct { int x, y, size; } ReadingCoverCrop;

@@ -7,7 +7,7 @@ Features:
 - Plain weekday and date, with support for 17 languages
 - Two balanced columns with big numbers and smaller units
 - Rain droplet for precipitation probability
-- Music title and artist, with album art sized to the music block
+- Music title/artist and compact, aligned artwork/notification icons
 - Optional notification summaries, app filtering and separate message-text control
 - Both readings remain visible above native Timeline Peek
 - Big text enlarges the date, time, readings, units and contextual text

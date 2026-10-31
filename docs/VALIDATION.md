@@ -1,5 +1,49 @@
 # Halftone release validation
 
+## 1.9.0 rc.4 — smaller, lowered artwork and matching notification icons
+
+- Two-line music artwork and notification icons now share a **32px standard /
+  40px Big text box**, inset 4px vertically then lowered another 2px. Their
+  two-line boxes end at screen y202, leaving 2px before the panel bottom.
+  Single-line context uses a 28px box, also 2px below vertical center.
+  Text remains 6px to the right of the displayed box.
+- Music images retain center-cropping; notification icons retain their aspect
+  ratio and contain fit. Artwork fitting and rendering use the same width.
+  The balanced clock, date guard, two reading columns and dots are unchanged.
+- **16 focused native captures pass** on the final rc.4 payload: normal/Big
+  music and notification panels, two/one-line text, rectangular music sources,
+  and Timeline Peek. **13,632 source-pixel checks** verify music crop sampling
+  and notification mask scaling/placement. Both Peek views hide context and
+  retain both readings. Minimum measured date/clock gap is 13px; clock/reading
+  gap is 9px. The contact sheets were visually reviewed before asset refresh.
+  Five final listing screenshots are separate from these 16 captures.
+- **225 JavaScript tests and nine strict C99 suites pass**; the changed reading
+  helper also passes AddressSanitizer/UndefinedBehaviorSanitizer with unsupported
+  leak scanning disabled. The exact-PBW verifier retains all **25,920 clock +
+  522,648 date checks**, including the 7px minimum corpus date/clock gap.
+- Release audit verifies exact SDK payloads, all 31 C/JS message keys, eight
+  active phone-source modules, original identity/permissions and seven real
+  Unicode-minus glyphs. Resources remain **149,964 bytes**, RAM footprint is
+  **26,791 bytes**, with **104,281 bytes free heap**. Settings controls and
+  translations are unchanged; the earlier 68-case Clay browser corpus is not
+  repeated for this artwork-only change.
+- Captures use an idle phone-script derivative with production-packed fixtures.
+  The broad rc.3 state tests remain recorded below against their named builds.
+  Live phone/plugin delivery, physical playback, Bluetooth callbacks and actual
+  Timeline event text still require device confirmation.
+
+Final PBW SHA-256:
+
+`5d4fd52f545ac0b8cbd36e9954ffab088452feac2323ea716bc9bdefa5b5ae33`
+
+Native binary SHA-256:
+
+`7f517b883fcea5eab518ae60fc4668cc8b3f187bdc7d23067f9e8e897ef75aff`
+
+Resource SHA-256 remains:
+
+`b52b3456e45f5bdeb4e97ecec2ddf188953f6cdade42aa33feaf58070433e803`
+
 ## 1.9.0 rc.3 — balanced clock and full-height album art
 
 - The clock is positioned from compiled glyph ink bounds, with a 96px visible

@@ -1,6 +1,6 @@
 # Two complications in the adaptive layout
 
-**Halftone 1.9.0 rc.3** uses the first two global complication choices in the
+**Halftone 1.9.0 rc.4** uses the first two global complication choices in the
 Pebble phone app. A complication is a source reading: a temperature, phone
 battery level, calendar time, condition or another plugin property. Clock and
 date remain native watch functions and do not consume a slot.
@@ -81,9 +81,10 @@ value; select a current scalar reading instead.
 
 These global-reading icons remain small; generic images fit inside their
 boxes without cropping. Music album art in the separate contextual panel is
-center-cropped to a square and scaled to match that block without stretching,
-while its incoming source bitmap
-is still capped at 24 pixels. Display sizes and the short halftone panel
+center-cropped to a square and scaled into a compact box without stretching.
+Notification icons share that box size and its slightly lowered placement.
+Incoming contextual source bitmaps remain capped at 24 pixels. Display sizes
+and the short halftone panel
 transition are described in [dynamic content](DYNAMIC-CONTENT.md).
 
 ## Sources, access and cache

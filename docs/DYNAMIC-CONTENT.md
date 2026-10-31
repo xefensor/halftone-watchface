@@ -1,6 +1,6 @@
 # Dynamic content
 
-Halftone 1.9.0 rc.3 uses one adaptive layout. Two large complications sit side
+Halftone 1.9.0 rc.4 uses one adaptive layout. Two large complications sit side
 by side below the clock and plain date. When music or a brief new-notification
 summary appears, both readings shrink into a compact horizontal row above it.
 Neither selected reading is replaced by contextual content.
@@ -29,13 +29,16 @@ Halftone does not add motion-based playback controls.
 **Show music while playing** defaults to on. Halftone subscribes to the phone's
 `music/track` source and reads title, artist, playing state and artwork. The
 built-in source is currently an Android feature. Incoming artwork is optional,
-static and capped at 24 pixels. The watch scales album art to match the height
-of the two-line music block: **40 pixels normally or 48 with Big text**. A
-single-line music panel uses **32-pixel** album art. This increases its displayed
-size without adding source-image detail. Rectangular music images are
-center-cropped to a square before scaling, so the art fills the block height
-without stretching. Generic complication images and notification icons fit
-inside their boxes without cropping; notification icons remain 24 pixels.
+static and capped at 24 pixels. Music artwork and notification icons use the
+same display box: **32 pixels normally or 40 with Big text** for a two-line
+panel, and **28 pixels** for a single-line panel. The box is centered beside
+the text and shifted down by **2 pixels**, leaving more space above it than
+the previous full-height music image. This changes display size without
+adding source-image detail.
+
+Rectangular music images are center-cropped to a square before scaling,
+preserving their proportions without stretching. Generic complication images
+and notification icons fit inside their boxes without cropping.
 Title and artist use two wide, left-aligned lines, with an inset based on the
 displayed artwork box plus a gap. When removing artwork allows the
 full title to fit, the artwork is omitted. If the

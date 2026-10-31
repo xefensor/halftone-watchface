@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.9.0 rc.4
+
+- Reduces the contextual artwork box to 32 pixels normally or 40 with Big text
+  for two-line panels; single-line panels use 28 pixels.
+- Applies the same box size and a 2-pixel downward offset to music artwork and
+  notification icons, leaving breathing room above them.
+- Keeps center-cropped, unstretched music images and contain-fit notification
+  icons; the displayed artwork still determines the title inset.
+- Preserves the source-artwork 24-pixel cap and the existing long-title
+  hide-art rule.
+- Leaves rc.3 clock fitting, both horizontal complications, dot geometry and
+  notification privacy behavior unchanged.
+
 ## 1.9.0 rc.3
 
 - Positions the clock using visible bounds measured from compiled font glyphs,

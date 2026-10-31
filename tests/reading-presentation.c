@@ -33,15 +33,20 @@ int main(void) {
   assert(reading_hide_artwork(150, 170, 30));
   assert(!reading_hide_artwork(130, 170, 30));
   assert(!reading_hide_artwork(180, 170, 30));
-  assert(reading_context_artwork_size(true,true,true,48)==48);
-  assert(reading_context_artwork_size(true,true,true,40)==40);
-  assert(reading_context_artwork_size(true,true,false,48)==32);
-  assert(reading_context_artwork_size(true,false,true,48)==24);
-  assert(reading_context_artwork_size(false,true,true,48)==24);
-  // The larger cover keeps short titles, while a title that fits only in the
+  // Music covers and notification icons share an inset box, lowered two
+  // pixels from center. Both two-line sizes end at screen y202.
+  assert(reading_context_artwork_size(true,48)==40);
+  assert(reading_context_artwork_size(true,40)==32);
+  assert(reading_context_artwork_size(false,48)==28);
+  assert(reading_context_artwork_size(false,40)==28);
+  assert(reading_context_artwork_y(48,40)==6);
+  assert(reading_context_artwork_y(40,32)==6);
+  assert(reading_context_artwork_y(48,28)==12);
+  assert(reading_context_artwork_y(40,28)==8);
+  // The inset cover keeps short titles, while a title that fits only in the
   // full row can still reclaim its width instead of shrinking unnecessarily.
-  assert(!reading_hide_artwork(80,170,54));
-  assert(reading_hide_artwork(130,170,54));
+  assert(!reading_hide_artwork(80,170,46));
+  assert(reading_hide_artwork(130,170,46));
   const ReadingCoverCrop landscape = reading_cover_crop(24,12);
   assert(landscape.x==6 && landscape.y==0 && landscape.size==12);
   const ReadingCoverCrop portrait = reading_cover_crop(12,24);

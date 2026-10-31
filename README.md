@@ -1,6 +1,6 @@
 # Halftone
 
-## Side-by-side release candidate — 1.9.0 rc.3
+## Side-by-side release candidate — 1.9.0 rc.4
 
 Halftone pairs a plain date and wide clock with two large readings side by
 side. When music or a new notification appears, both readings become smaller
@@ -8,9 +8,9 @@ and stay visible above the contextual panel. Its procedural black halftone
 border continues the PT2 bezel. Both readings also stay visible when Pebble
 opens Timeline Peek.
 
-Install [Halftone-1.9.0-rc.3.pbw](dist/Halftone-1.9.0-rc.3.pbw).
-[Source archive](dist/Halftone-1.9.0-rc.3-source.zip) and
-[prepared store package](dist/Halftone-1.9.0-rc.3-store-package.zip) are included.
+Install [Halftone-1.9.0-rc.4.pbw](dist/Halftone-1.9.0-rc.4.pbw).
+[Source archive](dist/Halftone-1.9.0-rc.4-source.zip) and
+[prepared store package](dist/Halftone-1.9.0-rc.4-store-package.zip) are included.
 This candidate is for sideloading with Pebble's plugin preview enabled. Pebble's
 [current plugin guide](https://developer.repebble.com/guides/plugins/) says not
 to publish apps using plugins to the public appstore yet. Public submission
@@ -101,14 +101,15 @@ the date and readings, while taller narrow times such as `1:05` retain their
 clearance. The clock fits to the available space above active context as well
 as to its width. Accented weekday letters retain extra clearance above the clock.
 
-Album art matches the height of the two-line music block: 40 pixels normally,
-or 48 with Big text. A single-line music panel uses 32-pixel art. These are
-upscaled presentations of source artwork capped at 24 pixels, not additional
-image detail. Rectangular music images are center-cropped to a square before
-scaling, preserving their proportions without stretching. Generic complication
-images and notification icons fit inside their boxes without cropping;
-notification icons stay at 24 pixels. Artwork remains optional
-and can be hidden to let a full music title fit.
+Music artwork and notification icons share a compact box beside the text:
+32 pixels normally or 40 with Big text for a two-line panel, and 28 pixels
+for a single line. Both sit 2 pixels below the panel's vertical center.
+Incoming source artwork remains capped at 24 pixels; scaling adds no image
+detail. Rectangular music images are center-cropped to a square without
+stretching. Generic complication images and notification icons fit inside
+their boxes without cropping. Music artwork remains optional and can be
+hidden to let a full title fit. This candidate changes artwork and icon
+presentation; the clock fitting from rc.3 is unchanged.
 
 Date margins and clock fitting keep text clear of the border. The compact
 date uses the full localized weekday and day/month, such as `SATURDAY · 31.10.`.
@@ -167,26 +168,26 @@ npm test
 pebble clean
 pebble build
 python3 scripts/package-beta.py
-python3 scripts/check-clock-fonts.py --pbw dist/Halftone-1.9.0-rc.3.pbw
+python3 scripts/check-clock-fonts.py --pbw dist/Halftone-1.9.0-rc.4.pbw
 ```
 
 The build includes message-key inputs and complete font definitions in SDK cache
 signatures, avoiding stale C/JavaScript keys or missing newly requested glyphs.
-The final step produces `dist/Halftone-1.9.0-rc.3.pbw` with manifest version 2 and verifies the existing
+The final step produces `dist/Halftone-1.9.0-rc.4.pbw` with manifest version 2 and verifies the existing
 UUID and unchanged SDK-built payloads. Halftone consumes plugin data; it does
 not install a plugin of its own or need a plugin-only SDK project.
 
 Install the packaged build in the Emery emulator:
 
 ```sh
-pebble install --emulator emery dist/Halftone-1.9.0-rc.3.pbw
+pebble install --emulator emery dist/Halftone-1.9.0-rc.4.pbw
 ```
 
 For a real PT2, enable Dev Connection in the Pebble phone app and use:
 
 ```sh
 pebble login
-pebble install --cloudpebble dist/Halftone-1.9.0-rc.3.pbw
+pebble install --cloudpebble dist/Halftone-1.9.0-rc.4.pbw
 ```
 
 See [version-specific validation and remaining device checks](docs/VALIDATION.md).

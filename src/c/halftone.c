@@ -772,8 +772,7 @@ static bool prv_context_bitmap_visible(const ComplicationSlot *title, ContextMod
     }
     const GSize full_title = graphics_text_layout_get_content_size(title->text, title_font,
         GRect(0, 0, 2048, 100), GTextOverflowModeFill, GTextAlignmentLeft);
-    const int artwork = reading_context_artwork_size(true,
-        (title->flags & COMPLICATION_FLAG_IMAGE) != 0, has_subtitle, bounds.size.h);
+    const int artwork = reading_context_artwork_size(has_subtitle, bounds.size.h);
     if (reading_hide_artwork(full_title.w, bounds.size.w - 2, artwork + 6)) { bitmap = false; }
   }
   return bitmap;
@@ -792,11 +791,10 @@ static void prv_draw_context(Layer *layer, GContext *ctx) {
   const int preferred = has_subtitle ? (s_large_text_enabled ? 24 : 20)
       : (s_large_text_enabled ? 28 : 24);
   const bool bitmap = prv_context_bitmap_visible(title, mode, bounds, has_subtitle);
-  const int artwork = reading_context_artwork_size(mode == CONTEXT_MUSIC,
-      (title->flags & COMPLICATION_FLAG_IMAGE) != 0, has_subtitle, bounds.size.h);
+  const int artwork = reading_context_artwork_size(has_subtitle, bounds.size.h);
   const int text_x = bitmap ? artwork + 6 : 0;
   if (bitmap) {
-    prv_draw_bitmap(ctx, title, 0, (bounds.size.h - artwork) / 2, artwork, false,
+    prv_draw_bitmap(ctx, title, 0, reading_context_artwork_y(bounds.size.h, artwork), artwork, false,
         mode == CONTEXT_MUSIC && (title->flags & COMPLICATION_FLAG_IMAGE) != 0);
   }
   if (has_subtitle) {

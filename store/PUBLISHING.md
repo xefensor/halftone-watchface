@@ -2,7 +2,7 @@
 
 ## Current status
 
-The files in this directory describe the 1.9.0 release candidate 3 build.
+The files in this directory describe the 1.9.0 release candidate 4 build.
 They replace the former 1.3.1 listing, which described a weather client that is
 no longer used.
 
@@ -20,8 +20,8 @@ phone/watch verification. Music and notification sources are currently Android
 features. Current build/emulator results and remaining device checks are in
 [validation](../docs/VALIDATION.md).
 
-The candidate bundle is `Halftone-1.9.0-rc.3-store-package.zip`. The PBW keeps
-the numeric SDK version **1.9.0**; `rc.3` identifies the test package, not a
+The candidate bundle is `Halftone-1.9.0-rc.4-store-package.zip`. The PBW keeps
+the numeric SDK version **1.9.0**; `rc.4` identifies the test package, not a
 separate native version. If another 1.9.0 is already in the dashboard, choose a
 new unused numeric version before uploading.
 
@@ -31,13 +31,14 @@ Timeline Peek keeps both selected readings in a compact horizontal row above
 Pebble's native panel. Halftone's own contextual panel yields while Peek is open.
 **Big text** enlarges the date, clock, readings and units, and contextual text,
 with fitting for longer content. The clock is centered using compiled glyph
-bounds and adapts to active context. Album art matches the two-line music
-block (40 pixels normally, 48 with Big text), using a source image capped at
-24 pixels. Rectangular music images are center-cropped to a square before
-scaling, preserving proportions without stretching. One-line music art uses
-32 pixels; generic complication images and 24-pixel notification icons fit
-inside their boxes without cropping. The title inset follows the displayed art, preserving the long-title
-hide-art rule. The halftone dots and rounded border are unchanged.
+bounds and adapts to active context. Music artwork and notification icons use
+matching boxes: 32 pixels normally or 40 with Big text for two lines, and
+28 pixels for one line, centered vertically then shifted down by 2 pixels.
+Incoming source artwork remains capped at 24 pixels. Rectangular music images
+are center-cropped to a square without stretching; generic complication images
+and notification icons fit inside their boxes without cropping. The title
+inset follows the displayed art, preserving the long-title hide-art rule.
+The clock fitting, halftone dots and rounded border are unchanged from rc.3.
 
 ## Listing fields
 
@@ -51,7 +52,7 @@ hide-art rule. The halftone dots and rounded border are unchanged.
 | UUID | `d4dd5046-53be-4624-99e8-46e0b377fe66` |
 | Description | [description.txt](description.txt) |
 | Release notes | [release-notes.txt](release-notes.txt) |
-| Binary | `Halftone-1.9.0-rc.3.pbw` |
+| Binary | `Halftone-1.9.0-rc.4.pbw` |
 | Website/source URL | https://github.com/xefensor/halftone-watchface |
 | Privacy information | https://github.com/xefensor/halftone-watchface/blob/main/store/PRIVACY.md |
 | Support | https://github.com/xefensor/halftone-watchface/issues |
@@ -120,9 +121,10 @@ Pebble mobile app, then check:
   and readings, fit its current space and stay still during dissolve frames.
 - Play, change, pause and stop music. Both readings must remain in the compact
   row above it. Test short/long titles, one/two-line music blocks and missing
-  artwork. Verify album art height matches the music block, notification icons
-  stay small, and long-title artwork hiding still works. Rectangular album
-  art should fill the square through a centered crop, without stretching;
+  artwork. Verify music artwork and notification icons use the same compact
+  box size and slightly lowered position, and long-title artwork hiding still
+  works. Rectangular album art should fill the square through a centered crop,
+  without stretching;
   generic reading images and notification icons must remain fully visible.
 - Opt into notification summaries. Verify existing notifications do not replay,
   app filtering works, body text stays hidden by default, and turning it off or
