@@ -278,5 +278,77 @@ int main(void) {
       true, true, true, guarded + 1, 0, "fi") && guarded[1] == '!');
   assert(!weather_details_format_column(bytes, sizeof(bytes), NOW,
       true, true, true, NULL, sizeof(text), "fi"));
+
+  // Production compact rows use high/low order and unlabelled percentages.
+  // Keep the original provided Fahrenheit pair rather than recalculating it.
+  sample(bytes);
+  put_i16(bytes + 14, -5);
+  put_i16(bytes + 16, 22);
+  put_i16(bytes + 18, 19);
+  put_i16(bytes + 20, 67);
+  assert(weather_details_format_range(bytes, sizeof(bytes), NOW, false,
+      text, sizeof(text)) && strcmp(text, "19/-5") == 0);
+  assert(weather_details_format_range(bytes, sizeof(bytes), NOW, true,
+      text, sizeof(text)) && strcmp(text, "67/22") == 0);
+  assert(weather_details_format_rain(bytes, sizeof(bytes), NOW,
+      text, sizeof(text)) && strcmp(text, "40%") == 0);
+  assert(weather_details_format_compact(bytes, sizeof(bytes), NOW,
+      true, true, false, text, sizeof(text)) && strcmp(text, "19/-5 · 40%") == 0);
+  assert(weather_details_format_compact_column(bytes, sizeof(bytes), NOW,
+      true, true, false, text, sizeof(text)) && strcmp(text, "19/-5\n40%") == 0);
+  assert(weather_details_format_compact_column(bytes, sizeof(bytes), NOW,
+      true, false, true, text, sizeof(text)) && strcmp(text, "67/22") == 0);
+  assert(weather_details_format_compact_column(bytes, sizeof(bytes), NOW,
+      false, true, false, text, sizeof(text)) && strcmp(text, "40%") == 0);
+  assert(!weather_details_format_compact_column(bytes, sizeof(bytes), NOW,
+      false, false, false, text, sizeof(text)) && text[0] == '\0');
+
+  // Zero temperatures and probabilities remain actual visible measurements.
+  memset(bytes + 14, 0, 9);
+  assert(weather_details_format_range(bytes, sizeof(bytes), NOW, false,
+      text, sizeof(text)) && strcmp(text, "0/0") == 0);
+  assert(weather_details_format_rain(bytes, sizeof(bytes), NOW,
+      text, sizeof(text)) && strcmp(text, "0%") == 0);
+  bytes[1] = WEATHER_DETAILS_RAIN;
+  assert(!weather_details_format_range(bytes, sizeof(bytes), NOW, false,
+      text, sizeof(text)) && text[0] == '\0');
+  assert(weather_details_format_compact_column(bytes, sizeof(bytes), NOW,
+      true, true, false, text, sizeof(text)) && strcmp(text, "0%") == 0);
+  bytes[1] = WEATHER_DETAILS_RANGE;
+  assert(!weather_details_format_rain(bytes, sizeof(bytes), NOW,
+      text, sizeof(text)) && text[0] == '\0');
+  assert(weather_details_format_compact_column(bytes, sizeof(bytes), NOW,
+      true, true, false, text, sizeof(text)) && strcmp(text, "0/0") == 0);
+
+  sample(bytes);
+  assert(!weather_details_format_range(bytes, sizeof(bytes), NOW + 5 * 3600,
+      false, text, sizeof(text)) && text[0] == '\0');
+  assert(!weather_details_format_rain(bytes, sizeof(bytes), NOW + 5 * 3600,
+      text, sizeof(text)) && text[0] == '\0');
+  assert(!weather_details_format_compact(bytes, sizeof(bytes), NOW + 5 * 3600,
+      true, true, false, text, sizeof(text)) && text[0] == '\0');
+  assert(!weather_details_format_range(NULL, sizeof(bytes), NOW, false,
+      text, sizeof(text)) && text[0] == '\0');
+  assert(!weather_details_format_rain(bytes, sizeof(bytes) - 1, NOW,
+      text, sizeof(text)) && text[0] == '\0');
+  assert(!weather_details_format_range(bytes, sizeof(bytes), NOW, false,
+      NULL, sizeof(text)));
+  assert(!weather_details_format_rain(bytes, sizeof(bytes), NOW,
+      NULL, sizeof(text)));
+  text[0] = '!';
+  assert(!weather_details_format_range(bytes, sizeof(bytes), NOW, false,
+      text, 0) && text[0] == '!');
+  assert(!weather_details_format_rain(bytes, sizeof(bytes), NOW,
+      text, 0) && text[0] == '!');
+  assert(!weather_details_format_range(bytes, sizeof(bytes), NOW, false,
+      text, 1) && text[0] == '\0');
+  assert(!weather_details_format_rain(bytes, sizeof(bytes), NOW,
+      text, 1) && text[0] == '\0');
+  assert(!weather_details_format_compact_column(bytes, sizeof(bytes), NOW,
+      true, true, false, text, 4) && text[0] == '\0');
+  assert(weather_details_format_rain(bytes, sizeof(bytes), NOW,
+      text, 4) && strcmp(text, "40%") == 0);
+  assert(weather_details_format_range(bytes, sizeof(bytes), NOW, false,
+      text, 4) && strcmp(text, "9/5") == 0);
   return 0;
 }

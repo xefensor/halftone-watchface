@@ -1,6 +1,58 @@
 # Halftone beta validation
 
-## 1.5.0 beta 5 — layout checks
+## 1.5.1 beta 6 — readability and condition checks
+
+This update uses high/low ranges such as `19/5` and a larger droplet with a
+precipitation percentage in all three styles. Comic cover's date is plain, and
+its large clock is lifted slightly so the tallest `11:11` font clears the icon.
+The optional current-condition icon defaults to on. Generic Pebble complication
+slots are not implemented in this build.
+
+- All **143 JavaScript tests** and **six standalone C test suites** pass. C checks
+  use C99 with `-Wall -Wextra -Werror`; JavaScript syntax and `git diff --check`
+  also pass.
+- Coverage includes high-first range order, original Celsius/Fahrenheit values,
+  negative temperatures, zero probability, missing fields, bounded buffers and
+  independent settings. The new ten-byte condition packet accepts only the
+  canonical current codes, retains its original shared-read confirmation and
+  hides unsupported, malformed, future or expired data.
+- Condition updates and clearing work independently of temperature availability.
+  Delivery tests cover held snapshots, source/location changes, compatibility
+  clearing and failed or superseded location-clear messages. A late callback
+  cannot acknowledge another location's pending invalidation.
+- All 17 language catalogs include the numeric range/droplet explanation and
+  condition-icon controls. Saved option IDs, values and user location names
+  remain unchanged.
+- A native Emery build succeeds with **SDK 4.33.1**: resources **85,006 bytes**,
+  RAM footprint **17,828 bytes**, free heap **113,244 bytes**. Permission packaging
+  verifies manifest version 2, the original UUID and byte-identical SDK-built
+  watch binary, resources and JavaScript.
+- Native emulator captures cover Classic, Comic cover and Stacked time with
+  both detail settings, each alone and neither; icon on/off and unknown/expired
+  conditions; Celsius/Fahrenheit, negative extremes, forecast markers, `0%` and
+  `100%`; normal/extra-large text, shadow/depth effects and custom text colors.
+  The six supported icon types were visually inspected.
+- Clock checks cover `11:11`, `23:59`, midnight, single-digit 12-hour time and a
+  later date/time. Comic's `11:11` icon overlap was caught during inspection and
+  corrected without shrinking the clock. Long Czech and Finnish dates were
+  checked in both column layouts.
+- Timeline Peek hides the icon and detail rows, then restores the selected
+  layout. Relaunching preserves the selected style and weather/icon data with
+  an exact before/after image match. Classic with icon and details disabled has
+  a zero-pixel difference from beta 5's corresponding baseline.
+
+Visual fixtures use the release watch binary/resources with an idle phone
+script so live callbacks cannot overwrite them. The Czech/Finnish previews are
+explicit locale-only source derivatives; the released app uses the watch's real
+system locale and clock. Peek uses the emulator's debug overlay. These checks
+do not claim physical phone/watch testing or live provider/Weather-app parity.
+The on-device checks in `PLUGIN-WEATHER.md` still apply.
+
+Permission-packaged PBW SHA-256:
+
+`f82adb705091a0c058282d60982d8a66cb5ea32062ae88f90952d1898ced36e1`
+
+## 1.5.0 beta 5 — historical layout checks
 
 This update adds Comic cover and Stacked time beside the existing Classic layout.
 Classic remains the default for upgrades and new installations. The layout

@@ -115,8 +115,18 @@ module.exports = [
         "label": "Show today's rain / snow chance"
       },
       {
+        "type": "toggle",
+        "messageKey": "SHOW_WEATHER_ICON",
+        "defaultValue": true,
+        "label": "Show weather icon"
+      },
+      {
         "type": "text",
-        "defaultValue": "Uses Pebble's shared weather. L/H show today's low/high; P shows precipitation probability. Missing data stays hidden. Details hide while Timeline Peek is visible."
+        "defaultValue": "Shows the condition supplied by Pebble. Hidden when unavailable."
+      },
+      {
+        "type": "text",
+        "defaultValue": "High/low is shown as 19/5. The droplet shows today's rain or snow chance. Missing data stays hidden. Details hide during Timeline Peek."
       }
     ]
   },

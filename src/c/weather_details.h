@@ -191,6 +191,81 @@ static inline bool weather_details_format_column(
   return true;
 }
 
+// Language-neutral compact helpers keep the high first, matching the familiar
+// forecast notation. The independent rows are also used by larger UI fonts.
+static inline bool weather_details_format_range(
+    const uint8_t *bytes, size_t length, time_t now, bool fahrenheit,
+    char *buffer, size_t capacity) {
+  if (buffer == NULL || capacity == 0) { return false; }
+  buffer[0] = '\0';
+  WeatherDetails value;
+  if (!weather_details_read(bytes, length, now, &value) ||
+      !(value.flags & WEATHER_DETAILS_RANGE)) { return false; }
+  const int high = fahrenheit ? value.high_fahrenheit : value.high_celsius;
+  const int low = fahrenheit ? value.low_fahrenheit : value.low_celsius;
+  const int written = snprintf(buffer, capacity, "%d/%d", high, low);
+  if (written <= 0 || (size_t)written >= capacity) {
+    buffer[0] = '\0';
+    return false;
+  }
+  return true;
+}
+
+static inline bool weather_details_format_rain(
+    const uint8_t *bytes, size_t length, time_t now, char *buffer,
+    size_t capacity) {
+  if (buffer == NULL || capacity == 0) { return false; }
+  buffer[0] = '\0';
+  WeatherDetails value;
+  if (!weather_details_read(bytes, length, now, &value) ||
+      !(value.flags & WEATHER_DETAILS_RAIN)) { return false; }
+  const int written = snprintf(buffer, capacity, "%u%%", value.rain_percent);
+  if (written <= 0 || (size_t)written >= capacity) {
+    buffer[0] = '\0';
+    return false;
+  }
+  return true;
+}
+
+static inline bool weather_details_format_compact_separated(
+    const uint8_t *bytes, size_t length, time_t now, bool show_range,
+    bool show_rain, bool fahrenheit, char *buffer, size_t capacity,
+    const char *separator) {
+  if (buffer == NULL || capacity == 0) { return false; }
+  buffer[0] = '\0';
+  char range[24];
+  char rain[8];
+  const bool has_range = show_range && weather_details_format_range(
+      bytes, length, now, fahrenheit, range, sizeof(range));
+  const bool has_rain = show_rain && weather_details_format_rain(
+      bytes, length, now, rain, sizeof(rain));
+  int written = 0;
+  if (has_range && has_rain) {
+    written = snprintf(buffer, capacity, "%s%s%s", range, separator, rain);
+  } else if (has_range || has_rain) {
+    written = snprintf(buffer, capacity, "%s", has_range ? range : rain);
+  }
+  if (written <= 0 || (size_t)written >= capacity) {
+    buffer[0] = '\0';
+    return false;
+  }
+  return true;
+}
+
+static inline bool weather_details_format_compact(
+    const uint8_t *bytes, size_t length, time_t now, bool show_range,
+    bool show_rain, bool fahrenheit, char *buffer, size_t capacity) {
+  return weather_details_format_compact_separated(bytes, length, now,
+      show_range, show_rain, fahrenheit, buffer, capacity, " · ");
+}
+
+static inline bool weather_details_format_compact_column(
+    const uint8_t *bytes, size_t length, time_t now, bool show_range,
+    bool show_rain, bool fahrenheit, char *buffer, size_t capacity) {
+  return weather_details_format_compact_separated(bytes, length, now,
+      show_range, show_rain, fahrenheit, buffer, capacity, "\n");
+}
+
 static inline bool weather_details_format(const uint8_t *bytes, size_t length,
                                           time_t now, bool show_range,
                                           bool show_rain, bool fahrenheit,

@@ -15,7 +15,8 @@ typedef struct {
 } WatchLayoutRect;
 
 typedef struct {
-  WatchLayoutRect date, time, minutes, temperature, details, caption;
+  WatchLayoutRect date, time, minutes, temperature, details, rain, icon;
+  int16_t droplet_x, droplet_y;
   int16_t divider_x, divider_top, divider_bottom;
 } WatchLayoutGeometry;
 
@@ -30,31 +31,53 @@ static inline WatchLayoutStyle watch_layout_effective(int value, int height) {
   return height >= 215 ? watch_layout_sanitize(value) : WATCH_LAYOUT_CLASSIC;
 }
 
+// Groups use bit1 for a range and bit0 for precipitation. Keeping each metric
+// in its own box lets normal values use large fonts without forcing the other
+// metric to shrink, and an absent group leaves no empty row.
 static inline WatchLayoutGeometry watch_layout_geometry(WatchLayoutStyle style,
-                                                        int rows, bool large) {
+    int groups, bool large, bool icon) {
   WatchLayoutGeometry result = {0};
-  if (rows < 0) { rows = 0; }
-  if (rows > 3) { rows = 3; }
+  groups &= 3;
+  const bool range = (groups & 2) != 0;
+  const bool rain = (groups & 1) != 0;
+  result.details = range ? (WatchLayoutRect){18, 180, rain ? 90 : 164, 32}
+                         : (WatchLayoutRect){0};
+  result.rain = rain ? (WatchLayoutRect){range ? 128 : 77, 180, range ? 57 : 60, 32}
+                     : (WatchLayoutRect){0};
+  result.droplet_x = range ? 115 : 63;
+  result.droplet_y = 190;
   if (style == WATCH_LAYOUT_COMIC_COVER) {
-    result.date = (WatchLayoutRect){25, 24, 150, 30};
-    result.caption = (WatchLayoutRect){23, 27, 154, 27};
-    result.time = (WatchLayoutRect){0, large ? 43 : 50, 200, 112};
-    result.temperature = rows ? (WatchLayoutRect){20, 151, 87, 57}
-                              : (WatchLayoutRect){20, 151, 160, 57};
-    result.details = (WatchLayoutRect){122, rows == 1 ? 166 : rows == 2 ? 158 : 150,
-                                      58, 63};
-    if (rows) {
-      result.divider_x = 112;
-      result.divider_top = 158;
-      result.divider_bottom = 203;
+    result.date = (WatchLayoutRect){8, 24, 184, 32};
+    // Narrow times can use the tallest font; leave room for its bottom ink
+    // above the optional condition icon without shrinking the clock.
+    result.time = (WatchLayoutRect){0, large ? 35 : 50, 200, 112};
+    result.temperature = (WatchLayoutRect){20, icon ? 159 : 151,
+                                          groups ? 84 : 160, icon ? 49 : 57};
+    if (icon) { result.icon = (WatchLayoutRect){groups ? 50 : 88, 140, 24, 24}; }
+    result.details = range ? (WatchLayoutRect){113, rain ? 148 : 164, 72, 32}
+                           : (WatchLayoutRect){0};
+    result.rain = rain ? (WatchLayoutRect){128, range ? 180 : 164, 57, 30}
+                       : (WatchLayoutRect){0};
+    result.droplet_x = 114;
+    result.droplet_y = range ? 190 : 176;
+    if (groups) {
+      result.divider_x = 108;
+      result.divider_top = 157;
+      result.divider_bottom = 204;
     }
   } else if (style == WATCH_LAYOUT_STACKED) {
-    result.date = (WatchLayoutRect){20, 24, 160, 30};
+    result.date = (WatchLayoutRect){8, 24, 184, 32};
     result.time = (WatchLayoutRect){7, 35, 96, 98};
     result.minutes = (WatchLayoutRect){7, 111, 96, 98};
-    result.temperature = (WatchLayoutRect){113, rows ? 69 : 112, 72, 50};
-    result.details = (WatchLayoutRect){113, rows == 1 ? 145 : rows == 2 ? 136 : 128,
-                                      72, 65};
+    result.temperature = (WatchLayoutRect){113, groups ? (icon ? 82 : 69) :
+                                          (icon ? 125 : 112), 72, 50};
+    if (icon) { result.icon = (WatchLayoutRect){137, groups ? 55 : 97, 24, 24}; }
+    result.details = range ? (WatchLayoutRect){113, rain ? 135 : 152, 72, 32}
+                           : (WatchLayoutRect){0};
+    result.rain = rain ? (WatchLayoutRect){128, range ? 169 : 150, 57, 32}
+                       : (WatchLayoutRect){0};
+    result.droplet_x = 114;
+    result.droplet_y = range ? 180 : 161;
     result.divider_x = 107;
     result.divider_top = 63;
     result.divider_bottom = 201;

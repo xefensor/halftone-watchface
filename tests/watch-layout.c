@@ -17,29 +17,49 @@ int main(void) {
     assert(watch_layout_effective(style, 215) == (WatchLayoutStyle)style);
     assert(watch_layout_effective(style, 228) == (WatchLayoutStyle)style);
   }
-  for (int rows = 0; rows <= 3; ++rows) {
-    WatchLayoutGeometry cover = watch_layout_geometry(WATCH_LAYOUT_COMIC_COVER, rows, true);
-    assert(cover.caption.x >= 23 && cover.caption.x + cover.caption.width <= 177);
-    assert(cover.time.width == 200); // Detail toggles keep the clock anchored.
-    assert(cover.time.y == 43);
-    if (rows) {
-      assert(cover.temperature.x + cover.temperature.width < cover.divider_x);
-      assert(cover.divider_x < cover.details.x);
-    } else {
-      assert(cover.temperature.x + cover.temperature.width / 2 == 100);
-      assert(cover.divider_x == 0);
+  for (int groups = 0; groups <= 3; ++groups) {
+    const bool range = (groups & 2) != 0;
+    const bool rain = (groups & 1) != 0;
+    for (int icon = 0; icon <= 1; ++icon) {
+      WatchLayoutGeometry cover = watch_layout_geometry(WATCH_LAYOUT_COMIC_COVER,
+                                                        groups, true, icon);
+      assert(cover.date.x == 8 && cover.date.width == 184); // Full plain weekday.
+      assert(cover.time.width == 200 && cover.time.y == 35);
+      assert(cover.details.width == (range ? 72 : 0));
+      assert(cover.rain.width == (rain ? 57 : 0));
+      if (groups) {
+        assert(cover.temperature.x + cover.temperature.width < cover.divider_x);
+        assert(cover.divider_x < 113);
+      } else {
+        assert(cover.temperature.x + cover.temperature.width / 2 == 100);
+        assert(cover.divider_x == 0);
+      }
+      assert(cover.icon.width == (icon ? 24 : 0));
+      if (icon) { assert(cover.icon.y + cover.icon.height <= cover.temperature.y + 10); }
+      WatchLayoutGeometry stacked = watch_layout_geometry(WATCH_LAYOUT_STACKED,
+                                                          groups, false, icon);
+      assert(stacked.time.x >= 0);
+      assert(stacked.time.x + stacked.time.width < stacked.divider_x);
+      assert(stacked.minutes.x + stacked.minutes.width < stacked.divider_x);
+      assert(stacked.divider_x < stacked.temperature.x);
+      assert(stacked.temperature.width == 72);
+      assert(stacked.temperature.x + stacked.temperature.width <= 185);
+      assert(stacked.details.width == (range ? 72 : 0));
+      assert(stacked.rain.width == (rain ? 57 : 0));
+      assert(stacked.minutes.y == 111); // Optional weather never shifts clock.
+      assert(stacked.icon.width == (icon ? 24 : 0));
+      if (range && rain) {
+        assert(stacked.details.y + stacked.details.height <= stacked.rain.y);
+      }
+      WatchLayoutGeometry classic = watch_layout_geometry(WATCH_LAYOUT_CLASSIC,
+                                                          groups, false, icon);
+      assert(classic.details.width == (range ? (rain ? 90 : 164) : 0));
+      assert(classic.rain.width == (rain ? (range ? 57 : 60) : 0));
+      if (range && rain) {
+        assert(classic.details.x + classic.details.width < classic.droplet_x);
+        assert(classic.droplet_x + 9 < classic.rain.x);
+      }
     }
-    WatchLayoutGeometry stacked = watch_layout_geometry(WATCH_LAYOUT_STACKED, rows, false);
-    assert(stacked.time.x >= 0);
-    assert(stacked.time.x + stacked.time.width < stacked.divider_x);
-    assert(stacked.minutes.x + stacked.minutes.width < stacked.divider_x);
-    assert(stacked.divider_x < stacked.temperature.x);
-    assert(stacked.temperature.width >= 72);
-    assert(stacked.temperature.x + stacked.temperature.width <= 185);
-    assert(stacked.details.x == stacked.temperature.x);
-    assert(stacked.details.width == stacked.temperature.width);
-    assert(stacked.minutes.y == 111);
-    assert(stacked.temperature.y == (rows ? 69 : 112));
   }
   char hours[3], minutes[3];
   const struct { const char *time, *hours, *minutes; } times[] = {

@@ -2,6 +2,7 @@
 // change providers on a transient error or permission denial.
 var packForecast = require('./forecast');
 var packDetails = require('./weather-details').packDetails;
+var packCondition = require('./condition').packCondition;
 var WEATHER = '00000000-0000-0000-0001-000000000002';
 var PREFERENCES = '00000000-0000-0000-0001-000000000009';
 var CACHE_KEY = 'halftone-shared-weather-v1';
@@ -38,6 +39,7 @@ module.exports = function(options) {
   var lastIdentity = null;
   var pending = null;
   var sending = false;
+  var clearRequired = false;
   var deliveryTimer = null;
   var deliveryGeneration = 0;
   var rememberedSamples = null;
@@ -77,6 +79,7 @@ module.exports = function(options) {
         done = true;
         options.cancelLater(deliveryTimer);
         deliveryTimer = null;
+        if (ok && payload[options.keys.WEATHER_CLEAR]) { clearRequired = false; }
         if (!ok && !pending && n < 3) {
           deliveryTimer = options.later(function() { attempt(n + 1); }, n * 1000);
           return;
@@ -91,12 +94,20 @@ module.exports = function(options) {
     }
     attempt(1);
   }
-  function send(payload) { pending = payload; pump(); }
+  function send(payload) {
+    // A partial update may supersede an in-flight or retrying location clear.
+    // Keep that invalidation until a matching-generation delivery succeeds.
+    if (clearRequired) { payload[options.keys.WEATHER_CLEAR] = 1; }
+    pending = payload;
+    pump();
+  }
   function clearWeather() {
     cancelDelivery();
+    clearRequired = true;
     var payload = {};
     payload[options.keys.WEATHER_CLEAR] = 1;
     payload[options.keys.WEATHER_DETAILS] = [];
+    payload[options.keys.WEATHER_CONDITION] = [];
     send(payload);
   }
   function unsubscribe() {
@@ -216,7 +227,22 @@ module.exports = function(options) {
     var p = selected.properties || {};
     var numeric = number(p.temperature);
     var temp = numeric && temperature(numeric.value, numeric.unit);
-    if (!temp) { return; }
+    if (!temp) {
+      // Condition availability is independent of temperature. In particular,
+      // an unknown condition must clear the old icon even when this snapshot
+      // has no usable temperature; leave the existing temperature cache alone.
+      var conditionOnly = {};
+      // Do not discard an already queued location replacement while an older
+      // delivery is in flight. Its clear flag and same-place cached reading
+      // still need to reach the watch together.
+      if (pending) {
+        Object.keys(pending).forEach(function(key) { conditionOnly[key] = pending[key]; });
+      }
+      conditionOnly[options.keys.WEATHER_CONDITION] = packCondition(p,
+        Math.floor(options.now() / 1000), confirmedAt, snapshot.validUntilMs);
+      send(conditionOnly);
+      return;
+    }
     var series = p.hourly_temperature && p.hourly_temperature.series;
     var hours = series && series.numericValue;
     var times = [];
@@ -260,6 +286,7 @@ module.exports = function(options) {
     payload[options.keys.WEATHER_CLEAR] = 1;
     payload[options.keys.FORECAST_DATA] = bytes;
     payload[options.keys.WEATHER_DETAILS] = packDetails(p, now, confirmedAt, snapshot.validUntilMs);
+    payload[options.keys.WEATHER_CONDITION] = packCondition(p, now, confirmedAt, snapshot.validUntilMs);
     var expires = confirmedAt + 2 * HOUR;
     if (finite(snapshot.validUntilMs)) { expires = Math.min(expires, Math.floor(snapshot.validUntilMs / 1000)); }
     if (confirmedAt > 0 && now <= expires) {
@@ -351,7 +378,7 @@ module.exports = function(options) {
       // receives the native source's initial database snapshot, then ends.
       var subscription = options.pebble.subscribeToSource({
         plugin: WEATHER, category: 'weather', item: 'location',
-        properties: ['name', 'temperature', 'hourly_temperature', 'high', 'low', 'precipitation',
+        properties: ['name', 'temperature', 'condition_code', 'hourly_temperature', 'high', 'low', 'precipitation',
           'daily_high', 'daily_low', 'daily_precipitation', 'utc_offset'],
         onData: function(envelope) {
         if (!envelope || envelope.pluginUuid !== WEATHER) { finish(null, {code: 'INVALID_SOURCE'}); }
@@ -388,7 +415,7 @@ module.exports = function(options) {
     try {
       if (!track({
         plugin: WEATHER, category: 'weather', item: 'location',
-        properties: ['name', 'temperature', 'hourly_temperature', 'high', 'low', 'precipitation',
+        properties: ['name', 'temperature', 'condition_code', 'hourly_temperature', 'high', 'low', 'precipitation',
           'daily_high', 'daily_low', 'daily_precipitation', 'utc_offset'],
         onData: function(envelope) {
           if (generation !== serial || !envelope || envelope.pluginUuid !== WEATHER) { return; }

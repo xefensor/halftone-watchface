@@ -54,9 +54,10 @@ var weather = createSharedWeather({
       keys: MessageKeys, geolocation: navigator.geolocation, XMLHttpRequest: XMLHttpRequest,
       send: function(payload, success, failure) {
         if (weather.isLegacy()) {
-          // Compatibility weather has no shared daily details. Clear any
+          // Compatibility weather has no shared daily details or condition. Clear any
           // persisted values from the previous provider in the same update.
           payload[MessageKeys.WEATHER_DETAILS] = [];
+          payload[MessageKeys.WEATHER_CONDITION] = [];
           send(payload, success, failure);
         }
         else if (failure) { failure(); }
@@ -102,7 +103,7 @@ Pebble.addEventListener('showConfiguration', function() {
             ? t(errors[status.error]) + ' (' + status.error + ')'
             : t('sourceError', {error: status.error});
         }
-        item.defaultValue = 'Halftone 1.5.0 beta 5. ' +
+        item.defaultValue = 'Halftone 1.5.1 beta 6. ' +
           t(status.source === 'shared' ? 'sharedSource' : 'legacySource') +
           (status.location ? ' · ' + status.location : '') +
           (status.temperature ? ' · ' + t('received', {temperature: status.temperature}) : '') +

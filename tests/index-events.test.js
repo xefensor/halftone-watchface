@@ -22,7 +22,7 @@ function fixture(settings = {}, locales = {}) {
     REQUEST_WEATHER: 10001, TEXT_COLOR: 10003, USE_FAHRENHEIT: 10008,
     FOLLOW_PEBBLE_UNITS: 10012, WEATHER_LOCATION: 10013,
     SHOW_DAILY_RANGE: 10015, SHOW_RAIN_CHANCE: 10016, WEATHER_DETAILS: 10017,
-    LAYOUT_STYLE: 10018
+    LAYOUT_STYLE: 10018, SHOW_WEATHER_ICON: 10019, WEATHER_CONDITION: 10020
   };
   const storage = {
     getItem: () => saved,
@@ -271,6 +271,20 @@ test('Layout selections reach the watch as integers while retaining the saved ch
   }
 });
 
+test('The condition icon setting retains explicit off choices independently of weather details', () => {
+  const f = fixture();
+  for (const value of [false, true]) {
+    f.handlers.webviewclosed({response: JSON.stringify({
+      SHOW_WEATHER_ICON: {value}, SHOW_DAILY_RANGE: {value: true}, SHOW_RAIN_CHANCE: {value: false}
+    })});
+    const payload = f.deliveries.at(-1);
+    assert.equal(payload[f.keys.SHOW_WEATHER_ICON], Number(value));
+    assert.equal(payload[f.keys.SHOW_DAILY_RANGE], 1);
+    assert.equal(payload[f.keys.SHOW_RAIN_CHANCE], 0);
+    assert.equal(f.settings().SHOW_WEATHER_ICON, value);
+  }
+});
+
 test('Invalid layout values cannot replace the watch layout or block unrelated settings', () => {
   const f = fixture({LAYOUT_STYLE: '2'});
   for (const value of [-1, 3, 1.5, null, '', '01', 'Classic', {}, []]) {
@@ -293,4 +307,6 @@ test('Late legacy deliveries are gated after switching to shared weather', () =>
   assert.equal(f.deliveries.length, 1);
   assert.deepEqual(Array.from(f.deliveries[0][f.keys.WEATHER_DETAILS]), [],
     'A compatibility reading clears daily details from the previous shared provider');
+  assert.deepEqual(Array.from(f.deliveries[0][f.keys.WEATHER_CONDITION]), [],
+    'A compatibility reading clears the condition icon from the previous shared provider');
 });

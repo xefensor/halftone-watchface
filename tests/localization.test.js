@@ -123,16 +123,51 @@ test('Saved location names are never translated even when they match an English 
   assert.equal(result[0].defaultValue,'city-1');
 });
 
-test('Weather help explains the exact localized low/high and precipitation labels used on the watch',()=>{
-  const labels={en:['L/H','P'],cs:['min/max','S'],sk:['min/max','Z'],de:['min/max','N'],fr:['min/max','P'],
-    es:['min/max','P'],it:['min/max','P'],pt:['min/max','P'],nl:['min/max','N'],pl:['min/max','O'],
-    da:['min/maks','N'],sv:['min/max','N'],no:['min/maks','N'],fi:['alin/ylin','S'],hu:['min/max','Cs'],
-    ro:['min/max','P'],tr:['min/maks','Y']};
-  for(const [language,[range,precipitation]] of Object.entries(labels)) {
+test('Weather help explains the numeric high-first range and droplet without obsolete letter labels',()=>{
+  const meaning={en:['droplet','rain','snow'],cs:['Kapka','deště','sněhu'],sk:['Kvapka','dažďa','snehu'],
+    de:['Tropfen','Regen','Schnee'],fr:['goutte','pluie','neige'],es:['gota','lluvia','nieve'],
+    it:['goccia','pioggia','neve'],pt:['gota','chuva','neve'],nl:['druppel','regen','sneeuw'],
+    pl:['Kropla','deszczu','śniegu'],da:['Dråben','regn','sne'],sv:['Droppen','regn','snö'],
+    no:['Dråpen','regn','snø'],fi:['Pisara','sateen','lumisateen'],hu:['csepp','eső','havazás'],
+    ro:['Picătura','ploaie','ninsoare'],tr:['Damla','yağmur','kar']};
+  for(const [language,words] of Object.entries(meaning)) {
     const help=localization.t('detailsHelp',language);
-    assert.ok(help.includes(range),language+' wrong range labels');
-    assert.ok(new RegExp('(?:^|[^A-Za-z])'+precipitation+'(?:[^A-Za-z]|$)').test(help),language+' wrong precipitation label');
+    assert.ok(help.includes('19/5'),language+' must show the actual high/low format');
+    assert.ok(help.includes('Timeline Peek'),language+' must explain when details hide');
+    assert.ok(!/L\/H|min\/max|min\/maks|alin\/ylin/.test(help),language+' still describes removed letter labels');
+    for(const word of words) assert.ok(help.includes(word),language+' missing '+word+' explanation');
   }
+  assert.equal(localization.t('detailsHelp','en'),
+    "High/low is shown as 19/5. The droplet shows today's rain or snow chance. Missing data stays hidden. Details hide during Timeline Peek.");
+});
+
+test('Weather icon settings translate all languages without changing saved toggle or location data',()=>{
+  const iconHelp='Shows the condition supplied by Pebble. Hidden when unavailable.';
+  const settings=[{type:'section',items:[
+    {type:'toggle',messageKey:'SHOW_WEATHER_ICON',id:'weather-icon',defaultValue:false,label:'Show weather icon'},
+    {type:'text',defaultValue:iconHelp},
+    {type:'select',messageKey:'WEATHER_LOCATION',defaultValue:'city',label:'Weather location',options:[
+      {label:'České Budějovice',value:'city'}
+    ]}
+  ]}];
+  for(const language of localization.languages) {
+    const translated=localization.translateConfig(settings,language);
+    const [toggle,help,location]=translated[0].items;
+    assert.equal(toggle.label,localization.t('showWeatherIcon',language));
+    assert.equal(help.defaultValue,localization.t('weatherIconHelp',language));
+    assert.ok(help.defaultValue.includes('Pebble'),language+' must identify the real condition source');
+    assert.equal(toggle.messageKey,'SHOW_WEATHER_ICON');
+    assert.equal(toggle.id,'weather-icon');
+    assert.equal(toggle.defaultValue,false);
+    assert.equal(location.defaultValue,'city');
+    assert.deepEqual(location.options,[{label:'České Budějovice',value:'city'}]);
+    if(language!=='en') {
+      assert.notEqual(toggle.label,'Show weather icon');
+      assert.notEqual(help.defaultValue,iconHelp);
+    }
+  }
+  assert.deepEqual(localization.translateConfig(settings,'unknown'),settings);
+  assert.equal(settings[0].items[0].label,'Show weather icon');
 });
 
 test('All layout controls and guidance translate without changing the stored layout values',()=>{

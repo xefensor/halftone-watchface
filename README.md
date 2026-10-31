@@ -1,10 +1,12 @@
 # Halftone
 
-## Layouts and shared weather beta — 1.5.0 beta 5
+## Layouts and shared weather beta — 1.5.1 beta 6
 
-Beta 5 adds **Comic cover** and **Stacked time** layouts alongside the existing
-**Classic** layout. Classic remains the default for both existing users and new
-installs. To try a new layout, open Halftone's settings in the Pebble phone app,
+Beta 6 improves readability in **Classic**, **Comic cover** and **Stacked time**:
+today's range reads high/low, precipitation uses a large droplet and percentage,
+and an optional icon shows the current condition supplied by Pebble. Comic cover
+now uses a plain date instead of a black badge. Classic remains the default for
+both existing users and new installs. To try a new layout, open Halftone's settings in the Pebble phone app,
 choose it under **Layout style** and save. The choice survives reopening the
 watchface.
 
@@ -13,22 +15,23 @@ six-hour offline forecast cache, and supports saved-location selection and
 **Follow Pebble** temperature units. Existing explicit unit choices are retained.
 Older apps and disabled plugin preview retain the compatibility weather client.
 
-Install [Halftone-1.5.0-beta.5.pbw](dist/Halftone-1.5.0-beta.5.pbw).
-Source: [Halftone-1.5.0-beta.5-source.zip](dist/Halftone-1.5.0-beta.5-source.zip).
+Install [Halftone-1.5.1-beta.6.pbw](dist/Halftone-1.5.1-beta.6.pbw).
+Source: [Halftone-1.5.1-beta.6-source.zip](dist/Halftone-1.5.1-beta.6-source.zip).
 Halftone's phone settings and weather status messages support
 the same 17 languages as the watchface. Settings follow the active watch's
 language when available, then the phone's language, with English as the fallback.
-The watch's weather-detail labels follow its system language. Existing settings
-and their saved values are preserved.
+The watch's weekday follows its system language. Weather details use the same
+high/low and droplet format across languages. Existing settings and their saved
+values are preserved.
 
 The optional **Show today's low and high** and **Show today's rain / snow
 chance** settings both default to off. When enabled and supplied by shared
-Pebble weather, Classic shows them in a small line below the temperature, such as
-`L5° H9° · P40%` in English. The prefixes are localized. The line hides while
-Timeline Peek is visible. The new layouts also respect these independent
-settings and hide missing values; a supplied zero probability is valid and
-displays as `P0%` in English.
-These details make no extra weather HTTP requests.
+Pebble weather, all three styles show a range such as `19/5` (high then low)
+and a droplet beside `40%`. These options are independent, hide missing values
+and hide during Timeline Peek. A supplied zero probability is valid and
+displays as `0%`. **Show weather icon** defaults to on; missing, unknown or
+expired conditions stay hidden. These details make no extra weather HTTP
+requests.
 
 The beta also corrects unit preference handling and tracks forecast age by its
 absolute UTC hour, so a moving forecast window cannot renew old cached hours.
@@ -54,6 +57,7 @@ Halftone displays:
 - automatically localized day name and numeric date
 - current temperature in Celsius or Fahrenheit
 - optional shared-weather daily high/low and rain/snow probability
+- an optional current-condition icon from shared Pebble weather
 - a black-to-orange halftone transition drawn directly from the screen edge
 - an adaptive Timeline Peek layout for upcoming events
 - optional recessed-dot and floating-text optical effects
@@ -69,7 +73,7 @@ You can also build the source yourself as described below.
 
 ## How it works
 
-The following describes the compatibility weather client. The 1.5.0 beta uses
+The following describes the compatibility weather client. The 1.5.1 beta uses
 shared Pebble weather when available; see the beta setup guide above.
 
 The watch-side C app draws the interface and updates the clock once per minute.
@@ -126,7 +130,7 @@ change also requests the provider's native value for that unit, avoiding a
 second rounding step. The fallback converts its unrounded Celsius reading to
 Fahrenheit before rounding.
 
-The weekday and watch weather labels automatically follow the PebbleOS language.
+The weekday automatically follows the PebbleOS language.
 Halftone includes
 English, Czech, Slovak, German, French, Spanish, Italian, Portuguese, Dutch,
 Polish, Danish, Swedish, Norwegian, Finnish, Hungarian, Romanian and Turkish;
@@ -188,7 +192,7 @@ See `store/PUBLISHING.md` for the upload checklist.
 ## Customize the design
 
 The **Layout style** setting offers Classic, Comic cover and Stacked time. Classic
-keeps the existing design and is the default; installing the beta does not
+keeps the original arrangement and is the default; installing the beta does not
 automatically select a new style.
 
 | Style | Arrangement |
@@ -201,11 +205,12 @@ The clock and date remain live in every style, including the 12-hour and
 24-hour options. Changing style preserves
 the saved weather options. Missing or disabled optional weather details remain
 hidden, and column layouts recenter the remaining values.
-Comic cover's black date badge uses white caption text for contrast; other
-text follows the saved text color.
-Long weekday/date combinations shorten the weekday only when needed to fit.
+All three styles use the chosen text color; Comic cover's date is now unboxed.
+Long weekday/date combinations use smaller date fonts when needed to fit.
 Stacked time fits both clock rows to the same size and gives weather a wider
 column, with fitted temperature fonts for signs, forecast markers and units.
+The condition icon and droplet are drawn in the selected text color. The
+condition icon has its own **Show weather icon** toggle, enabled by default.
 
 The main visual parameters are near the top of `src/c/halftone.c`:
 
@@ -249,6 +254,8 @@ cc -std=c99 -Wall -Wextra -Werror tests/weather-display.c -o /tmp/halftone-displ
 /tmp/halftone-display-test
 cc -std=c99 -Wall -Wextra -Werror tests/weather-details.c -o /tmp/halftone-details-test
 /tmp/halftone-details-test
+cc -std=c99 -Wall -Wextra -Werror tests/weather-icon.c -o /tmp/halftone-icon-test
+/tmp/halftone-icon-test
 cc -std=c99 -Wall -Wextra -Werror tests/watch-layout.c -o /tmp/halftone-layout-test
 /tmp/halftone-layout-test
 ```

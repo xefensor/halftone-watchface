@@ -7,7 +7,7 @@ const PREFS = '00000000-0000-0000-0001-000000000009';
 const KEYS = {
   TEMPERATURE: 10000, USE_FAHRENHEIT: 10008,
   TEMPERATURE_FAHRENHEIT: 10009, WEATHER_UPDATED_AT: 10010,
-  FORECAST_DATA: 10011, WEATHER_CLEAR: 10014, WEATHER_DETAILS:10015
+  FORECAST_DATA: 10011, WEATHER_CLEAR: 10014, WEATHER_DETAILS:10015, WEATHER_CONDITION:10020
 };
 const MIDNIGHT = 1791849600;
 const NOW = (MIDNIGHT + 12 * 3600 + 900) * 1000;
@@ -130,6 +130,7 @@ test('Shared weather pins the built-in source and requests only weather values',
   assert.equal(request.item, 'location');
   assert.ok(request.properties.includes('temperature'));
   assert.ok(request.properties.includes('hourly_temperature'));
+  assert.ok(request.properties.includes('condition_code'));
   for (const property of ['high','low','precipitation','daily_high','daily_low','daily_precipitation','utc_offset']) {
     assert.ok(request.properties.includes(property),property+' is requested for compact weather details');
   }
@@ -793,4 +794,193 @@ test('Weather details are populated from requested fields and explicitly cleared
   f.settings.locationId='missing';
   f.router.configure();
   assert.deepEqual(f.deliveries.at(-1)[KEYS.WEATHER_DETAILS],[]);
+});
+
+function conditioned(id,code,temp=20,unit='°C') {
+  const value=instance(id,temp,unit);
+  value.properties.condition_code={longText:{text:code}};
+  return value;
+}
+
+test('Live and one-shot shared subscriptions request canonical current condition codes',()=>{
+  const f=fixture();
+  f.router.refresh(false);
+  for(const subscription of f.subscriptions.filter(s=>s.request.category==='weather')) {
+    assert.ok(subscription.request.properties.includes('condition_code'));
+  }
+  f.weather([conditioned('current','rain_and_snow')]);
+  const bytes=Buffer.from(lastReading(f)[KEYS.WEATHER_CONDITION]);
+  assert.equal(bytes.length,10);
+  assert.equal(bytes[1],6);
+  assert.equal(bytes.readUInt32LE(2),NOW/1000);
+  assert.equal(bytes.readUInt32LE(6),NOW/1000+7200);
+  assert.equal(f.legacyRefreshes.length,0);
+});
+
+test('Unit-only responses before any weather snapshot omit condition data to preserve the offline icon',()=>{
+  const f=fixture({settings:{followPebbleUnits:true}});
+  f.router.refresh(false);
+  f.units('°F');
+  assert.ok(f.deliveries.length>0);
+  assert.ok(f.deliveries.every(payload=>!Object.hasOwn(payload,KEYS.WEATHER_CONDITION)));
+  f.weather([conditioned('current','sun')]);
+  const original=Buffer.from(lastReading(f)[KEYS.WEATHER_CONDITION]);
+  f.advance(40*60000);
+  f.units('°C');
+  assert.deepEqual(Buffer.from(lastReading(f)[KEYS.WEATHER_CONDITION]),original,
+    'changing units cannot renew the original source-read timestamp');
+});
+
+test('Unknown or missing canonical conditions explicitly clear a previously valid icon on real publication',()=>{
+  const f=fixture();
+  f.router.refresh(false);
+  f.weather([conditioned('current','sun')]);
+  assert.equal(lastReading(f)[KEYS.WEATHER_CONDITION][1],1);
+  for(const value of [instance(),conditioned('current','unknown'),conditioned('current','thunderstorm')]) {
+    value.properties.precipitation={numericValue:{value:100,unit:'%'}};
+    f.weather([value]);
+    assert.deepEqual(lastReading(f)[KEYS.WEATHER_CONDITION],[]);
+  }
+});
+
+test('Held, expired or source-limited conditions are never rejuvenated by configuring the watchface',()=>{
+  const f=fixture();
+  f.router.refresh(false);
+  f.weather([conditioned('current','cloudy')],{validUntilMs:NOW+60*60000});
+  const original=Buffer.from(lastReading(f)[KEYS.WEATHER_CONDITION]);
+  f.advance(59*60000);
+  f.router.configure();
+  assert.deepEqual(Buffer.from(lastReading(f)[KEYS.WEATHER_CONDITION]),original);
+  f.advance(60000);
+  f.router.configure();
+  assert.deepEqual(f.deliveries.at(-1)[KEYS.WEATHER_CONDITION],[],'snapshot expiry is exclusive');
+});
+
+test('A same-location condition updates or clears independently of a missing temperature',()=>{
+  const f=fixture();
+  f.router.refresh(false);
+  f.weather([conditioned('current','sun')]);
+  const before=f.readings().length;
+  for (const [code,expected] of [['heavy_rain',4],['unknown',null]]) {
+    const value=conditioned('current',code);
+    value.properties.temperature=null;
+    f.weather([value]);
+    const payload=f.deliveries.at(-1);
+    assert.equal(payload[KEYS.TEMPERATURE],undefined);
+    assert.equal(payload[KEYS.WEATHER_CLEAR],undefined,'keep the same-place temperature cache');
+    if(expected===null) assert.deepEqual(payload[KEYS.WEATHER_CONDITION],[]);
+    else assert.equal(payload[KEYS.WEATHER_CONDITION][1],expected);
+  }
+  assert.equal(f.readings().length,before,'a condition-only update cannot invent a temperature');
+});
+
+test('Location and source-mode replacements clear icons atomically without mixing conditions',()=>{
+  const f=fixture();
+  f.router.refresh(false);
+  f.weather([conditioned('home','sun'),conditioned('office','heavy_snow')]);
+  f.advance(30*60000);
+  f.settings.locationId='office';
+  f.router.configure();
+  const office=lastReading(f);
+  assert.equal(office[KEYS.WEATHER_CLEAR],1);
+  assert.equal(office[KEYS.WEATHER_CONDITION][1],5);
+  assert.equal(Buffer.from(office[KEYS.WEATHER_CONDITION]).readUInt32LE(2),NOW/1000);
+  f.settings.locationId='missing';
+  f.router.configure();
+  assert.deepEqual(f.deliveries.at(-1)[KEYS.WEATHER_CONDITION],[]);
+  f.enabled(false);
+  f.router.refresh(false);
+  assert.deepEqual(f.deliveries.at(-1)[KEYS.WEATHER_CONDITION],[]);
+});
+
+test('A condition-only update preserves a queued atomic location replacement',()=>{
+  const f=fixture();
+  f.router.refresh(false);
+  f.weather([conditioned('home','sun'),conditioned('office','cloudy',25)]);
+  f.hold(true);
+  f.weather([conditioned('home','sun',21),conditioned('office','cloudy',25)]);
+  f.settings.locationId='office';
+  f.router.configure();
+  const office=conditioned('office','unknown');
+  office.properties.temperature=null;
+  f.weather([conditioned('home','sun',21),office]);
+  f.tick(10000);
+  const replacement=f.deliveries.at(-1);
+  assert.equal(replacement[KEYS.TEMPERATURE],25);
+  assert.equal(replacement[KEYS.WEATHER_CLEAR],1);
+  assert.deepEqual(replacement[KEYS.WEATHER_CONDITION],[]);
+});
+
+test('An older one-shot callback cannot replace a newer live condition',()=>{
+  const f=fixture();
+  f.router.refresh(false);
+  const read=f.reads.at(-1);
+  assert.ok(read);
+  f.weather([conditioned('current','heavy_rain')]);
+  f.advance(1000);
+  read.resolve({pluginUuid:WEATHER,instances:[conditioned('current','sun')]});
+  assert.equal(lastReading(f)[KEYS.WEATHER_CONDITION][1],4);
+  assert.equal(Buffer.from(lastReading(f)[KEYS.WEATHER_CONDITION]).readUInt32LE(2),NOW/1000);
+});
+
+test('A failed location clear survives a pending condition-only replacement',()=>{
+  const f=fixture();
+  f.router.refresh(false);
+  const office=conditioned('office','unknown');
+  office.properties.temperature=null;
+  f.weather([conditioned('home','sun'),office]);
+  f.hold(true);
+  f.settings.locationId='office';
+  f.router.configure();
+  const firstClear=f.callbacks.at(-1);
+  assert.equal(f.deliveries.at(-1)[KEYS.WEATHER_CLEAR],1);
+  firstClear.failure();
+  const replacement=f.deliveries.at(-1);
+  assert.equal(replacement[KEYS.WEATHER_CLEAR],1,
+    'the old city must be invalidated even if the first clear was rejected');
+  assert.deepEqual(replacement[KEYS.WEATHER_CONDITION],[]);
+  f.callbacks.at(-1).success();
+  f.hold(false);
+  f.weather([office]);
+  assert.equal(f.deliveries.at(-1)[KEYS.WEATHER_CLEAR],undefined,
+    'after acknowledgement same-place condition updates need no further clear');
+});
+
+test('A unit preference cannot supersede an unacknowledged location clear',()=>{
+  const f=fixture({settings:{followPebbleUnits:true}});
+  f.router.refresh(false);
+  const office=conditioned('office','unknown');
+  office.properties.temperature=null;
+  f.weather([conditioned('home','sun'),office]);
+  f.hold(true);
+  f.settings.locationId='office';
+  f.router.configure();
+  const clear=f.callbacks.at(-1);
+  f.units('°F');
+  clear.failure();
+  const replacement=f.deliveries.at(-1);
+  assert.equal(replacement[KEYS.WEATHER_CLEAR],1);
+  assert.equal(replacement[KEYS.USE_FAHRENHEIT],1);
+  assert.deepEqual(replacement[KEYS.WEATHER_CONDITION],[]);
+});
+
+test('A late acknowledgement from a cancelled clear cannot acknowledge the next location',()=>{
+  const f=fixture();
+  f.router.refresh(false);
+  const office=conditioned('office','unknown');
+  const away=conditioned('away','unknown');
+  office.properties.temperature=away.properties.temperature=null;
+  f.weather([conditioned('home','sun'),office,away]);
+  f.hold(true);
+  f.settings.locationId='office';
+  f.router.configure();
+  const oldClear=f.callbacks.at(-1);
+  f.settings.locationId='away';
+  f.router.configure();
+  const newClear=f.callbacks.at(-1);
+  oldClear.success();
+  f.weather([away]);
+  newClear.failure();
+  assert.equal(f.deliveries.at(-1)[KEYS.WEATHER_CLEAR],1);
+  assert.deepEqual(f.deliveries.at(-1)[KEYS.WEATHER_CONDITION],[]);
 });
