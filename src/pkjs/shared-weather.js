@@ -9,7 +9,7 @@ var HOUR = 3600;
 function finite(value) { return typeof value === 'number' && isFinite(value); }
 function number(property) { return property && property.numericValue; }
 function instancesOf(envelope) {
-  return (Array.isArray(envelope.instances) ? envelope.instances : []).filter(function(instance) {
+  return (envelope && Array.isArray(envelope.instances) ? envelope.instances : []).filter(function(instance) {
     return instance && typeof instance.instanceId === 'string' &&
       instance.properties && typeof instance.properties === 'object' &&
       !Array.isArray(instance.properties);
@@ -40,6 +40,13 @@ module.exports = function(options) {
   var deliveryGeneration = 0;
   var rememberedSamples = null;
   var configuredLocation = options.getSettings().locationId || '';
+  var confirmedAt = 0;
+  var sourceVersion = 0;
+  var sourceError = '';
+  var readPending = false;
+  var readDeadline = null;
+  var readSubscription = null;
+  var refreshTimer = null;
 
   function settings() { return options.getSettings(); }
   function effectiveUnit() {
@@ -97,6 +104,15 @@ module.exports = function(options) {
     selected = null;
     locationList = [];
     globalFahrenheit = null;
+    confirmedAt = 0;
+    sourceVersion++;
+    readPending = false;
+    if (readDeadline !== null) { options.cancelLater(readDeadline); }
+    if (readSubscription && readSubscription.unsubscribe) { readSubscription.unsubscribe(); }
+    readSubscription = null;
+    if (refreshTimer !== null) { options.cancelLater(refreshTimer); }
+    readDeadline = null;
+    refreshTimer = null;
     cancelDelivery();
   }
   function available() {
@@ -124,8 +140,9 @@ module.exports = function(options) {
     // running source invalidates it before a replacement sample arrives.
     if (previous) { clearWeather(); }
   }
-  // Since this API has no observation timestamp, identical content retains its
-  // first-seen age, including across PKJS restarts and global unit changes.
+  // Forecast age is conservative because the API has no observation timestamp.
+  // Current conditions instead follow successful reads of Pebble's database;
+  // republishing a held snapshot must never count as another successful read.
   function firstSeen(identity, fingerprint) {
     var now = Math.floor(options.now() / 1000);
     if (!rememberedSamples) {
@@ -137,7 +154,17 @@ module.exports = function(options) {
         return sample && typeof sample.identity === 'string' &&
           typeof sample.fingerprint === 'string' && finite(sample.seen) &&
           sample.seen > 0 && sample.seen <= now;
-      }).slice(-16);
+      }).slice(-16).map(function(sample) {
+        // Beta 1 included the current temperature in the forecast fingerprint.
+        // Dropping that component must not renew an unchanged forecast on upgrade.
+        try {
+          var old = JSON.parse(sample.fingerprint);
+          if (Array.isArray(old) && old.length === 3 && Array.isArray(old[2])) {
+            sample.fingerprint = JSON.stringify([old[1], old[2]]);
+          }
+        } catch (ignored) {}
+        return sample;
+      });
     }
     var previous = null;
     rememberedSamples = rememberedSamples.filter(function(sample) {
@@ -176,7 +203,7 @@ module.exports = function(options) {
       }
     }
     var identity = WEATHER + '/' + selected.instanceId;
-    var fingerprint = JSON.stringify([temp.c, series && series.start, normalized]);
+    var fingerprint = JSON.stringify([series && series.start, normalized]);
     var seen = firstSeen(identity, fingerprint);
     var now = Math.floor(options.now() / 1000);
     var bytes = [];
@@ -198,16 +225,16 @@ module.exports = function(options) {
     var payload = {};
     payload[options.keys.WEATHER_CLEAR] = 1;
     payload[options.keys.FORECAST_DATA] = now - seen < 6 * HOUR ? bytes : [];
-    var expires = seen + 2 * HOUR;
+    var expires = confirmedAt + 2 * HOUR;
     if (finite(snapshot.validUntilMs)) { expires = Math.min(expires, Math.floor(snapshot.validUntilMs / 1000)); }
-    if (now <= expires) {
+    if (confirmedAt > 0 && now <= expires) {
       payload[options.keys.TEMPERATURE] = temp.c;
       payload[options.keys.TEMPERATURE_FAHRENHEIT] = temp.f;
-      payload[options.keys.WEATHER_UPDATED_AT] = Math.min(seen, expires - 2 * HOUR);
+      payload[options.keys.WEATHER_UPDATED_AT] = Math.min(confirmedAt, expires - 2 * HOUR);
     }
-    if (settings().followPebbleUnits && globalFahrenheit !== null) {
-      payload[options.keys.USE_FAHRENHEIT] = globalFahrenheit ? 1 : 0;
-    }
+    // Re-send the effective unit with the data, repairing a missed settings
+    // delivery or a watch reinstall without changing the saved override.
+    payload[options.keys.USE_FAHRENHEIT] = effectiveUnit() ? 1 : 0;
     // A different source/place must replace its cache, even when the new sample
     // predates the old place's observation. Clear in the same atomic message.
     lastIdentity = identity;
@@ -234,6 +261,73 @@ module.exports = function(options) {
     }
     publish();
   }
+  function receive(envelope) {
+    if (!envelope || envelope.pluginUuid !== WEATHER) { return; }
+    snapshot = envelope;
+    confirmedAt = Math.floor(options.now() / 1000);
+    sourceVersion++;
+    sourceError = '';
+    locationList = instancesOf(envelope).map(function(x) {
+      var name = x.properties && x.properties.name && x.properties.name.shortText;
+      return {id: x.instanceId, name: name && typeof name.text === 'string' ? name.text : x.instanceId};
+    });
+    var id = settings().locationId || '';
+    var here = instancesOf(envelope).filter(function(x) { return !id || x.instanceId === id; })[0];
+    var numeric = here && number((here.properties || {}).temperature);
+    if (numeric && temperature(numeric.value, numeric.unit)) {
+      globalFahrenheit = numeric.unit === '°F';
+    }
+    choose();
+  }
+  function scheduleRead(delay) {
+    if (refreshTimer !== null) { options.cancelLater(refreshTimer); }
+    refreshTimer = options.later(function() {
+      refreshTimer = null;
+      if (mode === 'shared') { readCurrent(); }
+    }, delay);
+  }
+  function readCurrent() {
+    if (readPending) { return; }
+    readPending = true;
+    var generation = serial;
+    var version = sourceVersion;
+    var done = false;
+    function finish(envelope, error) {
+      if (done || generation !== serial) { return; }
+      done = true;
+      readPending = false;
+      if (readDeadline !== null) { options.cancelLater(readDeadline); }
+      readDeadline = null;
+      if (readSubscription && readSubscription.unsubscribe) { readSubscription.unsubscribe(); }
+      readSubscription = null;
+      if (error && version === sourceVersion) {
+        sourceError = error.code || 'UNKNOWN';
+        options.log('Shared weather read: ' + sourceError);
+      } else if (version === sourceVersion) {
+        receive(envelope);
+      }
+      // Read the shared database, never another weather service. The timer is
+      // a backup for watch requests and missed subscription callbacks.
+      scheduleRead(error && version === sourceVersion ? 2 * 60000 : 30 * 60000);
+    }
+    readDeadline = options.later(function() { finish(null, {code: 'TIMEOUT'}); }, 15000);
+    try {
+      // Watchface PKJS 1.16 has no readSource API. A temporary subscription
+      // receives the native source's initial database snapshot, then ends.
+      var subscription = options.pebble.subscribeToSource({
+        plugin: WEATHER, category: 'weather', item: 'location',
+        properties: ['name', 'temperature', 'hourly_temperature'],
+        onData: function(envelope) {
+        if (!envelope || envelope.pluginUuid !== WEATHER) { finish(null, {code: 'INVALID_SOURCE'}); }
+        else { finish(envelope); }
+        },
+        onError: function(error) { finish(null, error || {code: 'UNKNOWN'}); }
+      });
+      if (done || generation !== serial) {
+        if (subscription && subscription.unsubscribe) { subscription.unsubscribe(); }
+      } else { readSubscription = subscription; }
+    } catch (error) { finish(null, error); }
+  }
   function subscribe() {
     var generation = serial;
     function track(config) {
@@ -249,7 +343,8 @@ module.exports = function(options) {
     }
     function error(e) {
       if (generation !== serial) { return; }
-      options.log('Shared weather: ' + (e && e.code || 'UNKNOWN'));
+      sourceError = e && e.code || 'UNKNOWN';
+      options.log('Shared weather: ' + sourceError);
       // Keep permission-denied and transient-error subscriptions alive. If the
       // source could not be established, allow a later watch request to retry.
       if (e && e.code === 'PLUGIN_UNAVAILABLE') { unsubscribe(); }
@@ -260,20 +355,7 @@ module.exports = function(options) {
         properties: ['name', 'temperature', 'hourly_temperature'],
         onData: function(envelope) {
           if (generation !== serial || !envelope || envelope.pluginUuid !== WEATHER) { return; }
-          snapshot = envelope;
-          locationList = instancesOf(envelope).map(function(x) {
-            var name = x.properties && x.properties.name && x.properties.name.shortText;
-            return {id: x.instanceId, name: name && typeof name.text === 'string' ? name.text : x.instanceId};
-          });
-          var id = settings().locationId || '';
-          var here = instancesOf(envelope).filter(function(x) { return !id || x.instanceId === id; })[0];
-          var numeric = here && number((here.properties || {}).temperature);
-          if (numeric && temperature(numeric.value, numeric.unit)) {
-            // Weather itself carries the global display unit, even if the
-            // Preferences plugin is unavailable or its subscription is delayed.
-            globalFahrenheit = numeric.unit === '°F';
-          }
-          choose();
+          receive(envelope);
         }, onError: error
       })) { return; }
       track({
@@ -302,6 +384,7 @@ module.exports = function(options) {
       switchMode('shared');
       if (!subscriptions.length) { subscribe(); }
       else { publish(); }
+      readCurrent();
     } else {
       switchMode('legacy');
       if (!legacy) { legacy = options.legacy(); }
@@ -317,6 +400,15 @@ module.exports = function(options) {
       if (mode === 'shared') { choose(); } else { refresh(effectiveUnit()); }
     },
     locations: function() { return locationList.slice(); },
+    status: function() {
+      var p = selected && selected.properties || {};
+      var numeric = number(p.temperature);
+      var temp = numeric && temperature(numeric.value, numeric.unit);
+      var name = p.name && p.name.shortText;
+      return {source: mode, location: name && name.text || selected && selected.instanceId || '',
+        temperature: temp ? (numeric.unit === '°F' ? temp.f : temp.c) + numeric.unit : '',
+        receivedAt: confirmedAt, error: sourceError};
+    },
     isLegacy: function() { return mode === 'legacy'; }
   };
 };

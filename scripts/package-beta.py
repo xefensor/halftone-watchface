@@ -107,7 +107,10 @@ def main():
     parser.add_argument("--output", type=Path, help="Beta PBW output path")
     args = parser.parse_args()
     package = json.loads((project / "package.json").read_text(encoding="utf-8"))
-    output = args.output or project / "dist" / ("Halftone-" + package["version"] + "-beta.1.pbw")
+    beta = package.get("halftoneBeta", 1)
+    if not isinstance(beta, int) or isinstance(beta, bool) or beta < 1:
+        parser.exit(1, "halftoneBeta must be a positive integer\n")
+    output = args.output or project / "dist" / ("Halftone-" + package["version"] + "-beta." + str(beta) + ".pbw")
     try:
         source = args.input or default_input(project, package)
         result = package_beta(project, source, output)

@@ -1,13 +1,16 @@
 # Halftone
 
-## Shared weather beta — 1.4.0
+## Shared weather beta — 1.4.1 beta 2
 
 The plugin beta reads the same weather database as Pebble's Weather app, keeps
 the six-hour offline forecast cache, and adds saved-location selection and
 "Follow Pebble temperature units". Existing explicit unit choices are retained.
 Older apps and disabled plugin preview retain the previous weather client.
 
-Install [Halftone-1.4.0-beta.1.pbw](dist/Halftone-1.4.0-beta.1.pbw).
+Install [Halftone-1.4.1-beta.2.pbw](dist/Halftone-1.4.1-beta.2.pbw).
+Beta 2 keeps usable current conditions ahead of forecasts, re-reads Pebble's
+shared database every 30 minutes, and shows the source, location and received
+temperature in settings. A forecast is used only when current conditions expire.
 See [setup, build instructions and limitations](docs/PLUGIN-WEATHER.md).
 This beta is for sideloading and device testing; 1.3.1 remains the prepared
 stable release. When building this beta, run `python3 scripts/package-beta.py`
@@ -40,7 +43,7 @@ You can also build the source yourself as described below.
 
 ## How it works
 
-The following describes the compatibility weather client. The 1.4.0 beta uses
+The following describes the compatibility weather client. The 1.4.1 beta uses
 shared Pebble weather when available; see the beta setup guide above.
 
 The watch-side C app draws the interface and updates the clock once per minute.

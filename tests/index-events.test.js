@@ -16,6 +16,7 @@ function fixture(settings = {}) {
   let legacyMode = false;
   let legacyOptions;
   const places = [];
+  const status = {source: '', location: '', temperature: '', receivedAt: 0, error: ''};
   const keys = {
     REQUEST_WEATHER: 10001, TEXT_COLOR: 10003, USE_FAHRENHEIT: 10008,
     FOLLOW_PEBBLE_UNITS: 10012, WEATHER_LOCATION: 10013
@@ -41,7 +42,10 @@ function fixture(settings = {}) {
         };
         clay = this;
       };
-      if (name === './config') return [{type: 'section', items: [{messageKey: 'WEATHER_LOCATION', options: []}]}];
+      if (name === './config') return [{type: 'section', items: [
+        {messageKey: 'WEATHER_LOCATION', options: []},
+        {id: 'weather-status', type: 'text', defaultValue: 'Weather source: waiting for data'}
+      ]}];
       if (name === './weather') return options => {
         legacyOptions = options;
         assert.equal(options.autoRefresh, true);
@@ -54,6 +58,7 @@ function fixture(settings = {}) {
           refresh: unit => refreshes.push(unit),
           configure: () => {configured++;},
           locations: () => places.slice(),
+          status: () => status,
           isLegacy: () => legacyMode
         };
       };
@@ -70,7 +75,7 @@ function fixture(settings = {}) {
     console: {log: () => {}}
   });
   return {
-    handlers, refreshes, deliveries, urls, places, clay, keys,
+    handlers, refreshes, deliveries, urls, places, status, clay, keys,
     coordinatorOptions, settings: () => JSON.parse(saved), configured: () => configured,
     legacyMode: value => {legacyMode = value;}, legacyOptions: () => legacyOptions
   };
@@ -137,6 +142,19 @@ test('Settings picker contains current Pebble locations and retains a missing se
   assert.match(choices.find(c => c.value === 'missing').label, /unavailable/i);
   assert.equal(f.places.length, 2, 'The current source list is not mutated by the picker');
   assert.deepEqual(f.urls, ['data:text/html,settings']);
+});
+
+test('Settings identify the weather source, location and received native current temperature', () => {
+  const f = fixture();
+  Object.assign(f.status, {source: 'shared', location: 'České Budějovice', temperature: '8°C', receivedAt: 1791849000});
+  f.handlers.showConfiguration();
+  const info = f.clay.config[0].items.find(item => item.id === 'weather-status').defaultValue;
+  assert.match(info, /Pebble shared current conditions/);
+  assert.match(info, /České Budějovice/);
+  assert.match(info, /Received 8°C/);
+  f.status.error = 'PERMISSION_DENIED';
+  f.handlers.showConfiguration();
+  assert.match(f.clay.config[0].items.find(item => item.id === 'weather-status').defaultValue, /PERMISSION_DENIED/);
 });
 
 test('Saving settings keeps JS preferences on the phone and lets Pebble global units win', () => {

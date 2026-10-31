@@ -3,7 +3,7 @@
 Halftone does not require an account and contains no advertising, analytics or
 developer-operated tracking service.
 
-## Shared weather (1.4.0 beta)
+## Shared weather (1.4.1 beta 2)
 
 When the Pebble mobile app's plugin preview is enabled and its built-in Weather
 source is available, Halftone subscribes to that source. It receives weather
@@ -19,8 +19,11 @@ snapshot's contents and first-seen time are stored locally on the phone to
 prevent reconnecting from renewing stale data. These records are not uploaded
 to Halftone's developer. Up to six hours of hourly temperatures are also stored
 on the watch for offline use. The shared source currently exposes no observation
-timestamp; identical snapshots may expire conservatively even if Pebble fetched
-them again.
+timestamp. A successful source read confirms the current value stored by Pebble;
+current conditions expire two hours after the last successful source confirmation.
+The forecast cache retains its conservative first-seen age for unchanged contents.
+The settings diagnostic shows the source, location and native temperature received
+locally; these diagnostic details are not uploaded to the developer.
 
 ## Compatibility weather client
 

@@ -1,13 +1,13 @@
 # Shared Pebble weather beta
 
-Halftone 1.4.0 beta reads the weather already stored by the Pebble phone app.
+Halftone 1.4.1 beta 2 reads the weather already stored by the Pebble phone app.
 Its built-in Weather plugin exposes the same database that feeds the watch's
 Weather app, including the weather provider selected in Pebble. Subscribing
 does not make another weather API request. Halftone keeps its current design
 and saves up to six hours of the shared hourly forecast for offline use.
 
-The downloadable beta is `Halftone-1.4.0-beta.1.pbw`. The SDK's internal
-version is `1.4.0`; its UUID is unchanged, so it updates the existing watchface.
+The downloadable beta is `Halftone-1.4.1-beta.2.pbw`. The SDK's internal
+version is `1.4.1`; its UUID is unchanged, so it updates the existing watchface.
 This is a testing build, not a new Store release. The plugin API remains a
 preview and can change.
 
@@ -27,9 +27,22 @@ preview and can change.
    choices are retained.
 
 Pebble controls network fetching in shared-weather mode. Halftone receives
-updates from an open subscription; it does not force a fresh weather download
-every 30 minutes. Comparing the same location and units should show the same
-temperature as Pebble's Weather app after delivery.
+updates from an open subscription. Every 30 minutes, and when the watch requests
+an update, a temporary subscription re-reads the shared database and ends after
+one result. This makes no independent weather HTTP request. A 15-second deadline
+and two-minute retry recover a stalled read.
+
+Halftone uses the shared source's **current conditions** (`temperature`), which
+matches the detailed weather report's stored current-conditions value for the
+same location and units. PebbleOS's main Weather screen can instead display the
+hourly forecast for the current hour. These are different values in the same
+database. Halftone keeps current conditions until they are no longer usable;
+it does not switch to hourly forecast merely because 30 minutes elapsed.
+
+The settings page shows the active weather source, selected location and exact
+native temperature received, plus any source error. This is a diagnostic snapshot
+when settings open. It identifies whether shared weather or the compatibility
+client is actually active.
 
 ## Offline data and compatibility
 
@@ -49,14 +62,18 @@ temperature as Pebble's Weather app after delivery.
 
 ### Freshness limitation
 
-The current built-in Weather source publishes neither an observation timestamp
-nor an expiry time (`validUntilMs` is null). Receiving a message therefore does
-not prove a new observation was fetched. Halftone conservatively remembers when
-it first saw the same weather snapshot instead of extending its lifetime on
-every reconnect or restart. An unchanged snapshot can expire even if Pebble
-refetched identical values; a first installation cannot establish how old
-Pebble's pre-existing cached observation was. The timestamped hourly series
-still identifies which forecast hour each value belongs to.
+The built-in Weather source publishes neither an observation timestamp nor an
+expiry time (`validUntilMs` is null). A successful source read confirms what
+Pebble currently stores; it does not prove that the provider just fetched a new
+observation. Halftone follows that current value while the source is available.
+Its two-hour offline current-conditions limit starts from the last successful
+source confirmation, even if the temperature has not changed. Merely replaying
+an old snapshot or changing units does not renew that confirmation.
+
+Forecasts retain their conservative first-seen age across reconnects, restarts
+and location changes. Their six-hour offline limit is not extended by repeatedly
+reading identical forecast contents. After current conditions expire, a usable
+cached forecast is marked with `~`; without either, Halftone shows `--`.
 
 ## Build and package
 
@@ -72,15 +89,19 @@ manifest. It copies `usesPermissions` from `package.json` into the PBW's root
 `appinfo.json` and sets `manifestVersion` to 2. It verifies the existing UUID,
 version and target platforms, and checks that JavaScript, watch binaries and
 resources remain byte-for-byte unchanged. It writes
-`dist/Halftone-1.4.0-beta.1.pbw`, leaving the ordinary SDK output intact.
+`dist/Halftone-1.4.1-beta.2.pbw`, leaving the ordinary SDK output intact.
 
 Halftone consumes a plugin; it does not contain or install a weather plugin of
 its own. No plugin SDK branch or plugin-only project is required.
 
 ## Checks on a real Pebble Time 2
 
-- Compare the first saved location in Halftone and the Weather app, in matching
-  units, then change the global weather provider and confirm both update.
+- Compare the settings diagnostic's received temperature and Halftone display
+  with the detailed weather report's current conditions, in matching units and
+  location. Change the global weather provider and confirm they update.
+- Leave the face open beyond 30 minutes and beyond two hours, including when
+  the shared source keeps returning the same temperature. Confirm it remains
+  current conditions while source reads succeed.
 - Change the selected saved location and check that old weather disappears.
 - Change Pebble's temperature units while using Follow Pebble, then test each
   explicit override.

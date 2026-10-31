@@ -1,6 +1,7 @@
 #include <pebble.h>
 #include "weather_schedule.h"
 #include "weather_forecast.h"
+#include "weather_display.h"
 
 #define PERSIST_KEY_TEMPERATURE 1
 #define PERSIST_KEY_BACKGROUND_COLOR 2
@@ -577,14 +578,12 @@ static void prv_refresh_temperature(void) {
       weather_is_fresh(now, s_weather_observation_time);
   const int forecast_index = forecast_hour_index(s_forecast,
                                                  s_forecast_length, now);
-  if (has_observation && weather_observation_is_current(
-      now, s_weather_observation_time, s_weather_received_time)) {
+  const WeatherDisplay display = weather_display_select(has_observation, forecast_index);
+  if (display == WEATHER_DISPLAY_CURRENT) {
     prv_show_temperature(s_temperature_celsius, s_temperature_fahrenheit, false);
-  } else if (forecast_index >= 0) {
+  } else if (display == WEATHER_DISPLAY_FORECAST) {
     prv_show_temperature(forecast_i16(s_forecast + 9 + forecast_index * 4),
                          forecast_i16(s_forecast + 11 + forecast_index * 4), true);
-  } else if (has_observation) {
-    prv_show_temperature(s_temperature_celsius, s_temperature_fahrenheit, false);
   } else {
     prv_show_temperature_placeholder();
   }

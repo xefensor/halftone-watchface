@@ -36,6 +36,7 @@ function fixture(overrides = {}) {
   const data = overrides.data || {};
   const settings = Object.assign({followPebbleUnits: false, useFahrenheit: false, locationId: ''}, overrides.settings);
   const subscriptions = [];
+  const reads = [];
   const deliveries = [];
   const callbacks = [];
   const timers = new Map();
@@ -51,8 +52,12 @@ function fixture(overrides = {}) {
       return enabled ? [{uuid: WEATHER}, {uuid: PREFS}] : [];
     },
     subscribeToSource: request => {
-      const subscription = {request, closed: false};
+      const oneShot = request.category === 'weather' &&
+        subscriptions.some(s => !s.closed && !s.oneShot && s.request.category === 'weather');
+      const subscription = {request, closed: false, oneShot};
       subscriptions.push(subscription);
+      if (oneShot) reads.push({request, subscription,
+        resolve: envelope => request.onData(envelope), reject: error => request.onError(error)});
       if (synchronousUnavailable && request.category === 'weather') {
         synchronousUnavailable = false;
         request.onError({code: 'PLUGIN_UNAVAILABLE', message: 'Not ready'});
@@ -73,12 +78,13 @@ function fixture(overrides = {}) {
     }
   });
   function latest(category) {
-    const sub = subscriptions.filter(s => !s.closed && s.request.category === category).at(-1);
+    const active = subscriptions.filter(s => !s.closed && s.request.category === category);
+    const sub = active.find(s => !s.oneShot) || active.at(-1);
     assert.ok(sub, 'Expected active ' + category + ' subscription');
     return sub.request;
   }
   return {
-    router, settings, subscriptions, deliveries, callbacks, data, legacyRefreshes,
+    router, settings, subscriptions, reads, deliveries, callbacks, data, legacyRefreshes, pebble,
     stops: () => legacyStops,
     enabled: value => {enabled = value;}, hold: value => {hold = value;},
     enumerationError: value => {enumerationError = value;},
@@ -154,6 +160,17 @@ test('An initial empty shared snapshot preserves the offline watch cache until a
     'Changing the requested location must clear forecasts belonging to the previous place');
 });
 
+test('Opening or changing settings before the first source response cannot crash or invent a current reading', () => {
+  const f = fixture();
+  assert.doesNotThrow(() => f.router.configure());
+  assert.doesNotThrow(() => f.router.configure());
+  assert.equal(f.readings().length, 0);
+  assert.equal(f.router.status().receivedAt, 0);
+  f.settings.locationId = 'not-yet-received';
+  assert.doesNotThrow(() => f.router.configure());
+  assert.equal(f.readings().length, 0);
+});
+
 test('Enabling plugins stops the legacy client before shared weather is used', () => {
   const f = fixture({enabled: false});
   f.router.refresh(false);
@@ -192,7 +209,7 @@ test('Synchronous unavailable errors leave no stale handle blocking a later subs
   const f = fixture({synchronousUnavailable: true});
   f.router.refresh(false);
   f.router.refresh(false);
-  assert.equal(f.subscriptions.filter(s => s.request.category === 'weather').length, 2);
+  assert.ok(f.subscriptions.filter(s => s.request.category === 'weather').length >= 2);
   f.weather();
   assert.equal(lastReading(f)[KEYS.TEMPERATURE], 20);
   assert.deepEqual(f.legacyRefreshes, []);
@@ -286,6 +303,135 @@ test('Hourly forecasts select the current UTC hour from a series beginning at mi
   assert.equal(b.readInt16LE(9 + 6 * 4), 28);
 });
 
+test('A watch refresh re-reads Pebble current conditions without using the legacy HTTP client', async () => {
+  const f = fixture();
+  assert.equal(f.pebble.readSource, undefined, 'The watchface runtime exposes subscriptions, not plugin-only readSource');
+  f.router.refresh(false);
+  f.weather([instance('current', 20)]);
+  // If startup initiated an immediate database read, complete it before testing
+  // the later request from a watchface that has stayed open.
+  for (const read of f.reads) read.resolve({pluginUuid: WEATHER, instances: [instance('current', 20)]});
+  await Promise.resolve();
+  await Promise.resolve();
+  const before = f.reads.length;
+  f.advance(35 * 60000);
+  f.router.refresh(false);
+  assert.ok(f.reads.length > before, 'Watch refresh must read Pebble\'s current weather again');
+  const read = f.reads.at(-1);
+  assert.equal(read.request.plugin, WEATHER);
+  assert.equal(read.request.category, 'weather');
+  assert.equal(read.request.item, 'location');
+  read.resolve({pluginUuid: WEATHER, instances: [instance('current', 18)]});
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(lastReading(f)[KEYS.TEMPERATURE], 18);
+  assert.equal(lastReading(f)[KEYS.WEATHER_UPDATED_AT], (NOW + 35 * 60000) / 1000);
+  assert.equal(read.subscription.closed, true, 'The one-shot subscription must close after confirming a snapshot');
+  assert.ok(f.subscriptions.some(s => !s.closed && !s.oneShot && s.request.category === 'weather'),
+    'The persistent change subscription must remain active');
+  assert.deepEqual(f.legacyRefreshes, []);
+});
+
+test('Identical conditions confirmed by Pebble after two hours remain current instead of becoming forecast', () => {
+  const f = fixture();
+  f.router.refresh(false);
+  f.weather([instance('current', 20)]);
+  const firstForecastAt = Buffer.from(lastReading(f)[KEYS.FORECAST_DATA]).readUInt32LE(4);
+  f.advance(2 * 3600000 + 60000);
+  f.weather([instance('current', 20)]);
+  const latest = lastReading(f);
+  assert.equal(latest[KEYS.TEMPERATURE], 20, 'Current conditions still exist in Pebble');
+  assert.equal(latest[KEYS.WEATHER_UPDATED_AT], (NOW + 2 * 3600000 + 60000) / 1000);
+  const forecast = Buffer.from(latest[KEYS.FORECAST_DATA]);
+  assert.equal(forecast.readUInt32LE(4), firstForecastAt, 'Confirmation cannot rejuvenate an unchanged offline forecast');
+  assert.notEqual(forecast.readInt16LE(9), 20, 'Fixture must distinguish current conditions from the hourly forecast');
+});
+
+test('Replaying a held snapshot cannot renew the age of its current conditions', () => {
+  const f = fixture();
+  f.router.refresh(false);
+  f.weather([instance('current', 20)]);
+  const stamp = lastReading(f)[KEYS.WEATHER_UPDATED_AT];
+  f.advance(35 * 60000);
+  f.router.configure();
+  assert.equal(lastReading(f)[KEYS.WEATHER_UPDATED_AT], stamp);
+  f.router.refresh(false); // Its database read has not completed yet.
+  assert.equal(lastReading(f)[KEYS.WEATHER_UPDATED_AT], stamp);
+  f.advance(2 * 3600000);
+  const before = f.deliveries.length;
+  f.router.configure();
+  assert.ok(!f.deliveries.slice(before).some(p => p[KEYS.TEMPERATURE] !== undefined),
+    'An unconfirmed held snapshot eventually expires instead of pretending to be new');
+});
+
+test('A failed database read keeps cached current conditions and never changes weather providers', async () => {
+  const f = fixture();
+  f.router.refresh(false);
+  f.weather();
+  for (const read of f.reads) read.resolve({pluginUuid: WEATHER, instances: [instance()]});
+  await Promise.resolve();
+  await Promise.resolve();
+  const stamp = lastReading(f)[KEYS.WEATHER_UPDATED_AT];
+  f.advance(35 * 60000);
+  f.router.refresh(false);
+  assert.ok(f.reads.length > 0);
+  f.reads.at(-1).reject({code: 'TIMEOUT', message: 'Weather database temporarily unavailable'});
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(lastReading(f)[KEYS.TEMPERATURE], 20);
+  assert.equal(lastReading(f)[KEYS.WEATHER_UPDATED_AT], stamp);
+  assert.deepEqual(f.legacyRefreshes, []);
+});
+
+test('Phone backup reads current conditions at thirty minutes and bounds a stalled database read', async () => {
+  const f = fixture();
+  f.router.refresh(false);
+  f.weather();
+  for (const read of f.reads) read.resolve({pluginUuid: WEATHER, instances: [instance()]});
+  await Promise.resolve();
+  await Promise.resolve();
+  const before = f.reads.length;
+  f.tick(30 * 60000);
+  assert.equal(f.reads.length, before + 1, 'The phone backup must work without a watch request');
+  const stalled = f.reads.at(-1);
+  f.tick(15000);
+  assert.equal(f.router.status().error, 'TIMEOUT');
+  assert.equal(stalled.subscription.closed, true, 'A stalled one-shot subscription must be unsubscribed');
+  assert.equal(lastReading(f)[KEYS.TEMPERATURE], 20);
+  f.tick(2 * 60000);
+  assert.equal(f.reads.length, before + 2, 'A stalled database read must allow a later retry');
+  f.reads.at(-1).resolve({pluginUuid: WEATHER, instances: [instance('current', 18)]});
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(lastReading(f)[KEYS.TEMPERATURE], 18);
+  stalled.resolve({pluginUuid: WEATHER, instances: [instance('current', 1)]});
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(lastReading(f)[KEYS.TEMPERATURE], 18, 'An expired read cannot overwrite the retry');
+  assert.deepEqual(f.legacyRefreshes, []);
+});
+
+test('Diagnostics expose the actual source, selected location, native reading, confirmation and error', () => {
+  const f = fixture({settings: {locationId: 'office'}});
+  f.router.refresh(false);
+  f.weather([instance('home', 10), instance('office', 44, '°F', Array(48).fill(44))]);
+  assert.deepEqual(f.router.status(), {
+    source: 'shared', location: 'office', temperature: '44°F',
+    receivedAt: NOW / 1000, error: ''
+  });
+  f.advance(35 * 60000);
+  f.router.configure();
+  assert.equal(f.router.status().receivedAt, NOW / 1000,
+    'Status must distinguish confirmation from merely reopening settings');
+  f.error('PERMISSION_DENIED');
+  assert.equal(f.router.status().error, 'PERMISSION_DENIED');
+  assert.equal(f.router.status().source, 'shared');
+  f.weather([instance('office', 8)]);
+  assert.equal(f.router.status().temperature, '8°C');
+  assert.equal(f.router.status().receivedAt, (NOW + 35 * 60000) / 1000);
+  assert.equal(f.router.status().error, '');
+});
+
 test('A null hourly point cannot shift later hours into its position', () => {
   const f = fixture();
   f.router.refresh(false);
@@ -300,7 +446,7 @@ test('A null hourly point cannot shift later hours into its position', () => {
   }
 });
 
-test('Repeated cached data and restarting PKJS do not renew weather or forecast age', () => {
+test('Confirmed current readings update their age while identical forecasts retain their age across restart', () => {
   const f = fixture();
   f.router.refresh(false);
   f.weather();
@@ -308,36 +454,63 @@ test('Repeated cached data and restarting PKJS do not renew weather or forecast 
   const firstForecastAt = Buffer.from(first[KEYS.FORECAST_DATA]).readUInt32LE(4);
   f.advance(40 * 60000);
   f.weather();
-  assert.equal(lastReading(f)[KEYS.WEATHER_UPDATED_AT], first[KEYS.WEATHER_UPDATED_AT]);
+  assert.equal(lastReading(f)[KEYS.WEATHER_UPDATED_AT], (NOW + 40 * 60000) / 1000);
   assert.equal(Buffer.from(lastReading(f)[KEYS.FORECAST_DATA]).readUInt32LE(4), firstForecastAt);
   const restarted = fixture({now: NOW + 60 * 60000, data: f.data});
   restarted.router.refresh(false);
   restarted.weather();
-  assert.equal(lastReading(restarted)[KEYS.WEATHER_UPDATED_AT], first[KEYS.WEATHER_UPDATED_AT]);
+  assert.equal(lastReading(restarted)[KEYS.WEATHER_UPDATED_AT], (NOW + 60 * 60000) / 1000);
   assert.equal(Buffer.from(lastReading(restarted)[KEYS.FORECAST_DATA]).readUInt32LE(4), firstForecastAt);
 });
 
-test('A changed weather snapshot is allowed a new first-seen timestamp', () => {
+test('A changed hourly forecast is allowed a new first-seen timestamp', () => {
   const f = fixture();
   f.router.refresh(false);
   f.weather();
-  const first = lastReading(f)[KEYS.WEATHER_UPDATED_AT];
+  const first = Buffer.from(lastReading(f)[KEYS.FORECAST_DATA]).readUInt32LE(4);
   f.advance(40 * 60000);
-  f.weather([instance('current', 21)]);
-  assert.ok(lastReading(f)[KEYS.WEATHER_UPDATED_AT] > first);
+  const changedHours = Array.from({length: 48}, (_, i) => 11 + i);
+  f.weather([instance('current', 21, '°C', changedHours)]);
+  assert.ok(Buffer.from(lastReading(f)[KEYS.FORECAST_DATA]).readUInt32LE(4) > first);
 });
 
-test('Switching A to B and back to A preserves each location age across a restart', () => {
+test('Changing current conditions cannot renew the age of an unchanged hourly forecast', () => {
+  const f = fixture();
+  f.router.refresh(false);
+  f.weather([instance('current', 20)]);
+  const forecastAt = Buffer.from(lastReading(f)[KEYS.FORECAST_DATA]).readUInt32LE(4);
+  f.advance(40 * 60000);
+  f.weather([instance('current', 21)]);
+  const latest = lastReading(f);
+  assert.equal(latest[KEYS.TEMPERATURE], 21);
+  assert.equal(latest[KEYS.WEATHER_UPDATED_AT], (NOW + 40 * 60000) / 1000);
+  assert.equal(Buffer.from(latest[KEYS.FORECAST_DATA]).readUInt32LE(4), forecastAt);
+});
+
+test('Explicit temperature units are resent with weather to repair a lost setting or watch reset', () => {
+  const f = fixture({settings: {followPebbleUnits: false, useFahrenheit: true}});
+  f.router.refresh(false); // The watch still reports its reset/default Celsius setting.
+  f.weather([instance('current', 20, '°C')]);
+  assert.equal(lastReading(f)[KEYS.USE_FAHRENHEIT], 1);
+  assert.equal(lastReading(f)[KEYS.TEMPERATURE_FAHRENHEIT], 68);
+  f.settings.useFahrenheit = false;
+  f.router.configure();
+  assert.equal(lastReading(f)[KEYS.USE_FAHRENHEIT], 0);
+  assert.equal(lastReading(f)[KEYS.TEMPERATURE], 20);
+});
+
+test('Switching A to B and back to A preserves forecast ages and does not reconfirm held current data', () => {
   const f = fixture({settings: {locationId: 'home'}});
   f.router.refresh(false);
   const locations = [instance('home', 20), instance('office', 25)];
   f.weather(locations);
-  const homeStamp = lastReading(f)[KEYS.WEATHER_UPDATED_AT];
+  const homeStamp = Buffer.from(lastReading(f)[KEYS.FORECAST_DATA]).readUInt32LE(4);
   f.advance(20 * 60000);
   f.settings.locationId = 'office';
   f.router.configure();
-  const officeStamp = lastReading(f)[KEYS.WEATHER_UPDATED_AT];
+  const officeStamp = Buffer.from(lastReading(f)[KEYS.FORECAST_DATA]).readUInt32LE(4);
   assert.ok(officeStamp > homeStamp);
+  assert.equal(lastReading(f)[KEYS.WEATHER_UPDATED_AT], NOW / 1000);
   f.advance(20 * 60000);
   f.settings.locationId = 'home';
   f.router.configure();
@@ -346,7 +519,8 @@ test('Switching A to B and back to A preserves each location age across a restar
   const restarted = fixture({now: NOW + 60 * 60000, data: f.data, settings: {locationId: 'office'}});
   restarted.router.refresh(false);
   restarted.weather(locations);
-  assert.equal(lastReading(restarted)[KEYS.WEATHER_UPDATED_AT], officeStamp);
+  assert.equal(Buffer.from(lastReading(restarted)[KEYS.FORECAST_DATA]).readUInt32LE(4), officeStamp);
+  assert.equal(lastReading(restarted)[KEYS.WEATHER_UPDATED_AT], (NOW + 60 * 60000) / 1000);
 });
 
 test('The original single-location first-seen cache migrates without resetting its age', () => {
@@ -359,8 +533,31 @@ test('The original single-location first-seen cache migrates without resetting i
   const restarted = fixture({now: NOW + 60 * 60000, data: migratedData});
   restarted.router.refresh(false);
   restarted.weather();
-  assert.equal(lastReading(restarted)[KEYS.WEATHER_UPDATED_AT], NOW / 1000);
+  assert.equal(lastReading(restarted)[KEYS.WEATHER_UPDATED_AT], (NOW + 60 * 60000) / 1000);
+  assert.equal(Buffer.from(lastReading(restarted)[KEYS.FORECAST_DATA]).readUInt32LE(4), NOW / 1000);
   assert.equal(JSON.parse(migratedData[cacheKey]).samples.length, 1);
+});
+
+test('Beta 1 forecast fingerprints migrate from current-plus-hours to hours-only without renewing age', () => {
+  const f = fixture();
+  f.router.refresh(false);
+  f.weather([instance('current', 20)]);
+  const cacheKey = Object.keys(f.data)[0];
+  const latestSample = JSON.parse(f.data[cacheKey]).samples[0];
+  const [start, values] = JSON.parse(latestSample.fingerprint);
+  const legacySample = {...latestSample, fingerprint: JSON.stringify([20, start, values])};
+  for (const previousFormat of [legacySample, {samples: [legacySample]}]) {
+    const data = {[cacheKey]: JSON.stringify(previousFormat)};
+    const restarted = fixture({now: NOW + 60 * 60000, data});
+    restarted.router.refresh(false);
+    restarted.weather([instance('current', 22)]);
+    const latest = lastReading(restarted);
+    assert.equal(latest[KEYS.TEMPERATURE], 22);
+    assert.equal(Buffer.from(latest[KEYS.FORECAST_DATA]).readUInt32LE(4), NOW / 1000);
+    const migrated = JSON.parse(data[cacheKey]).samples[0];
+    assert.deepEqual(JSON.parse(migrated.fingerprint), [start, values]);
+    assert.equal(migrated.seen, NOW / 1000);
+  }
 });
 
 test('Remembered location ages remain bounded to the sixteen most recently used locations', () => {

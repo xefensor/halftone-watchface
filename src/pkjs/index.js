@@ -70,6 +70,16 @@ Pebble.addEventListener('showConfiguration', function() {
   }
   clay.config.forEach(function(section) {
     (section.items || []).forEach(function(item) {
+      if (item.id === 'weather-status') {
+        var status = weather.status();
+        item.defaultValue = 'Halftone 1.4.1 beta 2. ' +
+          (status.source === 'shared' ? 'Pebble shared current conditions' : 'Compatibility weather') +
+          (status.location ? ' · ' + status.location : '') +
+          (status.temperature ? ' · Received ' + status.temperature : '') +
+          (status.receivedAt ? ' · Last source read ' +
+            Math.max(0, Math.floor((Date.now() / 1000 - status.receivedAt) / 60)) + ' min ago' : '') +
+          (status.error ? ' · ' + status.error : '');
+      }
       if (item.messageKey === 'WEATHER_LOCATION') {
         item.options = [{label: 'First Pebble weather location', value: ''}].concat(
           places.map(function(p) { return {label: p.name, value: p.id}; }));

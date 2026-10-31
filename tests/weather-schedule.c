@@ -13,9 +13,5 @@ int main(void) {
   assert(!weather_is_fresh(now, now - 7201));
   assert(!weather_is_fresh(now, 0));
   assert(!weather_is_fresh(now, now + 301));
-  assert(weather_observation_is_current(now, now - 1800, now - 1799));
-  assert(!weather_observation_is_current(now, now - 1800, now - 1800));
-  assert(!weather_observation_is_current(now, now, 0));
-  assert(!weather_observation_is_current(now, now, now + 1));
   return 0;
 }

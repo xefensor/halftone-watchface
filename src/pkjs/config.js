@@ -36,6 +36,11 @@ module.exports = [
         "defaultValue": "Time & temperature"
       },
       {
+        "type": "text",
+        "id": "weather-status",
+        "defaultValue": "Weather source: waiting for data"
+      },
+      {
         "type": "toggle",
         "messageKey": "FOLLOW_PEBBLE_UNITS",
         "defaultValue": true,
