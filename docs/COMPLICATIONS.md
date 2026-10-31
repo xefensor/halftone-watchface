@@ -1,6 +1,6 @@
-# Five fixed complications
+# Complications in the adaptive layout
 
-**Halftone 1.6.1 beta 8** uses the five global complication choices in the
+**Halftone 1.7.0 beta 9** uses the five global complication choices in the
 Pebble phone app. A complication is a source reading: a temperature, phone
 battery level, calendar time, condition or another plugin property. The clock
 and date remain native watch functions and do not consume a slot.
@@ -8,9 +8,9 @@ and date remain native watch functions and do not consume a slot.
 ## Choose what each number means
 
 Open **Complications** in the Pebble phone app's Settings; some preview versions
-place it under **Settings → Plugins**. Configure slots 1–5, then choose a layout
-in Halftone's settings. Classic is the default for new and existing users.
-The saved layout and time format survive relaunching the face.
+place it under **Settings → Plugins**. Configure slots 1–5. Halftone now has one
+adaptive layout; older saved layout styles no longer select separate designs.
+The saved time format and appearance settings survive relaunching the face.
 
 A weather example is Temperature in slot 1, High in 2, Low in 3, Precipitation
 in 4 and Condition in 5, all for the same location. Alternatively, put phone
@@ -19,29 +19,30 @@ no fixed weather preset or weather inference in Halftone.
 
 ## Where the five readings appear
 
-![Native watchface captures with the five global slot numbers](images/complication-layout-map.png)
-
 Each number always refers to the same global complication, even when an earlier
 slot is empty. Unconfigured slots are hidden. A configured slot waiting for
 usable data, denied permission or an unsupported format shows `--`; later slots
 do not move into its position.
 
-| Global complication | Classic | Comic cover | Stacked time |
-| --- | --- | --- | --- |
-| 1 | Large central reading below the clock | Large reading at lower left | Right column, second from top |
-| 2 | Upper-left cell of the lower grid | Right column, top | Right column, third from top |
-| 3 | Upper-right cell of the lower grid | Right column, middle | Right column, fourth from top |
-| 4 | Bottom-left cell | Right column, bottom | Right column, bottom |
-| 5 | Bottom-right cell | Left side, above slot 1 | Right column, top |
+| Global complication | Normal position | While music or a notification is shown |
+| --- | --- | --- |
+| 1 | Large central reading below the clock | Remains visible in the same primary area |
+| 2 | Upper-left cell of the lower grid | Temporarily hidden |
+| 3 | Upper-right cell of the lower grid | Temporarily hidden |
+| 4 | Bottom-left cell | Temporarily hidden |
+| 5 | Bottom-right cell | Temporarily hidden |
 
-Classic keeps a wide clock and central primary reading. Comic cover places the
-wide clock over the left-side readings and a separate right column. Stacked
-time puts hours above minutes on the left and all five readings down the right.
-The date is plain and remains live in every layout.
+The date is plain, and the wide clock stays in place as the lower area changes.
+A two-line music or new-notification panel replaces the lower grid. This uses
+additional source subscriptions, not a permanent change to any of the five
+complication choices. When the panel ends, the four readings return to their
+original positions. See [dynamic content](DYNAMIC-CONTENT.md).
 
-During **Timeline Peek / Quick View**, every style uses the common compact
-clock layout with **complication 1 only**. Complications 2–5 are hidden until
-Peek closes, then return to their original positions.
+During **Timeline Peek / Quick View**, clock and date compress around Pebble's
+native area with **complication 1 only**. Complications 2–5, music and notification
+summaries stay hidden until Peek closes. Halftone does not read or duplicate
+Timeline's own events and other content. Small battery/connection indicators
+use the primary-reading area when enabled.
 
 ## How a selected reading is drawn
 
@@ -77,12 +78,13 @@ select a scalar current reading instead.
 The Pebble app chooses the provider for each category/item. Source configuration,
 units and sign-in belong to Pebble or the provider, while layout, colors and
 12-hour/24-hour time remain Halftone settings. Changing one global slot changes
-that numbered reading across the layouts.
+that numbered reading without affecting the music or notification sources.
 
-Halftone declares no Internet or hard-coded Location permission. Pebble requests
-only the access required by the selected sources through its normal permission
-flow. A source can need Location, Calendar or another permission. Provider
-credentials and authentication are configured with that provider, not in
+Halftone declares `ReadMusic`, but no Internet or hard-coded Location permission.
+Pebble requests access required by selected sources through its normal permission
+flow. Notification summaries are opt-in and request notification access when
+enabled. A complication source can need Location, Calendar or another
+permission. Provider credentials and authentication are configured with that provider, not in
 Halftone's settings.
 
 A direct source can differ from the normalized data displayed in Pebble's native
@@ -92,14 +94,16 @@ accuracy or provider refresh intervals. See [weather setup and comparison](PLUGI
 ## Cache and expiry
 
 A slot's cached reading lasts at most **two hours from its original confirmed
-receipt**, capped by an earlier source expiry. Reopening the watchface, changing
-layout or replaying saved data cannot renew that confirmation. Receipt time is
+receipt**, capped by an earlier source expiry. Reopening the watchface or
+replaying saved data cannot renew that confirmation. Receipt time is
 not the source's measurement or model issue time. There is no generic observation
 timestamp and no six-hour weather forecast cache in this build.
 
 After expiry, a still-configured slot shows `--` until usable data arrives.
 If plugins are unavailable or a source cannot be read, Halftone does not start
-an independent HTTP fallback. Clock and date continue on the watch.
+an independent HTTP fallback. Clock and date continue on the watch. These cache
+rules apply to global complications, not the ephemeral music/notification panel;
+its shorter limits and privacy rules are documented separately.
 
 ## Source contract for developers
 

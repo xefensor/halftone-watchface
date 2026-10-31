@@ -1,6 +1,83 @@
 # Halftone beta validation
 
-## 1.6.1 beta 8 — source recovery and diagnostic checks
+## 1.7.0 beta 9 — adaptive layout and ephemeral context
+
+The checks below use deterministic source fixtures and the released native
+watch binary/resources. They do not claim physical phone/watch confirmation.
+
+- One adaptive layout replaces the three-style selector. The clock, date and
+  global complication 1 retain their areas. Global complications 2–5 form the
+  normal lower grid; music or new notification summaries can replace that grid.
+- Native Timeline Peek remains authoritative. It hides all secondary/contextual
+  content and keeps the compact clock, date and primary complication. No
+  separate calendar, timer or rain-trigger implementation is included.
+- Music and low phone battery use maximum 120-second confirmation leases, with
+  a one-minute source refresh. Paused music has a five-second grace period.
+  Notification summaries are opt-in, last at most 12 seconds and keep their
+  original expiry across unrelated updates. Baselines suppress existing items
+  on startup, reconfiguration and reconnect; app-name filtering and a separate
+  message-text switch control summaries.
+- Context is a separately validated five-record snapshot. Native context is
+  ephemeral and is not written to the global-complication cache. Disconnection
+  and relaunch clear it. Native expiry scheduling does not wait for a minute
+  tick. Low battery and connection status use small indicators, not panel
+  takeovers. All AppMessage producers use one serialized delivery queue.
+- Music declares `ReadMusic`; optional notification summaries use Pebble's
+  runtime permission flow. No Internet permission, weather HTTP fallback or
+  provider pin is added. The existing UUID and global complication contract
+  remain unchanged. New settings and status framing cover all 17 languages.
+
+- **217 JavaScript tests** pass, including an entrypoint integration test with
+  the real complication/context coordinators and the shared transport. Tests
+  cover opt-in notification access, same-ID chat updates, no replay of initial
+  snapshots, stale/old ACKs, source expiry, permission/API changes, callbacks,
+  heartbeat confirmation, pause grace, filters and translated controls.
+- **Eight C suites** pass with C99 and `-Wall -Wextra -Werror`. The complication
+  and contextual packet decoders also pass AddressSanitizer/UndefinedBehavior-
+  Sanitizer checks. Leak scanning is disabled because the execution environment
+  does not expose the required `/proc` process data; no leak check is claimed.
+- A clean SDK **4.33.1** Emery build succeeds: resources **117,903 bytes**, RAM
+  footprint **20,653 bytes**, free heap **110,419 bytes**. The Waf message-key
+  generator now includes its key mapping in the cache signature; a previously
+  stale SDK cache cannot restore old C/JS keys. All 30 generated keys match the
+  package manifest. Compiled source-map contents match the current modules.
+- Permission packaging preserves the app UUID and SDK payloads, adds manifest
+  version 2 and declares `ReadMusic`. Optional notification permission remains
+  requested only when enabled. The active JavaScript bundle contains no legacy
+  weather HTTP endpoint. Repeat packaging produces identical PBW bytes.
+- **34 native emulator captures** on the final PBW cover default readings,
+  music/artwork, notification title/body privacy, long accented values, zeroes,
+  holes, maximum packets, themes, shadow/depth and clock widths/formats. Clock,
+  date and primary reading remain pixel-identical across six context states.
+  Expiry restores the grid or music precisely; Peek hides and restores context;
+  relaunch drops private data. Both low watch/phone battery icons render after
+  the emulator's battery-monitor update. All four border bands are pixel-
+  identical to the previous native reference.
+- Reconnect protection uses a nonprivate session counter, exact token matching
+  and notification-free boundary snapshots. Only a matching ACK releases fresh
+  notification delivery. **14 additional native captures** verify fresh unmarked notifications stay
+  hidden; corrupt or wrong-token boundaries cannot open the gate; a matching
+  empty boundary permits later fresh notices; relaunch advances the token and
+  rejects the previous one. Unmarked music, precise expiry and Peek restoration
+  remain correct. All image equality checks use RGB differences, not the
+  alpha channel of SDK screenshots.
+- The emulator's synthetic Bluetooth toggle does **not** disconnect its Pebble
+  app session. Those two captures are labelled as an injection limitation;
+  they do not prove physical native disconnect behavior. Callback wiring and
+  native clearing/gating are reviewed, and coordinator disconnection is tested.
+  Actual Bluetooth loss/recovery, media apps and permission prompts still need
+  on-device confirmation.
+- The source archive is checked against current repository files and excludes
+  dependencies, credentials and nested release archives.
+
+Permission-packaged PBW SHA-256:
+
+`5adff11c1963c00dc5e1ad34ea1fba9a2e16cce65566a2657eca64e35a332ee4`
+
+No physical-phone/watch success is claimed for beta 9 until it is confirmed on
+the device. Historical results below apply to their named versions.
+
+## 1.6.1 beta 8 — historical source recovery and diagnostic checks
 
 This update addresses a recovery gap and exposes the original source failure
 message. It does not establish or claim a fix for the reported on-device
@@ -37,7 +114,7 @@ Permission-packaged PBW SHA-256:
 
 `0f20c7b75f390e8021dd90357839648578e9c2128c936b7d34b5d075cc349578`
 
-## 1.6.0 beta 7 — five-complication checks
+## 1.6.0 beta 7 — historical five-complication checks
 
 All source data now comes from five fixed global complication slots. Clock and
 date remain native. The active bundle has no weather preset, independent HTTP

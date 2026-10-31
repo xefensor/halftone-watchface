@@ -18,16 +18,18 @@ typedef struct { WatchLayoutRect rect; uint8_t font_size; } WatchSlotGeometry;
 typedef struct {
   WatchLayoutRect date, time, minutes;
   WatchSlotGeometry slots[WATCH_LAYOUT_SLOT_COUNT];
+  WatchLayoutRect context;
   int16_t divider_x, divider_top, divider_bottom;
 } WatchLayoutGeometry;
 
 static inline WatchLayoutStyle watch_layout_sanitize(int value) {
-  return value >= WATCH_LAYOUT_CLASSIC && value <= WATCH_LAYOUT_STACKED
-      ? (WatchLayoutStyle)value : WATCH_LAYOUT_CLASSIC;
+  (void)value;
+  return WATCH_LAYOUT_CLASSIC;
 }
 
 static inline WatchLayoutStyle watch_layout_effective(int value, int height) {
-  return height >= 215 ? watch_layout_sanitize(value) : WATCH_LAYOUT_CLASSIC;
+  (void)height;
+  return watch_layout_sanitize(value);
 }
 
 static inline int watch_layout_interpolate(int full, int peek, int height) {
@@ -40,7 +42,8 @@ static inline int watch_layout_interpolate(int full, int peek, int height) {
 static inline WatchLayoutGeometry watch_layout_geometry(int selected_style,
                                                          int height, bool large) {
   WatchLayoutGeometry result = {0};
-  const WatchLayoutStyle style = watch_layout_effective(selected_style, height);
+  (void)selected_style;
+  (void)large;
   if (height < 215) {
     result.slots[0] = (WatchSlotGeometry){{14,
         watch_layout_interpolate(132, 118, height), 172, 38}, 28};
@@ -51,30 +54,7 @@ static inline WatchLayoutGeometry watch_layout_geometry(int selected_style,
   result.slots[2] = (WatchSlotGeometry){{104, 166, 78, 25}, 20};
   result.slots[3] = (WatchSlotGeometry){{18, 187, 78, 25}, 20};
   result.slots[4] = (WatchSlotGeometry){{104, 187, 78, 25}, 20};
-  if (style == WATCH_LAYOUT_COMIC_COVER) {
-    result.date = (WatchLayoutRect){8, 24, 184, 32};
-    result.time = (WatchLayoutRect){0, large ? 35 : 50, 200, 112};
-    result.slots[0] = (WatchSlotGeometry){{20, 165, 84, 44}, 38};
-    result.slots[1] = (WatchSlotGeometry){{113, 136, 72, 26}, 24};
-    result.slots[2] = (WatchSlotGeometry){{113, 160, 72, 26}, 24};
-    result.slots[3] = (WatchSlotGeometry){{113, 184, 72, 26}, 24};
-    result.slots[4] = (WatchSlotGeometry){{20, 140, 84, 24}, 20};
-    result.divider_x = 108;
-    result.divider_top = 140;
-    result.divider_bottom = 207;
-  } else if (style == WATCH_LAYOUT_STACKED) {
-    result.date = (WatchLayoutRect){8, 24, 184, 32};
-    result.time = (WatchLayoutRect){7, 35, 96, 98};
-    result.minutes = (WatchLayoutRect){7, 111, 96, 98};
-    result.slots[0] = (WatchSlotGeometry){{113, 81, 72, 44}, 38};
-    result.slots[1] = (WatchSlotGeometry){{113, 128, 72, 25}, 24};
-    result.slots[2] = (WatchSlotGeometry){{113, 153, 72, 25}, 24};
-    result.slots[3] = (WatchSlotGeometry){{113, 178, 72, 25}, 24};
-    result.slots[4] = (WatchSlotGeometry){{113, 55, 72, 24}, 20};
-    result.divider_x = 107;
-    result.divider_top = 63;
-    result.divider_bottom = 203;
-  }
+  result.context = (WatchLayoutRect){14, 164, 172, 48};
   return result;
 }
 

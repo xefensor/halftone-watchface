@@ -10,22 +10,9 @@ module.exports = [
   {
     "type": "section",
     "items": [
-      {"type": "heading", "defaultValue": "Layout"},
-      {
-        "type": "select",
-        "messageKey": "LAYOUT_STYLE",
-        "defaultValue": "0",
-        "label": "Layout style",
-        "options": [
-          {"label": "Classic", "value": "0"},
-          {"label": "Comic cover", "value": "1"},
-          {"label": "Stacked time", "value": "2"}
-        ]
-      },
-      {"type": "text", "defaultValue": "Classic: 1 centered; 2/3 above 4/5 in the bottom grid."},
-      {"type": "text", "defaultValue": "Comic cover: 1 large at lower left, 5 above it; 2, 3 and 4 down the right."},
-      {"type": "text", "defaultValue": "Stacked time: 5, 1, 2, 3 and 4 down the right; clock on the left."},
-      {"type": "text", "defaultValue": "Timeline Peek shows only complication 1."}
+      {"type": "heading", "defaultValue": "Adaptive layout"},
+      {"type": "text", "defaultValue": "The clock stays in place. Complication 1 stays visible; music and new notifications replace slots 2–5."},
+      {"type": "text", "defaultValue": "Timeline Peek keeps the clock and complication 1; secondary readings, music and notification summaries hide."}
     ]
   },
   {
@@ -41,6 +28,20 @@ module.exports = [
     "items": [
       {"type": "heading", "defaultValue": "Time"},
       {"type": "toggle", "messageKey": "USE_12_HOUR", "defaultValue": false, "label": "12-hour time"}
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {"type": "heading", "defaultValue": "Dynamic content"},
+      {"type": "text", "id": "context-status", "defaultValue": "Dynamic content: waiting for Pebble"},
+      {"type": "toggle", "messageKey": "SHOW_MUSIC", "defaultValue": true, "label": "Show music while playing"},
+      {"type": "toggle", "messageKey": "SHOW_NOTIFICATIONS", "defaultValue": false, "label": "Show new notification summaries"},
+      {"type": "toggle", "messageKey": "NOTIFICATION_PREVIEW", "defaultValue": false, "label": "Include message text"},
+      {"type": "input", "messageKey": "NOTIFICATION_APPS", "defaultValue": "", "label": "Apps to show", "attributes": {"type": "text", "maxlength": 160}},
+      {"type": "text", "defaultValue": "App names separated by commas, for example Signal, WhatsApp. Leave empty for all allowed apps."},
+      {"type": "text", "defaultValue": "Uses notifications currently on the phone. Existing notifications are not replayed. Allow access in Pebble."},
+      {"type": "toggle", "messageKey": "SHOW_STATUS", "defaultValue": true, "label": "Show low battery and connection indicators"}
     ]
   },
   {

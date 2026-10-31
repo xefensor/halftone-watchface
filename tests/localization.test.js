@@ -5,8 +5,10 @@ const {test}=require('node:test');
 const localization=require('../src/pkjs/localization');
 const config=require('../src/pkjs/config');
 
-const DYNAMIC=['complicationsStatus','complicationsWaiting','complicationsDisabled','complicationsError','stateOn','stateOff'];
-const MAP_KEYS=['classicSlots','comicSlots','stackedSlots','peekSlots'];
+const DYNAMIC=['complicationsStatus','complicationsWaiting','complicationsDisabled','complicationsError','stateOn','stateOff',
+  'contextWaiting','contextReady','contextError'];
+const ADAPTIVE_KEYS=['adaptiveLayout','adaptiveHelp','adaptivePeek','dynamicContent','showMusic','showNotifications',
+  'notificationPreview','notificationApps','notificationAppsHelp','notificationsHelp','showStatus'];
 
 function visible(config) {
   const out=[];
@@ -65,12 +67,15 @@ test('All seventeen languages translate every visible setting and complication s
   }
 });
 
-test('Czech settings include established controls, complication configuration and slot mapping',()=>{
+test('Czech settings include established controls, the single layout and dynamic content',()=>{
   const strings=visible(localization.translateConfig(config,'cs-CZ'));
   for(const text of ['Nastavení Halftone','Barva pozadí','Čas','Komplikace','Uložit nastavení']) assert.ok(strings.includes(text));
   assert.ok(strings.some(text=>text.includes('pozice 1–5')&&text.includes('Pebble')));
-  assert.ok(strings.some(text=>text.includes('2/3 nad 4/5')));
-  assert.ok(strings.includes('Při Timeline Peek se zobrazuje pouze komplikace 1.'));
+  assert.ok(strings.includes('Přizpůsobivé rozložení'));
+  assert.ok(strings.includes('Zobrazit hudbu při přehrávání'));
+  assert.ok(strings.includes('Zobrazit souhrny nových oznámení'));
+  assert.ok(strings.some(text=>text.includes('Komplikace 1')&&text.includes('pozice 2–5')));
+  assert.ok(strings.some(text=>text.includes('Timeline Peek')&&text.includes('souhrny oznámení se skryjí')));
 });
 
 test('Unknown text and locales fall back safely, and English literals remain translation keys',()=>{
@@ -89,6 +94,8 @@ test('Complication status translations preserve zero counts and source error dat
     assert.ok(localization.t('complicationsError',language,parameters).includes('PERMISSION_DENIED'),language);
     assert.equal(localization.t('complicationsStatus',language).match(/\{[^}]+\}/g).join(','),'{ready},{configured}');
     assert.equal(localization.t('complicationsError',language).match(/\{[^}]+\}/g).join(','),'{error}');
+    assert.equal(localization.t('contextError',language).match(/\{[^}]+\}/g).join(','),'{error}');
+    assert.ok(localization.t('contextError',language,parameters).includes('PERMISSION_DENIED'),language);
     assert.notEqual(localization.t('stateOn',language),localization.t('stateOff',language),language);
   }
   assert.equal(localization.t('complicationsStatus','en',parameters),'Complications: 0/5 ready');
@@ -124,31 +131,37 @@ test('Translation deep-clones Clay data while preserving keys, IDs, saved values
   assert.equal(result[0].items[0].options[0].label,'Velikost textu');
 });
 
-test('Active settings contain only retained clock and appearance message keys',()=>{
+test('Active settings retain appearance controls and add opt-in notification settings without a layout picker',()=>{
   const messageKeys=items(config).filter(item=>item.messageKey).map(item=>item.messageKey);
-  assert.deepEqual(messageKeys,['LAYOUT_STYLE','BACKGROUND_COLOR','TEXT_COLOR','USE_12_HOUR','LARGE_TEXT','DEPTH_EFFECT','TEXT_SHADOW']);
+  assert.deepEqual(messageKeys,['BACKGROUND_COLOR','TEXT_COLOR','USE_12_HOUR','SHOW_MUSIC','SHOW_NOTIFICATIONS',
+    'NOTIFICATION_PREVIEW','NOTIFICATION_APPS','SHOW_STATUS','LARGE_TEXT','DEPTH_EFFECT','TEXT_SHADOW']);
   assert.ok(!items(config).some(item=>item.id==='weather-status'));
   const status=items(config).find(item=>item.id==='complications-status');
   assert.equal(status.defaultValue,'Complications: waiting for Pebble');
   assert.equal(status.messageKey,undefined,'the source status is informational, not a watch setting');
   assert.equal(items(config).find(item=>item.messageKey==='USE_12_HOUR').defaultValue,false);
   assert.equal(items(config).find(item=>item.messageKey==='LARGE_TEXT').defaultValue,false);
-  assert.deepEqual(items(config).find(item=>item.messageKey==='LAYOUT_STYLE').options.map(option=>option.value),['0','1','2']);
+  assert.ok(!items(config).some(item=>item.messageKey==='LAYOUT_STYLE'));
+  assert.equal(items(config).find(item=>item.messageKey==='SHOW_MUSIC').defaultValue,true);
+  assert.equal(items(config).find(item=>item.messageKey==='SHOW_NOTIFICATIONS').defaultValue,false);
+  assert.equal(items(config).find(item=>item.messageKey==='NOTIFICATION_PREVIEW').defaultValue,false);
+  assert.equal(items(config).find(item=>item.messageKey==='NOTIFICATION_APPS').defaultValue,'');
+  assert.equal(items(config).find(item=>item.messageKey==='SHOW_STATUS').defaultValue,true);
+  const context=items(config).find(item=>item.id==='context-status');
+  assert.equal(context.defaultValue,'Dynamic content: waiting for Pebble');
+  assert.equal(context.messageKey,undefined);
 });
 
-test('Every language explains all five fixed positions and the primary-only Peek layout',()=>{
+test('Every language explains the adaptive layout and the primary-only Peek behavior',()=>{
   for(const language of localization.languages) {
     const help=localization.t('complicationsHelp',language);
     assert.ok(help.includes('1–5')&&help.includes('Pebble'),language);
-    const classic=localization.t('classicSlots',language);
-    assert.ok(classic.includes('1')&&classic.includes('2/3')&&classic.includes('4/5'),language);
-    const comic=localization.t('comicSlots',language);
-    const stacked=localization.t('stackedSlots',language);
-    for(const number of ['1','2','3','4','5']) assert.ok(comic.includes(number)&&stacked.includes(number),language+' missing '+number);
-    const peek=localization.t('peekSlots',language);
+    const adaptive=localization.t('adaptiveHelp',language);
+    assert.ok(adaptive.includes('1')&&adaptive.includes('2–5'),language);
+    const peek=localization.t('adaptivePeek',language);
     assert.ok(peek.includes('Timeline Peek')&&peek.includes('1'),language);
     const rendered=visible(localization.translateConfig(config,language));
-    for(const key of MAP_KEYS) assert.ok(rendered.includes(localization.t(key,language)),language+' does not display '+key);
+    for(const key of ADAPTIVE_KEYS) assert.ok(rendered.includes(localization.t(key,language)),language+' does not display '+key);
     assert.ok(rendered.includes(localization.t('complicationsUnits',language)),language+' must explain source-owned units');
   }
 });
@@ -164,19 +177,25 @@ test('Complication help identifies source-owned units without retaining active w
   }
 });
 
-test('All layout controls translate without changing stored layout values or shared source schema',()=>{
-  const section=config.find(section=>(section.items||[]).some(item=>item.messageKey==='LAYOUT_STYLE'));
-  const original=JSON.parse(JSON.stringify(section));
+test('All new controls translate while preserving app filters, privacy defaults and source schema',()=>{
+  const original=JSON.parse(JSON.stringify(config));
   for(const language of localization.languages) {
-    const translated=localization.translateConfig([section],language)[0];
-    const select=translated.items.find(item=>item.messageKey==='LAYOUT_STYLE');
-    assert.equal(select.messageKey,'LAYOUT_STYLE');
-    assert.equal(select.defaultValue,'0');
-    assert.deepEqual(select.options.map(option=>option.value),['0','1','2']);
-    assert.deepEqual(select.options.map(option=>option.label),['layoutClassic','layoutComic','layoutStacked'].map(key=>localization.t(key,language)));
+    const translated=items(localization.translateConfig(config,language));
+    for(const key of ADAPTIVE_KEYS) {
+      const result=localization.t(key,language);
+      assert.notEqual(result,key,language+' missing '+key);
+      if(language!=='en') assert.notEqual(result,localization.t(key,'en'),language+' English fallback '+key);
+    }
+    const apps=translated.find(item=>item.messageKey==='NOTIFICATION_APPS');
+    assert.equal(apps.defaultValue,'');
+    assert.equal(apps.type,'input');
+    assert.equal(apps.attributes.maxlength,160);
+    assert.equal(translated.find(item=>item.messageKey==='SHOW_NOTIFICATIONS').defaultValue,false);
+    assert.equal(translated.find(item=>item.messageKey==='NOTIFICATION_PREVIEW').defaultValue,false);
+    assert.equal(translated.find(item=>item.id==='context-status').defaultValue,localization.t('contextWaiting',language));
   }
-  assert.deepEqual(section,original);
-  const czech=localization.translateConfig([section],'cs-CZ')[0].items.find(item=>item.messageKey==='LAYOUT_STYLE');
-  assert.equal(czech.options[1].label,'Komiksová obálka');
-  assert.equal(czech.options[2].label,'Čas pod sebou');
+  assert.deepEqual(config,original);
+  const sample=[{type:'input',messageKey:'NOTIFICATION_APPS',label:'Apps to show',defaultValue:'Signal, Colors'}];
+  assert.equal(localization.translateConfig(sample,'cs')[0].defaultValue,'Signal, Colors');
+  assert.ok(!items(config).some(item=>/TIMER|CALENDAR/.test(item.messageKey||'')));
 });

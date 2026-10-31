@@ -1,87 +1,100 @@
 # Halftone
 
-## Five-complication beta — 1.6.1 beta 8
+## Adaptive-layout beta — 1.7.0 beta 9
 
-Halftone displays five readings chosen in the Pebble phone app's global
-**Complications** settings. Choose weather, phone battery, calendar data or
-other installed plugin readings. The clock and date continue to run on the
-watch, with Halftone's existing 12-hour/24-hour option.
+Halftone has one layout: a plain date, a wide clock and a primary complication
+that stay in place, with a lower area that adapts to music and new
+notifications. Its procedural black halftone border continues the PT2 bezel.
 
-Install [Halftone-1.6.1-beta.8.pbw](dist/Halftone-1.6.1-beta.8.pbw).
-Source: [Halftone-1.6.1-beta.8-source.zip](dist/Halftone-1.6.1-beta.8-source.zip).
-This is a sideloadable testing build. Automated checks and native emulator
-results are recorded in [validation](docs/VALIDATION.md); physical phone/watch
-testing is still needed.
+Install [Halftone-1.7.0-beta.9.pbw](dist/Halftone-1.7.0-beta.9.pbw).
+Source: [Halftone-1.7.0-beta.9-source.zip](dist/Halftone-1.7.0-beta.9-source.zip).
+This is a sideloadable testing build. Release checks and remaining device
+checks are recorded in [validation](docs/VALIDATION.md).
 
-All five data areas now follow global complications. This build has no weather
-preset, independent weather HTTP client, pinned weather provider, temperature
-unit override or hourly forecast cache. Pebble and the selected sources supply
-the readings, units and any source-specific permission or sign-in flow.
-
-Beta 8 adds faster recovery from an unavailable source and shows the full failure
-message in settings. It does not establish the cause of a phone-side weather
-failure. See [weather troubleshooting](docs/WEATHER-TROUBLESHOOTING.md).
+The normal readings come from the Pebble phone app's five global
+**Complications** choices. Music, optional notification summaries and low phone
+battery use additional Pebble plugin subscriptions. There is no independent
+weather HTTP client, pinned weather provider, temperature-unit override or
+hourly forecast cache. Clock, date, watch battery and phone-connection state
+remain native watch functions.
 
 ## Set up
 
 1. Enable the Pebble app's plugin preview if your app version requires it.
 2. Open **Complications** in the Pebble phone app's Settings and configure slots
    1–5. Some preview builds place this screen under **Settings → Plugins**.
-3. Open Halftone's settings with its gear icon. Choose **Classic**, **Comic
-   cover** or **Stacked time** under **Layout style**, then save. Classic is the
-   default for both new and existing installations.
-4. Allow the permissions requested by the sources you selected. Connect or
-   configure a provider in Pebble if that provider requires it.
+3. Open Halftone's settings with its gear icon. Choose colors, text size and
+   dynamic-content options, then save. There is no layout selector.
+4. Allow the permissions requested by the sources you select. Music uses
+   `ReadMusic`; enabling notification summaries requests notification access
+   through Pebble. Connect or configure a provider in Pebble if required.
+
+Music and status indicators default to on. Notification summaries and message
+text default to off. When summaries are enabled, **Apps to show** can contain
+app names separated by commas, such as `Signal, WhatsApp`; an empty field
+includes all apps allowed by Pebble. Existing notifications are not replayed
+when the face starts, reconnects or notification access is reconfigured.
 
 For a weather arrangement, choose Temperature, High, Low, Precipitation and
-Condition for slots 1–5. These remain five independent readings; Halftone does
-not combine high/low or infer a condition or droplet from a percentage. Phone
-battery or any other supported reading can replace any slot.
+Condition for slots 1–5. These remain five independent readings: Halftone does
+not combine high/low or infer a condition from a percentage. Any supported
+source reading can replace any slot.
 
-![Five numbered complication positions in all three layouts](docs/images/complication-layout-map.png)
-
-Read the [slot-by-slot layout and format guide](docs/COMPLICATIONS.md), or the
+Read the [complication layout and format guide](docs/COMPLICATIONS.md),
+[dynamic-content guide](docs/DYNAMIC-CONTENT.md), or
 [weather setup guide](docs/PLUGIN-WEATHER.md).
 
-## Layouts
+## One layout, changing lower panel
 
-Halftone blends the PT2 screen into the bezel with its procedural black
-halftone border. The three styles place the same five numbered complications
-in different fixed positions:
+![Native captures: normal readings, music, notification and Timeline Peek](docs/images/adaptive-context-states.png)
 
-| Style | Arrangement |
+| State | Information area |
 | --- | --- |
-| Classic | Slot 1 centered; slots 2–5 in two rows below |
-| Comic cover | Large slot 1 at lower left, slot 5 above it, slots 2–4 down the right |
-| Stacked time | Hours above minutes on the left; slots 5, 1, 2, 3, 4 down the right |
+| Normal | Complication 1 centered; slots 2–5 in a two-row grid below |
+| Music playing | Complication 1 remains; song title and artist replace slots 2–5, with artwork when supplied |
+| New notification | Complication 1 remains; app/title and optional message text briefly replace the lower grid or music |
+| Timeline Peek / Quick View | The layout compresses around Pebble's native area; only clock, date and complication 1 remain |
 
-Empty slots stay empty without moving later slots. A selected reading that has
-no usable value shows `--`, with a reason in Halftone's settings diagnostics.
-During Timeline Peek / Quick View, every style uses the common compact clock
-layout with slot 1 only; slots 2–5 return afterward.
+Notifications have priority over music and last at most 12 seconds. Paused
+music yields after a five-second grace period. Secondary complications return
+when neither panel is active. Missing slots keep their positions; a selected
+reading without a usable value shows `--`.
 
-Time and date remain live in every style. The layout, time format, colors,
-extra-large text, text shadow and three-step/four-step border remain Halftone
-settings. Selecting a layout does not change the global complication choices.
-Source icons use the chosen text color; source images retain their own palette.
+Low watch battery (10% or less while not charging), low phone battery (15% or
+less) and a lost phone connection use small indicators beside the primary reading, rather than
+replacing the panel. These indicators can be disabled together.
+
+Timeline continues to handle its own calendar events and other content.
+Halftone does not create a second appointment panel. Timer integration is not
+included in this beta. There are no custom button, touch or motion controls;
+use Pebble's Music app for playback controls.
+
+The time format, colors, extra-large text, text shadow and three-step/four-step
+border remain configurable. Source icons use the chosen text color; source
+images retain their own palette. Upgrading from an earlier Classic, Comic or
+Stacked setting uses the same single adaptive layout.
 
 ## Readings and offline use
 
 Halftone accepts text, numbers, booleans, timestamps and small source-supplied
-icons/images. It prefers a property's short text when available and can display
-an icon beside the text. Long values fit the available area or end in an
-ellipsis. Series-only readings are unsupported and show `--`; choose a current
-scalar reading instead of an hourly or daily series.
+icons/images. It prefers a property's short text when available. Long values
+fit the available area or end in an ellipsis. Series-only readings are
+unsupported and show `--`; choose a current scalar reading instead.
 
-Each reading can be retained for up to two hours from its confirmed receipt,
-or until the source's expiry if earlier. Restarting, changing layout or
-replaying a cached value does not renew that time. Receipt time is not the
-provider's observation time. There is no six-hour forecast or separate HTTP
-fallback in beta 8. The clock and date continue while the phone is unavailable.
+Global complication readings can be retained for up to two hours from their
+confirmed receipt, or until the source's expiry if earlier. Reopening the face
+or replaying cached data does not renew that time. Receipt time is not the
+provider's observation time. Clock and date continue without the phone.
+
+Music and notification panels are separate, short-lived context. They are not
+persisted or logged, disappear on disconnection and cannot survive a native
+watchface relaunch. Music and phone battery require confirmation at least every
+two minutes; their subscriptions are refreshed every minute. Notification
+summaries keep their original expiry even if another source updates.
 
 Generic complications do not make a provider more accurate or refresh it more
-often. Direct plugin readings can also differ from the values normalized for
-Pebble's native Weather app; see the weather guide for that distinction.
+often. Direct plugin readings can differ from values normalized for Pebble's
+native Weather app; see the weather guide for that distinction.
 
 ## Languages
 
@@ -91,8 +104,8 @@ Danish, Swedish, Norwegian, Finnish, Hungarian, Romanian and Turkish. Norwegian
 accepts `no`, `nb` and `nn`; unsupported languages fall back to English.
 
 Phone settings prefer the active watch language, then the phone language, and
-finally English. Source-provided text, units and names are displayed as supplied
-rather than translated or converted by Halftone.
+finally English. All dynamic-content controls and status framing are translated.
+Source-provided text, units and names remain as supplied.
 
 ## Build and install
 
@@ -107,22 +120,23 @@ pebble build
 python3 scripts/package-beta.py
 ```
 
-The clean step regenerates SDK message keys. The final step produces
-`dist/Halftone-1.6.1-beta.8.pbw` with manifest version 2 and verifies the existing
-UUID and byte-identical SDK-built payloads. This watchface consumes plugin data;
-it does not install a plugin of its own or need a plugin-only SDK project.
+The build includes message-key inputs in the SDK cache signature, avoiding
+stale generated C/JavaScript keys across upgrades. The final step produces
+`dist/Halftone-1.7.0-beta.9.pbw` with manifest version 2 and verifies the existing
+UUID and unchanged SDK-built payloads. Halftone consumes plugin data; it does
+not install a plugin of its own or need a plugin-only SDK project.
 
 Install the packaged build in the Emery emulator:
 
 ```sh
-pebble install --emulator emery dist/Halftone-1.6.1-beta.8.pbw
+pebble install --emulator emery dist/Halftone-1.7.0-beta.9.pbw
 ```
 
 For a real PT2, enable Dev Connection in the Pebble phone app and use:
 
 ```sh
 pebble login
-pebble install --cloudpebble dist/Halftone-1.6.1-beta.8.pbw
+pebble install --cloudpebble dist/Halftone-1.7.0-beta.9.pbw
 ```
 
 See [version-specific validation and remaining device checks](docs/VALIDATION.md).
@@ -130,22 +144,27 @@ See [version-specific validation and remaining device checks](docs/VALIDATION.md
 ## Project structure
 
 ```text
-src/c/halftone.c      Watchface rendering, clock, persistence and AppMessage
-src/pkjs/index.js     Phone-side source subscriptions and Clay initialization
-src/pkjs/complications.js Global slot selection, subscriptions and receipt cache
+src/c/halftone.c       Rendering, clock, native state and AppMessage
+src/c/context_data.h   Ephemeral context validation and panel selection
+src/pkjs/index.js      Source coordination and Clay initialization
+src/pkjs/complications.js Global slot subscriptions and receipt cache
+src/pkjs/context.js    Music, new notifications and low phone battery
+src/pkjs/message-queue.js Shared serialized AppMessage transport
 src/pkjs/complication-data.js Bounded text, artwork and five-slot packet
-src/pkjs/config.js    Halftone phone-app settings
-resources/fonts/     Custom date, clock and reading fonts
-docs/COMPLICATIONS.md Fixed slot maps, supported formats and data limits
-package.json         Emery target, permissions and message keys
+src/pkjs/config.js     Halftone phone-app settings
+resources/fonts/      Custom date, clock and reading fonts
+docs/COMPLICATIONS.md  Fixed slot map, formats and data limits
+docs/DYNAMIC-CONTENT.md Context behavior, privacy and source contract
+package.json          Emery target, permissions and message keys
 ```
 
 ## Earlier releases
 
-Previous PBWs and source archives remain in `dist/`. The 1.4.x–1.5.x betas used
-a weather preset; the older 1.3.1 release used an independent weather client.
+Previous PBWs and source archives remain in `dist/`. The 1.6.x betas used five
+fixed global complications in three layout styles. The 1.4.x–1.5.x betas used a
+weather preset; the older 1.3.1 release used an independent weather client.
 Their caches, settings, permissions and screenshots describe those versions,
-not beta 8. Historical Store materials remain in `store/`, and previous test
+not beta 9. Historical Store materials remain in `store/`, and earlier test
 results remain under their own versions in `docs/VALIDATION.md`.
 
 ## License

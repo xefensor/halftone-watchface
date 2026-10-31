@@ -4,9 +4,21 @@
 # Feel free to customize this to your needs.
 #
 import os.path
+from waflib.TaskGen import after_method, feature
 
 top = '.'
 out = 'build'
+
+
+@feature('message_keys')
+@after_method('process_message_keys')
+def message_key_cache_inputs(task_gen):
+    # SDK 4.33.1 sets the obsolete dep_vars field for these generated files.
+    # Waf 2 uses vars: without it, its shared cache can restore another build's
+    # old keys even after pebble clean, leaving C and JavaScript out of sync.
+    for task in task_gen.tasks:
+        if hasattr(task, 'message_keys') and 'MESSAGE_KEYS' not in task.vars:
+            task.vars = list(task.vars) + ['MESSAGE_KEYS']
 
 
 def options(ctx):

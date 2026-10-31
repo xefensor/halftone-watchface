@@ -1,5 +1,6 @@
 #include <pebble.h>
 #include "complication_data.h"
+#include "context_data.h"
 #include "watch_layout.h"
 
 #define PERSIST_KEY_BACKGROUND_COLOR 2
@@ -9,7 +10,9 @@
 #define PERSIST_KEY_LARGE_TEXT 6
 #define PERSIST_KEY_USE_12_HOUR 7
 #define PERSIST_KEY_LAYOUT_STYLE 16
+#define PERSIST_KEY_SHOW_STATUS 19
 #define PERSIST_KEY_COMPLICATION_FIRST 20
+#define PERSIST_KEY_CONTEXT_SESSION 61
 #define COMPLICATION_CACHE_CHUNKS 8
 #define COMPLICATION_CACHE_CHUNK_BYTES 256
 
@@ -30,12 +33,12 @@ static Window *s_window;
 static Layer *s_window_layer;
 static Layer *s_background_layer;
 static Layer *s_complication_layers[COMPLICATION_SLOT_COUNT];
+static Layer *s_context_layer;
+static Layer *s_status_layer;
 static TextLayer *s_date_layer;
 static TextLayer *s_time_layer;
-static TextLayer *s_minutes_layer;
 static TextLayer *s_date_shadow_layer;
 static TextLayer *s_time_shadow_layer;
-static TextLayer *s_minutes_shadow_layer;
 static GFont s_date_font;
 static GFont s_time_font;
 static GFont s_compact_date_font;
@@ -53,7 +56,18 @@ static bool s_depth_effect_enabled;
 static bool s_text_shadow_enabled;
 static bool s_large_text_enabled;
 static bool s_use_12_hour;
-static WatchLayoutStyle s_layout_style;
+static bool s_show_status;
+static bool s_phone_connected;
+static BatteryChargeState s_battery;
+static ComplicationSet s_context;
+static AppTimer *s_context_timer;
+static bool s_context_rebaseline = true;
+static bool s_context_awaiting_baseline = true;
+static bool s_context_rebaseline_in_flight;
+static uint32_t s_context_session_token;
+static uint32_t s_connection_generation;
+static uint32_t s_request_generation;
+static time_t s_last_request_at;
 static ComplicationSet s_complications;
 static bool s_has_complications;
 static bool s_was_fresh[COMPLICATION_SLOT_COUNT];
@@ -62,8 +76,6 @@ static size_t s_complication_packet_length;
 static AppTimer *s_startup_timer;
 static char s_date_buffer[40];
 static char s_time_buffer[6];
-static char s_hours_buffer[3];
-static char s_minutes_buffer[3];
 
 static const char *const s_english_days[] = {
   "SUNDAY",
@@ -404,25 +416,6 @@ static bool prv_text_fits(const char *text, GFont font, int width, int height) {
   return size.w <= width && size.h <= height;
 }
 
-static GFont prv_get_stacked_time_font(int width) {
-  // A shared size keeps the two rows aligned even when the 12-hour hour has a
-  // single digit. Cap at96 so the two cap-height rows fit the vertical budget.
-  for (int i = 4; i >= 0; --i) {
-    if (prv_text_fits(s_hours_buffer, s_large_time_fonts[i], width, 100) &&
-        prv_text_fits(s_minutes_buffer, s_large_time_fonts[i], width, 100)) {
-      return s_large_time_fonts[i];
-    }
-  }
-  const GFont smaller[] = {s_time_font, s_large_compact_time_font, s_compact_time_font};
-  for (size_t i = 0; i < sizeof(smaller) / sizeof(smaller[0]); ++i) {
-    if (prv_text_fits(s_hours_buffer, smaller[i], width, 100) &&
-        prv_text_fits(s_minutes_buffer, smaller[i], width, 100)) { return smaller[i]; }
-  }
-  return s_compact_time_font;
-}
-
-
-
 static GRect prv_layout_rect(WatchLayoutRect rect) {
   return GRect(rect.x, rect.y, rect.width, rect.height);
 }
@@ -489,9 +482,9 @@ static void prv_load_complications(void) {
 }
 
 static void prv_remove_legacy_data(void) {
-  // Keys2..7 are still theme/clock settings;16 is still the layout. Never
-  // reuse or read the obsolete provider-specific values as generic slot data.
-  static const uint8_t keys[] = {1, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18};
+  // Keys2..7 remain theme/clock settings. Ignore the old layout choice and
+  // never reinterpret obsolete provider-specific values as generic slot data.
+  static const uint8_t keys[] = {1, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
   for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); ++i) { persist_delete(keys[i]); }
 }
 
@@ -575,7 +568,7 @@ static void prv_draw_complication(Layer *layer, GContext *ctx) {
   if (!has_text && !bitmap) { snprintf(text, sizeof(text), "--"); has_text = true; }
   const int bitmap_size = bitmap ? (has_text ? 16 : 24) : 0;
   const int gap = bitmap && has_text ? 4 : 0;
-  const WatchLayoutGeometry geometry = watch_layout_geometry(s_layout_style,
+  const WatchLayoutGeometry geometry = watch_layout_geometry(WATCH_LAYOUT_CLASSIC,
       layer_get_unobstructed_bounds(s_window_layer).size.h, s_large_text_enabled);
   const int preferred = geometry.slots[index].font_size;
   GFont font = s_complication_fonts[COMPLICATION_FONT_COUNT - 1];
@@ -609,6 +602,106 @@ static void prv_draw_complication(Layer *layer, GContext *ctx) {
   }
 }
 
+static int prv_status_reserve(void) {
+  if (!s_show_status) { return 0; }
+  unsigned left = s_battery.charge_percent <= 10 && !s_battery.is_charging ? 1 : 0;
+  if (context_phone_battery(&s_context.slots[4], time(NULL), NULL)) { ++left; }
+  const unsigned right = s_phone_connected ? 0 : 1;
+  return (int)(left > right ? left : right) * 22;
+}
+
+static void prv_draw_context_text(GContext *ctx, const ComplicationSlot *slot,
+                                  GRect rect, int preferred) {
+  if (!context_slot_fresh(slot, time(NULL)) || !(slot->flags & COMPLICATION_FLAG_TEXT)) { return; }
+  char text[COMPLICATION_MAX_TEXT_BYTES + 5];
+  snprintf(text, sizeof(text), "%s", slot->text);
+  GFont font = prv_fit_complication(text, sizeof(text), rect.size.w - 2, rect.size.h, preferred);
+  const GSize size = graphics_text_layout_get_content_size(text, font,
+      GRect(0, 0, 2048, 100), GTextOverflowModeFill, GTextAlignmentLeft);
+  rect.origin.y += (rect.size.h - size.h) / 2;
+  if (s_text_shadow_enabled) {
+    graphics_context_set_text_color(ctx, GColorBlack);
+    graphics_draw_text(ctx, text, font, GRect(rect.origin.x + 1, rect.origin.y + 1,
+        rect.size.w, rect.size.h), GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+  }
+  graphics_context_set_text_color(ctx, s_text_color);
+  graphics_draw_text(ctx, text, font, rect, GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+}
+
+static void prv_draw_context(Layer *layer, GContext *ctx) {
+  const ContextMode mode = context_mode(&s_context, time(NULL));
+  if (mode == CONTEXT_NONE) { return; }
+  const unsigned first = mode == CONTEXT_NOTIFICATION ? 2 : 0;
+  const ComplicationSlot *title = &s_context.slots[first];
+  const ComplicationSlot *subtitle = &s_context.slots[first + 1];
+  const GRect bounds = layer_get_bounds(layer);
+  const bool has_subtitle = context_slot_fresh(subtitle, time(NULL)) &&
+      (subtitle->flags & COMPLICATION_FLAG_TEXT);
+  const bool bitmap = title->flags & COMPLICATION_FLAG_BITMAP;
+  const int text_x = bitmap ? 30 : 0;
+  if (bitmap) { prv_draw_bitmap(ctx, title, 0, (bounds.size.h - 24) / 2, 24, false); }
+  if (has_subtitle) {
+    prv_draw_context_text(ctx, title, GRect(text_x, 0, bounds.size.w - text_x, 24), 20);
+    prv_draw_context_text(ctx, subtitle, GRect(text_x, 24, bounds.size.w - text_x, 24), 20);
+  } else {
+    prv_draw_context_text(ctx, title, GRect(text_x, 0, bounds.size.w - text_x, bounds.size.h), 24);
+  }
+}
+
+static void prv_draw_status(Layer *layer, GContext *ctx) {
+  if (!s_show_status) { return; }
+  const WatchLayoutGeometry geometry = watch_layout_geometry(WATCH_LAYOUT_CLASSIC,
+      layer_get_unobstructed_bounds(s_window_layer).size.h, s_large_text_enabled);
+  const int y = geometry.slots[0].rect.y + (geometry.slots[0].rect.height - 14) / 2;
+  int x = 14;
+  graphics_context_set_stroke_color(ctx, s_text_color);
+  graphics_context_set_fill_color(ctx, s_text_color);
+  graphics_context_set_stroke_width(ctx, 1);
+  if (s_battery.charge_percent <= 10 && !s_battery.is_charging) {
+    graphics_draw_rect(ctx, GRect(x, y + 3, 16, 9));
+    graphics_fill_rect(ctx, GRect(x + 16, y + 5, 2, 5), 0, GCornerNone);
+    graphics_fill_rect(ctx, GRect(x + 2, y + 5, 2, 5), 0, GCornerNone);
+    x += 22;
+  }
+  if (context_phone_battery(&s_context.slots[4], time(NULL), NULL)) {
+    graphics_draw_round_rect(ctx, GRect(x + 4, y, 9, 14), 1);
+    graphics_fill_rect(ctx, GRect(x + 7, y + 10, 3, 1), 0, GCornerNone);
+  }
+  if (!s_phone_connected) {
+    const int bx = 175;
+    graphics_draw_line(ctx, GPoint(bx + 5, y), GPoint(bx + 5, y + 14));
+    graphics_draw_line(ctx, GPoint(bx + 5, y), GPoint(bx + 11, y + 5));
+    graphics_draw_line(ctx, GPoint(bx + 11, y + 5), GPoint(bx, y + 12));
+    graphics_draw_line(ctx, GPoint(bx + 5, y + 14), GPoint(bx + 11, y + 9));
+    graphics_draw_line(ctx, GPoint(bx + 11, y + 9), GPoint(bx, y + 2));
+    graphics_draw_line(ctx, GPoint(bx - 1, y + 14), GPoint(bx + 12, y));
+  }
+}
+
+static void prv_apply_unobstructed_layout(void);
+static void prv_context_expired(void *context);
+
+static void prv_schedule_context_expiry(void) {
+  if (s_context_timer != NULL) { app_timer_cancel(s_context_timer); s_context_timer = NULL; }
+  const time_t now = time(NULL);
+  for (unsigned i = 0; i < COMPLICATION_SLOT_COUNT; ++i) {
+    if (!context_slot_fresh(&s_context.slots[i], now)) {
+      memset(&s_context.slots[i], 0, sizeof(s_context.slots[i]));
+    }
+  }
+  const uint32_t next = context_next_expiry(&s_context, now);
+  if (next > (uint32_t)now) {
+    s_context_timer = app_timer_register((next - (uint32_t)now) * 1000,
+        prv_context_expired, NULL);
+  }
+}
+
+static void prv_context_expired(void *context) {
+  s_context_timer = NULL;
+  prv_schedule_context_expiry();
+  prv_apply_unobstructed_layout();
+}
+
 static void prv_draw_background(Layer *layer, GContext *ctx) {
   const GRect layer_bounds = layer_get_bounds(layer);
   const GRect bounds = layer_get_unobstructed_bounds(s_window_layer != NULL ? s_window_layer : layer);
@@ -617,18 +710,6 @@ static void prv_draw_background(Layer *layer, GContext *ctx) {
   graphics_fill_rect(ctx, layer_bounds, 0, GCornerNone);
   graphics_context_set_fill_color(ctx, s_background_color);
   graphics_fill_rect(ctx, bounds, DOT_OUTER_CORNER_RADIUS, GCornersAll);
-  const WatchLayoutStyle style = watch_layout_effective(s_layout_style, bounds.size.h);
-  const WatchLayoutGeometry geometry = watch_layout_geometry(style, bounds.size.h, s_large_text_enabled);
-  const bool right_selected = s_has_complications &&
-      (complication_is_selected(&s_complications.slots[1]) ||
-       complication_is_selected(&s_complications.slots[2]) ||
-       complication_is_selected(&s_complications.slots[3]));
-  if (geometry.divider_x && (style == WATCH_LAYOUT_STACKED || right_selected)) {
-    graphics_context_set_stroke_color(ctx, GColorBlack);
-    graphics_context_set_stroke_width(ctx, 2);
-    graphics_draw_line(ctx, GPoint(geometry.divider_x, geometry.divider_top),
-                       GPoint(geometry.divider_x, geometry.divider_bottom));
-  }
   graphics_context_set_fill_color(ctx, GColorBlack);
   const int *dot_depths = s_depth_effect_enabled ? s_depth_dot_depths : s_classic_dot_depths;
   const int *dot_radii = s_depth_effect_enabled ? s_depth_dot_radii : s_classic_dot_radii;
@@ -640,8 +721,7 @@ static void prv_draw_background(Layer *layer, GContext *ctx) {
 }
 
 static void prv_apply_unobstructed_layout(void) {
-  if (s_window_layer == NULL || s_date_layer == NULL || s_time_layer == NULL ||
-      s_minutes_layer == NULL) { return; }
+  if (s_window_layer == NULL || s_date_layer == NULL || s_time_layer == NULL) { return; }
   const GRect root_bounds = layer_get_bounds(s_window_layer);
   const int visible_height = layer_get_unobstructed_bounds(s_window_layer).size.h;
   if (!s_compact_layout && visible_height <= COMPACT_FONT_ENTER_HEIGHT) { s_compact_layout = true; }
@@ -670,38 +750,27 @@ static void prv_apply_unobstructed_layout(void) {
   text_layer_set_text(s_date_shadow_layer, s_date_buffer);
   text_layer_set_text(s_time_layer, s_time_buffer);
   text_layer_set_text(s_time_shadow_layer, s_time_buffer);
-  layer_set_hidden(text_layer_get_layer(s_minutes_layer), true);
-  layer_set_hidden(text_layer_get_layer(s_minutes_shadow_layer), true);
-  const WatchLayoutStyle style = watch_layout_effective(s_layout_style, visible_height);
-  const WatchLayoutGeometry geometry = watch_layout_geometry(s_layout_style, visible_height, s_large_text_enabled);
-  if (style != WATCH_LAYOUT_CLASSIC) {
-    const GFont header_font = prv_get_date_font(s_large_text_enabled ? s_date_font : s_compact_date_font,
-        geometry.date.width - (s_text_shadow_enabled ? 2 : 0));
-    prv_set_text_pair_layout(s_date_shadow_layer, s_date_layer,
-                            prv_layout_rect(geometry.date), header_font, 1);
-    if (style == WATCH_LAYOUT_COMIC_COVER) {
-      prv_set_text_pair_layout(s_time_shadow_layer, s_time_layer, prv_layout_rect(geometry.time),
-          s_large_text_enabled ? prv_get_large_time_font(root_bounds.size.w -
-          (s_text_shadow_enabled ? 4 : 2)) : s_time_font, 2);
-    } else {
-      const GFont stacked = prv_get_stacked_time_font(geometry.time.width - (s_text_shadow_enabled ? 2 : 0));
-      text_layer_set_text(s_time_layer, s_hours_buffer);
-      text_layer_set_text(s_time_shadow_layer, s_hours_buffer);
-      text_layer_set_text(s_minutes_layer, s_minutes_buffer);
-      text_layer_set_text(s_minutes_shadow_layer, s_minutes_buffer);
-      prv_set_text_pair_layout(s_time_shadow_layer, s_time_layer, prv_layout_rect(geometry.time), stacked, 2);
-      prv_set_text_pair_layout(s_minutes_shadow_layer, s_minutes_layer, prv_layout_rect(geometry.minutes), stacked, 2);
-      layer_set_hidden(text_layer_get_layer(s_minutes_layer), false);
-      layer_set_hidden(text_layer_get_layer(s_minutes_shadow_layer), !s_text_shadow_enabled);
-    }
-  }
+  const WatchLayoutGeometry geometry = watch_layout_geometry(WATCH_LAYOUT_CLASSIC, visible_height, s_large_text_enabled);
+  const bool contextual = geometry.context.width > 0 && context_mode(&s_context, time(NULL)) != CONTEXT_NONE;
   for (unsigned i = 0; i < COMPLICATION_SLOT_COUNT; ++i) {
     const bool visible = s_has_complications && complication_is_selected(&s_complications.slots[i]) &&
-        geometry.slots[i].rect.width > 0;
-    layer_set_frame(s_complication_layers[i], prv_layout_rect(geometry.slots[i].rect));
+        geometry.slots[i].rect.width > 0 && (i == 0 || !contextual);
+    WatchLayoutRect rect = geometry.slots[i].rect;
+    if (i == 0 && s_show_status) {
+      const int reserve = prv_status_reserve();
+      rect.x += reserve;
+      rect.width -= reserve * 2;
+    }
+    layer_set_frame(s_complication_layers[i], prv_layout_rect(rect));
     layer_set_hidden(s_complication_layers[i], !visible);
     layer_mark_dirty(s_complication_layers[i]);
   }
+  if (s_context_layer != NULL) {
+    layer_set_frame(s_context_layer, prv_layout_rect(geometry.context));
+    layer_set_hidden(s_context_layer, !contextual);
+    layer_mark_dirty(s_context_layer);
+  }
+  if (s_status_layer != NULL) { layer_mark_dirty(s_status_layer); }
   layer_mark_dirty(s_background_layer);
 }
 
@@ -715,7 +784,6 @@ static void prv_update_clock(void) {
   if (s_use_12_hour && s_time_buffer[0] == '0') {
     memmove(s_time_buffer, s_time_buffer + 1, strlen(s_time_buffer));
   }
-  watch_layout_split_time(s_time_buffer, s_hours_buffer, s_minutes_buffer);
   snprintf(s_date_buffer, sizeof(s_date_buffer), "%s · %d. %d.",
            localized_days[current_time->tm_wday], current_time->tm_mday,
            current_time->tm_mon + 1);
@@ -739,8 +807,15 @@ static void prv_request_complications(void) {
     return;
   }
   dict_write_uint8(iterator, MESSAGE_KEY_REQUEST_COMPLICATIONS, 1);
+  dict_write_uint32(iterator, MESSAGE_KEY_REQUEST_CONTEXT,
+      s_context_rebaseline || s_context_awaiting_baseline ? s_context_session_token : 1);
+  s_context_rebaseline_in_flight = s_context_rebaseline;
+  s_request_generation = s_connection_generation;
   const AppMessageResult sent = app_message_outbox_send();
-  if (sent != APP_MSG_OK) { APP_LOG(APP_LOG_LEVEL_WARNING, "Complication request failed: %d", sent); }
+  if (sent != APP_MSG_OK) {
+    s_context_rebaseline_in_flight = false;
+    APP_LOG(APP_LOG_LEVEL_WARNING, "Complication request failed: %d", sent);
+  } else { s_last_request_at = time(NULL); }
 }
 
 static void prv_startup_request(void *context) {
@@ -749,10 +824,25 @@ static void prv_startup_request(void *context) {
 }
 
 static void prv_phone_connection_changed(bool connected) {
+  if (connected == s_phone_connected) { return; }
+  s_phone_connected = connected;
+  ++s_connection_generation;
+  s_context_rebaseline = true;
+  s_context_awaiting_baseline = true;
+  memset(&s_context, 0, sizeof(s_context));
+  prv_schedule_context_expiry();
+  prv_apply_unobstructed_layout();
   if (connected) {
+    s_context_session_token = context_next_session_token(s_context_session_token);
+    persist_write_int(PERSIST_KEY_CONTEXT_SESSION, (int32_t)s_context_session_token);
     if (s_startup_timer != NULL) { app_timer_cancel(s_startup_timer); }
     s_startup_timer = app_timer_register(1000, prv_startup_request, NULL);
   }
+}
+
+static void prv_battery_changed(BatteryChargeState charge) {
+  s_battery = charge;
+  prv_apply_unobstructed_layout();
 }
 
 static void prv_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
@@ -768,7 +858,10 @@ static void prv_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   prv_update_clock();
   // One request on the freshness transition; denied/unavailable slots do not
   // cause a polling loop. Provider refresh policies belong to the phone host.
-  if (expired) { prv_request_complications(); }
+  if (expired || (s_phone_connected && now >= s_last_request_at + 30 * 60)) {
+    prv_request_complications();
+  }
+  prv_schedule_context_expiry();
 }
 
 static void prv_unobstructed_area_will_change(GRect final_area, void *context) {
@@ -783,7 +876,6 @@ static void prv_apply_colors(void) {
   if (s_window != NULL) { window_set_background_color(s_window, s_background_color); }
   if (s_date_layer != NULL) { text_layer_set_text_color(s_date_layer, s_text_color); }
   if (s_time_layer != NULL) { text_layer_set_text_color(s_time_layer, s_text_color); }
-  if (s_minutes_layer != NULL) { text_layer_set_text_color(s_minutes_layer, s_text_color); }
   prv_apply_unobstructed_layout();
 }
 
@@ -797,7 +889,42 @@ static void prv_apply_effects(void) {
   prv_apply_unobstructed_layout();
 }
 
+static uint32_t prv_context_request_value(const Tuple *marker) {
+  if (marker == NULL || (marker->type != TUPLE_INT && marker->type != TUPLE_UINT)) { return 0; }
+  uint32_t value = 0;
+  if (marker->length == 1) {
+    if (marker->type == TUPLE_INT && marker->value->int8 < 0) { return 0; }
+    value = marker->value->uint8;
+  } else if (marker->length == 2) {
+    if (marker->type == TUPLE_INT && marker->value->int16 < 0) { return 0; }
+    value = marker->value->uint16;
+  } else if (marker->length == 4) {
+    if (marker->type == TUPLE_INT && marker->value->int32 < 0) { return 0; }
+    value = marker->value->uint32;
+  }
+  return value <= CONTEXT_MAX_SESSION_TOKEN ? value : 0;
+}
+
 static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
+  Tuple *context_data = dict_find(iterator, MESSAGE_KEY_CONTEXT_DATA);
+  const uint32_t marker_value = prv_context_request_value(dict_find(iterator, MESSAGE_KEY_REQUEST_CONTEXT));
+  if (context_data == NULL && marker_value == 1) {
+    // PKJS may become ready after the first native request was acknowledged.
+    // Answer its query with the current epoch; querying never advances it.
+    s_context_rebaseline = true;
+    if (s_startup_timer != NULL) { app_timer_cancel(s_startup_timer); }
+    s_startup_timer = app_timer_register(100, prv_startup_request, NULL);
+  }
+  if (context_data != NULL) {
+    const bool baseline = context_session_token_matches(marker_value, s_context_session_token);
+    if (!s_phone_connected || context_data->type != TUPLE_BYTE_ARRAY || context_data->length > COMPLICATION_MAX_BYTES ||
+        !context_receive(context_data->value->data, context_data->length, &s_context,
+            &s_context_awaiting_baseline, baseline)) {
+      // A malformed update must not leave an earlier private preview visible.
+      memset(&s_context, 0, sizeof(s_context));
+    }
+    prv_schedule_context_expiry();
+  }
   Tuple *data = dict_find(iterator, MESSAGE_KEY_COMPLICATION_DATA);
   if (data != NULL) {
     if (data->type == TUPLE_BYTE_ARRAY && data->length <= COMPLICATION_MAX_BYTES &&
@@ -822,7 +949,7 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
   Tuple *shadow = dict_find(iterator, MESSAGE_KEY_TEXT_SHADOW);
   Tuple *large = dict_find(iterator, MESSAGE_KEY_LARGE_TEXT);
   Tuple *twelve = dict_find(iterator, MESSAGE_KEY_USE_12_HOUR);
-  Tuple *layout = dict_find(iterator, MESSAGE_KEY_LAYOUT_STYLE);
+  Tuple *show_status = dict_find(iterator, MESSAGE_KEY_SHOW_STATUS);
   if (background != NULL) {
     s_background_color = GColorFromHEX(background->value->int32);
     persist_write_int(PERSIST_KEY_BACKGROUND_COLOR, background->value->int32);
@@ -847,9 +974,9 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
     s_use_12_hour = twelve->value->int32 != 0;
     persist_write_bool(PERSIST_KEY_USE_12_HOUR, s_use_12_hour);
   }
-  if (layout != NULL && (layout->type == TUPLE_INT || layout->type == TUPLE_UINT)) {
-    s_layout_style = watch_layout_sanitize(layout->value->int32);
-    persist_write_int(PERSIST_KEY_LAYOUT_STYLE, s_layout_style);
+  if (show_status != NULL && (show_status->type == TUPLE_INT || show_status->type == TUPLE_UINT)) {
+    s_show_status = show_status->value->int32 != 0;
+    persist_write_bool(PERSIST_KEY_SHOW_STATUS, s_show_status);
   }
   prv_update_clock();
   prv_apply_colors();
@@ -860,7 +987,14 @@ static void prv_inbox_dropped(AppMessageResult reason, void *context) {
   APP_LOG(APP_LOG_LEVEL_WARNING, "Complication message dropped: %d", reason);
 }
 static void prv_outbox_failed(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
+  s_context_rebaseline_in_flight = false;
   APP_LOG(APP_LOG_LEVEL_WARNING, "Complication request failed: %d", reason);
+}
+static void prv_outbox_sent(DictionaryIterator *iterator, void *context) {
+  if (s_context_rebaseline_in_flight && s_request_generation == s_connection_generation) {
+    s_context_rebaseline = false;
+  }
+  s_context_rebaseline_in_flight = false;
 }
 
 static void prv_configure_text_layer(TextLayer *layer, GFont font) {
@@ -912,24 +1046,24 @@ static void prv_window_load(Window *window) {
   s_time_shadow_layer = text_layer_create(GRect(2, 54, bounds.size.w, 102));
   prv_configure_shadow_layer(s_time_shadow_layer, s_time_font);
   layer_add_child(s_window_layer, text_layer_get_layer(s_time_shadow_layer));
-  s_minutes_shadow_layer = text_layer_create(GRect(9, 113, 96, 98));
-  prv_configure_shadow_layer(s_minutes_shadow_layer, s_large_time_fonts[4]);
-  layer_add_child(s_window_layer, text_layer_get_layer(s_minutes_shadow_layer));
   s_date_layer = text_layer_create(GRect(8, 28, bounds.size.w - 16, 38));
   prv_configure_text_layer(s_date_layer, s_date_font);
   layer_add_child(s_window_layer, text_layer_get_layer(s_date_layer));
   s_time_layer = text_layer_create(GRect(0, 52, bounds.size.w, 102));
   prv_configure_text_layer(s_time_layer, s_time_font);
   layer_add_child(s_window_layer, text_layer_get_layer(s_time_layer));
-  s_minutes_layer = text_layer_create(GRect(7, 111, 96, 98));
-  prv_configure_text_layer(s_minutes_layer, s_large_time_fonts[4]);
-  layer_add_child(s_window_layer, text_layer_get_layer(s_minutes_layer));
   for (unsigned i = 0; i < COMPLICATION_SLOT_COUNT; ++i) {
     s_complication_layers[i] = layer_create_with_data(GRect(0, 0, 0, 0), sizeof(uint8_t));
     *(uint8_t *)layer_get_data(s_complication_layers[i]) = i;
     layer_set_update_proc(s_complication_layers[i], prv_draw_complication);
     layer_add_child(s_window_layer, s_complication_layers[i]);
   }
+  s_context_layer = layer_create(GRect(14, 164, 172, 48));
+  layer_set_update_proc(s_context_layer, prv_draw_context);
+  layer_add_child(s_window_layer, s_context_layer);
+  s_status_layer = layer_create(bounds);
+  layer_set_update_proc(s_status_layer, prv_draw_status);
+  layer_add_child(s_window_layer, s_status_layer);
   prv_update_clock();
   prv_apply_effects();
   UnobstructedAreaHandlers handlers = {
@@ -942,9 +1076,9 @@ static void prv_window_load(Window *window) {
 
 static void prv_window_unload(Window *window) {
   unobstructed_area_service_unsubscribe();
+  layer_destroy(s_status_layer);
+  layer_destroy(s_context_layer);
   for (unsigned i = 0; i < COMPLICATION_SLOT_COUNT; ++i) { layer_destroy(s_complication_layers[i]); }
-  text_layer_destroy(s_minutes_layer);
-  text_layer_destroy(s_minutes_shadow_layer);
   text_layer_destroy(s_date_layer);
   text_layer_destroy(s_time_layer);
   text_layer_destroy(s_date_shadow_layer);
@@ -969,7 +1103,13 @@ static void prv_init(void) {
   s_text_shadow_enabled = false;
   s_large_text_enabled = false;
   s_use_12_hour = false;
-  s_layout_style = WATCH_LAYOUT_CLASSIC;
+  s_show_status = true;
+  s_context_session_token = context_next_session_token(
+      persist_exists(PERSIST_KEY_CONTEXT_SESSION)
+          ? (uint32_t)persist_read_int(PERSIST_KEY_CONTEXT_SESSION) : 0);
+  persist_write_int(PERSIST_KEY_CONTEXT_SESSION, (int32_t)s_context_session_token);
+  s_phone_connected = connection_service_peek_pebble_app_connection();
+  s_battery = battery_state_service_peek();
   if (persist_exists(PERSIST_KEY_BACKGROUND_COLOR)) {
     s_background_color = GColorFromHEX(persist_read_int(PERSIST_KEY_BACKGROUND_COLOR));
   }
@@ -978,9 +1118,8 @@ static void prv_init(void) {
   if (persist_exists(PERSIST_KEY_TEXT_SHADOW)) { s_text_shadow_enabled = persist_read_bool(PERSIST_KEY_TEXT_SHADOW); }
   if (persist_exists(PERSIST_KEY_LARGE_TEXT)) { s_large_text_enabled = persist_read_bool(PERSIST_KEY_LARGE_TEXT); }
   if (persist_exists(PERSIST_KEY_USE_12_HOUR)) { s_use_12_hour = persist_read_bool(PERSIST_KEY_USE_12_HOUR); }
-  if (persist_exists(PERSIST_KEY_LAYOUT_STYLE)) {
-    s_layout_style = watch_layout_sanitize(persist_read_int(PERSIST_KEY_LAYOUT_STYLE));
-  }
+  if (persist_exists(PERSIST_KEY_SHOW_STATUS)) { s_show_status = persist_read_bool(PERSIST_KEY_SHOW_STATUS); }
+  persist_delete(PERSIST_KEY_LAYOUT_STYLE);
   prv_load_complications();
   s_window = window_create();
   window_set_background_color(s_window, s_background_color);
@@ -988,15 +1127,20 @@ static void prv_init(void) {
   app_message_register_inbox_received(prv_inbox_received);
   app_message_register_inbox_dropped(prv_inbox_dropped);
   app_message_register_outbox_failed(prv_outbox_failed);
+  app_message_register_outbox_sent(prv_outbox_sent);
   app_message_open(2048, 32);
   tick_timer_service_subscribe(MINUTE_UNIT, prv_tick_handler);
   window_stack_push(s_window, false);
   connection_service_subscribe((ConnectionHandlers){.pebble_app_connection_handler = prv_phone_connection_changed});
+  battery_state_service_subscribe(prv_battery_changed);
   s_startup_timer = app_timer_register(1000, prv_startup_request, NULL);
 }
 
 static void prv_deinit(void) {
   if (s_startup_timer != NULL) { app_timer_cancel(s_startup_timer); }
+  if (s_context_timer != NULL) { app_timer_cancel(s_context_timer); }
+  memset(&s_context, 0, sizeof(s_context));
+  battery_state_service_unsubscribe();
   connection_service_unsubscribe();
   tick_timer_service_unsubscribe();
   app_message_deregister_callbacks();

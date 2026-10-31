@@ -1,8 +1,8 @@
 {
   "name": "halftone",
   "author": "Xef",
-  "version": "1.6.1",
-  "halftoneBeta": 8,
+  "version": "1.7.0",
+  "halftoneBeta": 9,
   "scripts": {
     "test": "node --test tests/*.test.js"
   },
@@ -30,7 +30,9 @@
     "capabilities": [
       "configurable"
     ],
-    "usesPermissions": [],
+    "usesPermissions": [
+      "ReadMusic"
+    ],
     "messageKeys": [
       "TEMPERATURE",
       "REQUEST_WEATHER",
@@ -54,7 +56,14 @@
       "SHOW_WEATHER_ICON",
       "WEATHER_CONDITION",
       "COMPLICATION_DATA",
-      "REQUEST_COMPLICATIONS"
+      "REQUEST_COMPLICATIONS",
+      "CONTEXT_DATA",
+      "REQUEST_CONTEXT",
+      "SHOW_MUSIC",
+      "SHOW_NOTIFICATIONS",
+      "NOTIFICATION_PREVIEW",
+      "NOTIFICATION_APPS",
+      "SHOW_STATUS"
     ],
     "resources": {
       "media": [

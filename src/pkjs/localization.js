@@ -523,6 +523,170 @@ Object.keys(COMPLICATION_ROWS).forEach(function(language) {
   ROWS[language] = ROWS[language].concat(COMPLICATION_ROWS[language]);
 });
 
+// One adaptive composition replaces the old style picker. Keep the historical
+// translation indices above intact for saved settings and older diagnostics.
+KEYS = KEYS.concat(['adaptiveLayout','adaptiveHelp','adaptivePeek','dynamicContent',
+  'showMusic','showNotifications','notificationPreview','notificationApps',
+  'notificationAppsHelp','notificationsHelp','showStatus','contextWaiting','contextReady','contextError']);
+var CONTEXT_ROWS = {
+  en:[
+    'Adaptive layout',
+    'The clock stays in place. Complication 1 stays visible; music and new notifications replace slots 2–5.',
+    'Timeline Peek keeps the clock and complication 1; secondary readings, music and notification summaries hide.',
+    'Dynamic content','Show music while playing','Show new notification summaries','Include message text','Apps to show',
+    'App names separated by commas, for example Signal, WhatsApp. Leave empty for all allowed apps.',
+    'Uses notifications currently on the phone. Existing notifications are not replayed. Allow access in Pebble.',
+    'Show low battery and connection indicators','Dynamic content: waiting for Pebble','Dynamic content: ready','Dynamic content: {error}'
+  ],
+  cs:[
+    'Přizpůsobivé rozložení',
+    'Čas zůstává na svém místě. Komplikace 1 zůstává viditelná; hudba a nová oznámení nahradí pozice 2–5.',
+    'Timeline Peek zachová čas a komplikaci 1; ostatní údaje, hudba a souhrny oznámení se skryjí.',
+    'Dynamický obsah','Zobrazit hudbu při přehrávání','Zobrazit souhrny nových oznámení','Zahrnout text zprávy','Zobrazené aplikace',
+    'Názvy aplikací oddělte čárkami, například Signal, WhatsApp. Prázdné pole povolí všechny aplikace s uděleným přístupem.',
+    'Používá oznámení, která jsou právě v telefonu. Starší oznámení se znovu nezobrazují. Přístup povolte v Pebble.',
+    'Zobrazit ukazatele slabé baterie a připojení','Dynamický obsah: čeká se na Pebble','Dynamický obsah: připraveno','Dynamický obsah: {error}'
+  ],
+  sk:[
+    'Prispôsobivé rozloženie',
+    'Čas zostáva na svojom mieste. Komplikácia 1 zostáva viditeľná; hudba a nové oznámenia nahradia pozície 2–5.',
+    'Timeline Peek zachová čas a komplikáciu 1; ostatné údaje, hudba a súhrny oznámení sa skryjú.',
+    'Dynamický obsah','Zobraziť hudbu počas prehrávania','Zobraziť súhrny nových oznámení','Zahrnúť text správy','Zobrazené aplikácie',
+    'Názvy aplikácií oddeľte čiarkami, napríklad Signal, WhatsApp. Prázdne pole povolí všetky aplikácie s udeleným prístupom.',
+    'Používa oznámenia, ktoré sú práve v telefóne. Staršie oznámenia sa znova nezobrazujú. Prístup povoľte v Pebble.',
+    'Zobraziť ukazovatele slabej batérie a pripojenia','Dynamický obsah: čaká sa na Pebble','Dynamický obsah: pripravený','Dynamický obsah: {error}'
+  ],
+  de:[
+    'Adaptive Anordnung',
+    'Die Uhr bleibt an ihrem Platz. Komplikation 1 bleibt sichtbar; Musik und neue Mitteilungen ersetzen die Plätze 2–5.',
+    'Timeline Peek behält Uhr und Komplikation 1 bei; weitere Werte, Musik und Mitteilungsübersichten werden ausgeblendet.',
+    'Dynamische Inhalte','Musik während der Wiedergabe anzeigen','Übersichten neuer Mitteilungen anzeigen','Nachrichtentext einbeziehen','Anzuzeigende Apps',
+    'App-Namen durch Kommas trennen, zum Beispiel Signal, WhatsApp. Leer lassen, um alle zugelassenen Apps anzuzeigen.',
+    'Verwendet die aktuellen Mitteilungen auf dem Telefon. Vorhandene Mitteilungen werden nicht erneut angezeigt. Erlaube den Zugriff in Pebble.',
+    'Niedrigen Akkustand und Verbindung anzeigen','Dynamische Inhalte: Warten auf Pebble','Dynamische Inhalte: bereit','Dynamische Inhalte: {error}'
+  ],
+  fr:[
+    'Disposition adaptative',
+    'L’heure reste à sa place. La complication 1 reste visible ; la musique et les nouvelles notifications remplacent les emplacements 2–5.',
+    'Timeline Peek conserve l’heure et la complication 1 ; les autres données, la musique et les résumés de notifications sont masqués.',
+    'Contenu dynamique','Afficher la musique pendant la lecture','Afficher les résumés des nouvelles notifications','Inclure le texte du message','Applications à afficher',
+    'Séparez les noms des applications par des virgules, par exemple Signal, WhatsApp. Laissez vide pour toutes les applications autorisées.',
+    'Utilise les notifications actuellement sur le téléphone. Les notifications existantes ne sont pas réaffichées. Autorisez l’accès dans Pebble.',
+    'Afficher les indicateurs de batterie faible et de connexion','Contenu dynamique : en attente de Pebble','Contenu dynamique : prêt','Contenu dynamique : {error}'
+  ],
+  es:[
+    'Distribución adaptable',
+    'El reloj permanece en su sitio. La complicación 1 sigue visible; la música y las nuevas notificaciones sustituyen las posiciones 2–5.',
+    'Timeline Peek mantiene el reloj y la complicación 1; oculta los demás datos, la música y los resúmenes de notificaciones.',
+    'Contenido dinámico','Mostrar música durante la reproducción','Mostrar resúmenes de nuevas notificaciones','Incluir el texto del mensaje','Aplicaciones que mostrar',
+    'Separa los nombres de aplicaciones con comas, por ejemplo Signal, WhatsApp. Déjalo vacío para todas las aplicaciones permitidas.',
+    'Usa las notificaciones que están actualmente en el teléfono. Las existentes no se vuelven a mostrar. Permite el acceso en Pebble.',
+    'Mostrar indicadores de batería baja y conexión','Contenido dinámico: esperando a Pebble','Contenido dinámico: listo','Contenido dinámico: {error}'
+  ],
+  it:[
+    'Disposizione adattiva',
+    'L’orologio resta al suo posto. La complicazione 1 resta visibile; musica e nuove notifiche sostituiscono le posizioni 2–5.',
+    'Timeline Peek mantiene l’orologio e la complicazione 1; nasconde gli altri dati, la musica e i riepiloghi delle notifiche.',
+    'Contenuti dinamici','Mostra la musica durante la riproduzione','Mostra i riepiloghi delle nuove notifiche','Includi il testo del messaggio','App da mostrare',
+    'Separa i nomi delle app con virgole, per esempio Signal, WhatsApp. Lascia vuoto per tutte le app autorizzate.',
+    'Usa le notifiche attualmente sul telefono. Le notifiche già presenti non vengono riproposte. Autorizza l’accesso in Pebble.',
+    'Mostra gli indicatori di batteria scarica e connessione','Contenuti dinamici: in attesa di Pebble','Contenuti dinamici: pronti','Contenuti dinamici: {error}'
+  ],
+  pt:[
+    'Disposição adaptável',
+    'O relógio mantém a posição. A complicação 1 continua visível; a música e as novas notificações substituem as posições 2–5.',
+    'O Timeline Peek mantém o relógio e a complicação 1; os demais dados, a música e os resumos de notificações ficam ocultos.',
+    'Conteúdo dinâmico','Mostrar música durante a reprodução','Mostrar resumos de novas notificações','Incluir o texto da mensagem','Aplicativos a mostrar',
+    'Separe os nomes dos aplicativos com vírgulas, por exemplo Signal, WhatsApp. Deixe vazio para todos os aplicativos permitidos.',
+    'Usa as notificações que estão atualmente no telefone. As existentes não são mostradas novamente. Permita o acesso no Pebble.',
+    'Mostrar indicadores de bateria fraca e conexão','Conteúdo dinâmico: à espera do Pebble','Conteúdo dinâmico: pronto','Conteúdo dinâmico: {error}'
+  ],
+  nl:[
+    'Adaptieve indeling',
+    'De klok blijft op zijn plaats. Complicatie 1 blijft zichtbaar; muziek en nieuwe meldingen vervangen posities 2–5.',
+    'Timeline Peek behoudt de klok en complicatie 1; overige gegevens, muziek en meldingsoverzichten worden verborgen.',
+    'Dynamische inhoud','Muziek tonen tijdens het afspelen','Overzichten van nieuwe meldingen tonen','Berichttekst opnemen','Te tonen apps',
+    'Scheid appnamen met komma’s, bijvoorbeeld Signal, WhatsApp. Laat leeg voor alle toegestane apps.',
+    'Gebruikt de huidige meldingen op de telefoon. Bestaande meldingen worden niet opnieuw getoond. Geef toegang in Pebble.',
+    'Indicatoren voor lage batterij en verbinding tonen','Dynamische inhoud: wachten op Pebble','Dynamische inhoud: gereed','Dynamische inhoud: {error}'
+  ],
+  pl:[
+    'Dostosowujący się układ',
+    'Zegar pozostaje na swoim miejscu. Komplikacja 1 jest stale widoczna; muzyka i nowe powiadomienia zastępują pozycje 2–5.',
+    'Timeline Peek zachowuje zegar i komplikację 1; pozostałe dane, muzyka i podsumowania powiadomień są ukrywane.',
+    'Treść dynamiczna','Pokazuj muzykę podczas odtwarzania','Pokazuj podsumowania nowych powiadomień','Dołącz tekst wiadomości','Wyświetlane aplikacje',
+    'Oddziel nazwy aplikacji przecinkami, na przykład Signal, WhatsApp. Pozostaw puste, aby wyświetlać wszystkie dozwolone aplikacje.',
+    'Korzysta z powiadomień obecnych na telefonie. Istniejące powiadomienia nie są pokazywane ponownie. Zezwól na dostęp w Pebble.',
+    'Pokazuj wskaźniki niskiego poziomu baterii i połączenia','Treść dynamiczna: oczekiwanie na Pebble','Treść dynamiczna: gotowa','Treść dynamiczna: {error}'
+  ],
+  da:[
+    'Dynamisk layout',
+    'Uret bliver på sin plads. Komplikation 1 forbliver synlig; musik og nye notifikationer erstatter pladserne 2–5.',
+    'Timeline Peek beholder uret og komplikation 1; øvrige data, musik og notifikationsoversigter skjules.',
+    'Dynamisk indhold','Vis musik under afspilning','Vis oversigter over nye notifikationer','Medtag beskedtekst','Apps, der skal vises',
+    'Adskil appnavne med kommaer, for eksempel Signal, WhatsApp. Lad feltet være tomt for alle tilladte apps.',
+    'Bruger de aktuelle notifikationer på telefonen. Eksisterende notifikationer vises ikke igen. Tillad adgang i Pebble.',
+    'Vis indikatorer for lavt batteri og forbindelse','Dynamisk indhold: venter på Pebble','Dynamisk indhold: klar','Dynamisk indhold: {error}'
+  ],
+  sv:[
+    'Adaptiv layout',
+    'Klockan stannar på sin plats. Komplikation 1 förblir synlig; musik och nya aviseringar ersätter platserna 2–5.',
+    'Timeline Peek behåller klockan och komplikation 1; övriga uppgifter, musik och aviseringssammanfattningar döljs.',
+    'Dynamiskt innehåll','Visa musik under uppspelning','Visa sammanfattningar av nya aviseringar','Ta med meddelandetext','Appar att visa',
+    'Separera appnamn med kommatecken, till exempel Signal, WhatsApp. Lämna tomt för alla tillåtna appar.',
+    'Använder de aviseringar som finns på telefonen. Befintliga aviseringar visas inte igen. Tillåt åtkomst i Pebble.',
+    'Visa indikatorer för lågt batteri och anslutning','Dynamiskt innehåll: väntar på Pebble','Dynamiskt innehåll: klart','Dynamiskt innehåll: {error}'
+  ],
+  no:[
+    'Dynamisk oppsett',
+    'Klokken beholder plassen sin. Komplikasjon 1 forblir synlig; musikk og nye varsler erstatter plassene 2–5.',
+    'Timeline Peek beholder klokken og komplikasjon 1; øvrige opplysninger, musikk og varseloversikter skjules.',
+    'Dynamisk innhold','Vis musikk under avspilling','Vis oversikter over nye varsler','Ta med meldingstekst','Apper som skal vises',
+    'Skill appnavn med komma, for eksempel Signal, WhatsApp. La feltet stå tomt for alle tillatte apper.',
+    'Bruker varslene som finnes på telefonen. Eksisterende varsler vises ikke på nytt. Tillat tilgang i Pebble.',
+    'Vis indikatorer for lavt batteri og tilkobling','Dynamisk innhold: venter på Pebble','Dynamisk innhold: klart','Dynamisk innhold: {error}'
+  ],
+  fi:[
+    'Mukautuva asettelu',
+    'Kello pysyy paikallaan. Lisätieto 1 pysyy näkyvissä; musiikki ja uudet ilmoitukset korvaavat paikat 2–5.',
+    'Timeline Peek säilyttää kellon ja lisätiedon 1; muut tiedot, musiikki ja ilmoitusyhteenvedot piilotetaan.',
+    'Muuttuva sisältö','Näytä musiikki toiston aikana','Näytä uusien ilmoitusten yhteenvedot','Sisällytä viestin teksti','Näytettävät sovellukset',
+    'Erota sovellusten nimet pilkuilla, esimerkiksi Signal, WhatsApp. Jätä tyhjäksi, jos haluat näyttää kaikki sallitut sovellukset.',
+    'Käyttää puhelimessa olevia ilmoituksia. Aiemmat ilmoitukset eivät näy uudelleen. Salli käyttö Pebblessä.',
+    'Näytä vähäisen akun ja yhteyden ilmaisimet','Muuttuva sisältö: odotetaan Pebbleä','Muuttuva sisältö: valmis','Muuttuva sisältö: {error}'
+  ],
+  hu:[
+    'Alkalmazkodó elrendezés',
+    'Az óra a helyén marad. Az 1. komplikáció látható marad; a zene és az új értesítések a 2–5. helyet váltják fel.',
+    'A Timeline Peek megtartja az órát és az 1. komplikációt; a többi adat, a zene és az értesítés-összefoglalók rejtve maradnak.',
+    'Változó tartalom','Zene megjelenítése lejátszás közben','Új értesítések összefoglalóinak megjelenítése','Üzenetszöveg megjelenítése','Megjelenített alkalmazások',
+    'Az alkalmazásneveket vesszővel válaszd el, például Signal, WhatsApp. Hagyd üresen az összes engedélyezett alkalmazáshoz.',
+    'A telefonon jelenleg látható értesítéseket használja. A korábbi értesítéseket nem jeleníti meg újra. Engedélyezd a hozzáférést a Pebble-ben.',
+    'Alacsony töltöttség és kapcsolat jelzése','Változó tartalom: várakozás a Pebble-re','Változó tartalom: kész','Változó tartalom: {error}'
+  ],
+  ro:[
+    'Aspect adaptiv',
+    'Ceasul rămâne pe loc. Complicația 1 rămâne vizibilă; muzica și notificările noi înlocuiesc pozițiile 2–5.',
+    'Timeline Peek păstrează ceasul și complicația 1; celelalte date, muzica și rezumatele notificărilor sunt ascunse.',
+    'Conținut dinamic','Arată muzica în timpul redării','Arată rezumatele notificărilor noi','Include textul mesajului','Aplicații de afișat',
+    'Separă numele aplicațiilor prin virgule, de exemplu Signal, WhatsApp. Lasă gol pentru toate aplicațiile permise.',
+    'Folosește notificările prezente pe telefon. Notificările existente nu sunt afișate din nou. Permite accesul în Pebble.',
+    'Arată indicatoarele de baterie slabă și conexiune','Conținut dinamic: se așteaptă Pebble','Conținut dinamic: pregătit','Conținut dinamic: {error}'
+  ],
+  tr:[
+    'Uyarlanabilir düzen',
+    'Saat yerinde kalır. 1. komplikasyon görünür kalır; müzik ve yeni bildirimler 2–5 yuvalarının yerini alır.',
+    'Timeline Peek saati ve 1. komplikasyonu korur; diğer bilgiler, müzik ve bildirim özetleri gizlenir.',
+    'Dinamik içerik','Çalma sırasında müziği göster','Yeni bildirim özetlerini göster','Mesaj metnini dahil et','Gösterilecek uygulamalar',
+    'Uygulama adlarını virgülle ayırın, örneğin Signal, WhatsApp. İzin verilen tüm uygulamalar için boş bırakın.',
+    'Telefonda bulunan bildirimleri kullanır. Mevcut bildirimler yeniden gösterilmez. Pebble’da erişime izin verin.',
+    'Düşük pil ve bağlantı göstergelerini göster','Dinamik içerik: Pebble bekleniyor','Dinamik içerik: hazır','Dinamik içerik: {error}'
+  ]
+};
+Object.keys(CONTEXT_ROWS).forEach(function(language) {
+  ROWS[language] = ROWS[language].concat(CONTEXT_ROWS[language]);
+});
+
 var LANGUAGES = ['en','cs','sk','de','fr','es','it','pt','nl','pl','da','sv','no','fi','hu','ro','tr'];
 var LITERALS = Object.create(null);
 ROWS.en.forEach(function(value, index) { LITERALS[value] = index; });
