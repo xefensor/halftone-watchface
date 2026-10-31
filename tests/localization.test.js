@@ -7,9 +7,9 @@ const config=require('../src/pkjs/config');
 
 const DYNAMIC=['complicationsStatus','complicationsWaiting','complicationsDisabled','complicationsError','stateOn','stateOff',
   'contextWaiting','contextReady','contextError'];
-const ADAPTIVE_KEYS=['adaptiveLayout','adaptiveHelp','adaptivePeek','dynamicContent','showMusic','showNotifications',
+const ADAPTIVE_KEYS=['appearance','statusHelp','largeText','adaptiveHelp','adaptivePeek','dynamicContent','showMusic','showNotifications',
   'notificationPreview','notificationApps','notificationAppsHelp','notificationsHelp','showStatus',
-  'panelTransitions','panelTransitionsHelp'];
+  'panelTransitions','panelTransitionsHelp','statusIndicatorsHelp'];
 
 function visible(config) {
   const out=[];
@@ -17,6 +17,7 @@ function visible(config) {
     if(Array.isArray(value)) return value.forEach(walk);
     if(!value||typeof value!=='object') return;
     if(typeof value.label==='string') out.push(value.label);
+    if(typeof value.description==='string') out.push(value.description);
     if(['text','heading','submit'].includes(value.type)&&typeof value.defaultValue==='string') out.push(value.defaultValue);
     Object.values(value).forEach(walk);
   }
@@ -70,13 +71,14 @@ test('All seventeen languages translate every visible setting and complication s
 
 test('Czech settings include established controls, the single layout and dynamic content',()=>{
   const strings=visible(localization.translateConfig(config,'cs-CZ'));
-  for(const text of ['Nastavení Halftone','Barva pozadí','Čas','Komplikace','Uložit nastavení']) assert.ok(strings.includes(text));
+  for(const text of ['Nastavení Halftone','Barva pozadí','Vzhled','Komplikace','Uložit nastavení']) assert.ok(strings.includes(text));
   assert.ok(strings.some(text=>text.includes('pozice 1 a 2')&&text.includes('Pebble')));
-  assert.ok(strings.includes('Přizpůsobivé rozložení'));
+  assert.ok(strings.includes('Stav a nápověda'));
+  assert.ok(strings.includes('Extra velký čas'));
   assert.ok(strings.includes('Zobrazit hudbu při přehrávání'));
-  assert.ok(strings.includes('Zobrazit souhrny nových oznámení'));
-  assert.ok(strings.some(text=>text.includes('Komplikace 1 je větší')&&text.includes('komplikaci 2')));
-  assert.ok(strings.some(text=>text.includes('Timeline Peek')&&text.includes('souhrny oznámení se skryjí')));
+  assert.ok(strings.includes('Nová oznámení'));
+  assert.ok(strings.some(text=>text.includes('Komplikace 1 a 2 jsou vedle sebe')&&text.includes('Obě se zmenší')));
+  assert.ok(strings.some(text=>text.includes('Timeline Peek')&&text.includes('komplikaci 1')));
   assert.ok(strings.includes('Krátké tečkované přechody'));
   assert.ok(strings.some(text=>text.includes('Čas a rámeček zůstanou nehybné')));
 });
@@ -119,7 +121,7 @@ test('Translation deep-clones Clay data while preserving keys, IDs, saved values
     assert.deepEqual(Object.keys(a),Object.keys(b));
     for(const key of Object.keys(a)) {
       if(a[key]&&typeof a[key]==='object') compare(a[key],b[key]);
-      else if(key!=='label'&&!(key==='defaultValue'&&['text','heading','submit'].includes(a.type))) assert.equal(a[key],b[key],key);
+      else if(key!=='label'&&key!=='description'&&!(key==='defaultValue'&&['text','heading','submit'].includes(a.type))) assert.equal(a[key],b[key],key);
     }
   }
   compare(config,translated);
@@ -136,8 +138,8 @@ test('Translation deep-clones Clay data while preserving keys, IDs, saved values
 
 test('Active settings retain appearance controls and add opt-in notification settings without a layout picker',()=>{
   const messageKeys=items(config).filter(item=>item.messageKey).map(item=>item.messageKey);
-  assert.deepEqual(messageKeys,['BACKGROUND_COLOR','TEXT_COLOR','USE_12_HOUR','SHOW_MUSIC','SHOW_NOTIFICATIONS',
-    'NOTIFICATION_PREVIEW','NOTIFICATION_APPS','SHOW_STATUS','LARGE_TEXT','PANEL_TRANSITIONS','DEPTH_EFFECT','TEXT_SHADOW']);
+  assert.deepEqual(messageKeys,['BACKGROUND_COLOR','TEXT_COLOR','USE_12_HOUR','LARGE_TEXT','SHOW_STATUS',
+    'SHOW_MUSIC','SHOW_NOTIFICATIONS','NOTIFICATION_PREVIEW','NOTIFICATION_APPS','PANEL_TRANSITIONS','DEPTH_EFFECT','TEXT_SHADOW']);
   assert.ok(!items(config).some(item=>item.id==='weather-status'));
   const status=items(config).find(item=>item.id==='complications-status');
   assert.equal(status.defaultValue,'Complications: waiting for Pebble');
@@ -163,7 +165,7 @@ test('Every language explains the adaptive layout and the primary-only Peek beha
     assert.ok(!help.includes('1–5'),language+' must explain the two visible choices');
     const adaptive=localization.t('adaptiveHelp',language);
     assert.ok(adaptive.includes('1')&&adaptive.includes('2'),language);
-    assert.ok(!adaptive.includes('2–5'),language+' must describe only the second reading yielding');
+    assert.ok(!adaptive.includes('2–5'),language+' must describe only the two selected readings');
     const peek=localization.t('adaptivePeek',language);
     assert.ok(peek.includes('Timeline Peek')&&peek.includes('1'),language);
     const rendered=visible(localization.translateConfig(config,language));
@@ -205,4 +207,35 @@ test('All new controls translate while preserving app filters, privacy defaults 
   const sample=[{type:'input',messageKey:'NOTIFICATION_APPS',label:'Apps to show',defaultValue:'Signal, Colors'}];
   assert.equal(localization.translateConfig(sample,'cs')[0].defaultValue,'Signal, Colors');
   assert.ok(!items(config).some(item=>/TIMER|CALENDAR/.test(item.messageKey||'')));
+});
+
+
+test('Settings put common appearance controls first, keep diagnostics last and attach help to its control',()=>{
+  const sections=config.filter(item=>item.type==='section');
+  assert.deepEqual(sections.map(section=>section.items[0].defaultValue),
+    ['Appearance','Complications','Dynamic content','Optical effects','Status & help']);
+  assert.deepEqual(sections[0].items.filter(item=>item.messageKey).map(item=>item.messageKey),
+    ['BACKGROUND_COLOR','TEXT_COLOR','USE_12_HOUR','LARGE_TEXT','SHOW_STATUS']);
+  const diagnostics=sections[sections.length-1];
+  assert.deepEqual(diagnostics.items.filter(item=>item.id).map(item=>item.id),
+    ['complications-status','context-status']);
+  assert.ok(!sections.slice(0,-1).some(section=>section.items.some(item=>/-status$/.test(item.id||''))));
+  const all=items(config);
+  for(const key of ['SHOW_STATUS','SHOW_NOTIFICATIONS','NOTIFICATION_APPS','PANEL_TRANSITIONS']) {
+    assert.ok(all.find(item=>item.messageKey===key).description,key+' keeps help next to the control');
+  }
+  assert.equal(config[config.length-1].type,'submit');
+});
+
+test('Inline descriptions translate without changing saved app filters or other values',()=>{
+  const sample=[{type:'input',messageKey:'NOTIFICATION_APPS',label:'Apps to show',
+    description:'Separate app names with commas. Empty means all allowed apps.',defaultValue:'Signal, Colors'}];
+  for(const language of localization.languages) {
+    const result=localization.translateConfig(sample,language)[0];
+    assert.equal(result.defaultValue,'Signal, Colors');
+    assert.equal(result.description,localization.t('notificationAppsHelp',language));
+    if(language!=='en') assert.notEqual(result.description,sample[0].description);
+  }
+  assert.match(localization.t('adaptiveHelp','en'),/side by side.*Both shrink/);
+  assert.doesNotMatch(visible(config).join('\n'),/replace complication 2|larger and stays visible/);
 });

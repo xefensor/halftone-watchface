@@ -48,7 +48,7 @@ def package_beta(project, source, output):
     if not isinstance(permissions, list):
         raise ValueError("package.json must declare usesPermissions (empty is valid for dynamic complication access)")
     if not re.fullmatch(r"\d+\.\d+\.\d+", package["version"]):
-        raise ValueError("use a numeric SDK version; the filename identifies this as a beta")
+        raise ValueError("use a numeric SDK version; prerelease labels belong in the filename")
     if source.resolve() == output.resolve():
         raise ValueError("output must differ from the original SDK-built PBW")
 
@@ -76,7 +76,7 @@ def package_beta(project, source, output):
     appinfo["manifestVersion"] = 2
     appinfo["usesPermissions"] = permissions
     output.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary = tempfile.mkstemp(prefix=".halftone-beta-", suffix=".pbw", dir=output.parent)
+    descriptor, temporary = tempfile.mkstemp(prefix=".halftone-package-", suffix=".pbw", dir=output.parent)
     os.close(descriptor)
     try:
         with zipfile.ZipFile(temporary, "w") as archive:
@@ -104,18 +104,27 @@ def main():
     project = Path(__file__).resolve().parent.parent
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, help="SDK-built PBW (default: detect matching package/project PBW in build/)")
-    parser.add_argument("--output", type=Path, help="Beta PBW output path")
+    parser.add_argument("--output", type=Path, help="Permission-packaged PBW output path")
     args = parser.parse_args()
     package = json.loads((project / "package.json").read_text(encoding="utf-8"))
-    beta = package.get("halftoneBeta", 1)
-    if not isinstance(beta, int) or isinstance(beta, bool) or beta < 1:
-        parser.exit(1, "halftoneBeta must be a positive integer\n")
-    output = args.output or project / "dist" / ("Halftone-" + package["version"] + "-beta." + str(beta) + ".pbw")
+    labels = [(key, label) for key, label in
+              (("halftoneBeta", "beta"), ("halftoneReleaseCandidate", "rc"))
+              if key in package]
+    if len(labels) > 1:
+        parser.exit(1, "Declare only one prerelease label\n")
+    suffix = ""
+    if labels:
+        key, label = labels[0]
+        number = package[key]
+        if not isinstance(number, int) or isinstance(number, bool) or number < 1:
+            parser.exit(1, key + " must be a positive integer\n")
+        suffix = "-" + label + "." + str(number)
+    output = args.output or project / "dist" / ("Halftone-" + package["version"] + suffix + ".pbw")
     try:
         source = args.input or default_input(project, package)
         result = package_beta(project, source, output)
     except (OSError, ValueError, KeyError, zipfile.BadZipFile) as error:
-        parser.exit(1, "Cannot package beta: " + str(error) + "\n")
+        parser.exit(1, "Cannot package PBW: " + str(error) + "\n")
     print("Packaged " + str(result))
     print("Verified manifestVersion 2, declared permissions, original UUID and unchanged SDK payloads.")
 

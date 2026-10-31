@@ -1,0 +1,66 @@
+{
+  "version": "1.9.0",
+  "releaseCandidate": 1,
+  "pbw": {
+    "file": "Halftone-1.9.0-rc.1.pbw",
+    "sha256": "51a91538f4fbb52cc85b6b0e8d4645efdc5666724c595d42da90045af94bf2f7",
+    "nativeBinarySha256": "8173c5e205a6129b1ffdb6abae2acfd02b9cb33b86718932716e4eea133f470b",
+    "resourcesSha256": "b1e4e5b5e75f3a217f93b8664d925fd8c8310904d88d0d4aaaa35b1e48ff59ec"
+  },
+  "screenshots": {
+    "provenance": "Unretouched Emery emulator captures using the final release native binary/resources. Phone-side JavaScript is an idle test derivative; production-encoded sample data is injected over AppMessage. These are illustrative fixtures, not live phone/provider verification.",
+    "files": [
+      {
+        "file": "emery_01_orange.png",
+        "sha256": "4bc90ee61c55955bf812acc9d8d679978fb5f4405807f4ef8f5b48bd896ab10e",
+        "pixels": [
+          200,
+          228
+        ]
+      },
+      {
+        "file": "emery_02_blue_large.png",
+        "sha256": "6cc7c3ca9851c3f2eeab1ae4c53bb209a827308af7509a383a259c5502e98406",
+        "pixels": [
+          200,
+          228
+        ]
+      },
+      {
+        "file": "emery_03_green_shadow.png",
+        "sha256": "1e7177ee9ddac03eefd966fa3f8b452f87122c9560cc72b82df93a0242ba1c34",
+        "pixels": [
+          200,
+          228
+        ]
+      },
+      {
+        "file": "emery_04_music.png",
+        "sha256": "d573072ddfcc23a7d77ed3d54c82c9985e75a1197303d4d557da778b2837c533",
+        "pixels": [
+          200,
+          228
+        ]
+      },
+      {
+        "file": "emery_05_notification.png",
+        "sha256": "96a44a7f23a9f1c278a5d3046bc7e75637ad1490f88f99df30f36765243ec386",
+        "pixels": [
+          200,
+          228
+        ]
+      }
+    ]
+  },
+  "banner": {
+    "file": "halftone-banner-720x320.png",
+    "sha256": "eb982445e22d445873d60502d9959ebffaf4d40f624659a0d189b40319cdce33",
+    "pixels": [
+      720,
+      320
+    ],
+    "source": "banner-source.svg",
+    "watchScreenshot": "emery_01_orange.png",
+    "render": "Chromium 138 with the bundled Fira Sans Condensed Bold font"
+  }
+}

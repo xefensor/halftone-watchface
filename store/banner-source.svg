@@ -3,6 +3,10 @@
      xmlns:xlink="http://www.w3.org/1999/xlink"
      width="720" height="320" viewBox="0 0 720 320">
   <defs>
+    <style>
+      @font-face { font-family: HalftoneFira; src: url("../resources/fonts/FiraSansCondensed-Bold.ttf"); }
+      text { font-family: HalftoneFira, sans-serif; }
+    </style>
     <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#08090b"/>
       <stop offset="1" stop-color="#202126"/>
@@ -13,8 +17,8 @@
       <stop offset="1" stop-color="#c8c9cc"/>
     </linearGradient>
     <pattern id="dots" width="16" height="16" patternUnits="userSpaceOnUse">
-      <circle cx="4" cy="4" r="3" fill="#ed6b69" opacity="0.48"/>
-      <circle cx="12" cy="12" r="1.7" fill="#ed6b69" opacity="0.28"/>
+      <circle cx="4" cy="4" r="3" fill="#ff5500" opacity="0.48"/>
+      <circle cx="12" cy="12" r="1.7" fill="#ff5500" opacity="0.28"/>
     </pattern>
     <clipPath id="screenClip">
       <rect x="466" y="46" width="200" height="228" rx="30" ry="30"/>
@@ -23,7 +27,7 @@
 
   <rect width="720" height="320" fill="url(#background)"/>
   <path d="M0 0H355C310 60 315 126 350 174C376 209 364 270 318 320H0Z"
-        fill="#ed6b69"/>
+        fill="#ff5500"/>
   <path d="M306 0H420V320H278C337 261 337 207 306 164C271 116 269 60 306 0Z"
         fill="url(#dots)"/>
 

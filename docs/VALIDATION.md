@@ -1,4 +1,106 @@
-# Halftone beta validation
+# Halftone release validation
+
+## 1.9.0 rc.1 — horizontal readings, spacing and settings
+
+The checks below use the final release candidate, deterministic fixtures and
+real browser/emulator rendering. No physical phone/watch result or public-store
+acceptance is claimed.
+
+- The first two global complications use equally sized horizontal columns.
+  Both shrink into a compact row above music or notification context; neither
+  is replaced. Empty slots keep their left/right positions. Native Timeline
+  Peek still keeps complication 1 only while Pebble owns the lower area.
+- Date fitting uses a consistent inset and a compact day/month separator, with
+  a smaller font available for long translated weekdays. Large-clock fitting
+  and vertical spacing are revised to keep text clear of the reading row. The
+  contextual panel is inset and raised away from the bottom dots. The
+  procedural bezel geometry is preserved.
+- Settings group appearance, complications, dynamic content, optical effects
+  and status/help. Short descriptions sit beside relevant controls, source
+  diagnostics move to the bottom, and new help is translated in all 17
+  supported languages. Existing setting keys and defaults are retained.
+- Global source ownership/cache behavior, number/unit formatting, precipitation
+  hints, artwork fitting, optional transitions, notification privacy and
+  session-boundary behavior remain in scope.
+- Prepared PBW, source archive, screenshots, banner, listing copy, privacy
+  disclosure and publishing checklist are candidate deliverables. Pebble's
+  [current plugin guide](https://developer.repebble.com/guides/plugins/) says
+  apps using plugins should not be published to the public appstore yet.
+  The candidate remains suitable for sideloaded preview testing while that
+  restriction and physical-device checks are outstanding.
+
+- **225 JavaScript tests** and **nine strict C99 suites** pass. The three
+  complication/context/presentation helper suites also pass AddressSanitizer
+  and UndefinedBehaviorSanitizer checks; leak scanning is disabled because the
+  environment lacks the required `/proc` process data.
+- SDK **4.33.1** builds the final Emery candidate: resources **130,180 bytes**,
+  RAM footprint **24,306 bytes**, free heap **106,766 bytes**. All **31** C/JS
+  message keys and **eight** bundled source modules match current source.
+  Permission packaging preserves the SDK native binary/resources/JavaScript,
+  original UUID and Emery target, adds manifest version 2, and declares
+  `ReadMusic`. Repeat packaging is byte-identical and ZIP integrity passes.
+  All six complication fonts contain a real Unicode minus glyph. No active
+  legacy weather client or endpoint is bundled.
+- Compiled-font metrics cover **43,554** localized weekday/day/month
+  combinations. Compact `d.M.` dates fit all 17 languages within the 166-pixel
+  text budget, including shadow allowance. **2,160** formatted clock values
+  cover both 12-hour and 24-hour modes. Native screenshots caught a minimum-font
+  overflow at `00:00`; standard and extra-large fitting now fall back to the
+  existing 64px and 72px fonts respectively. This font-metric coverage is
+  separate from the native screenshot cases and is not a claim of installing
+  every watch language pack.
+- The actual installed Clay form runs in Chromium **138** for **68 cases**:
+  17 languages × two phone widths (320/390px) × light/dark themes. No JavaScript
+  errors, clipped labels or horizontal overflow occur. Actual toggle, app-name
+  filter, 64-color picker and Save interactions retain the expected values.
+  Fresh color defaults remain `0xFF5500` and `0xFFFFFF`; Clay's sunlight-preview
+  swatch does not rewrite the saved value. Long diagnostics wrap at 320px.
+  See [light](images/settings-light.png) and [dark](images/settings-dark.png).
+
+- **103 final native screenshots** pass: 92 layout/context/animation/privacy/
+  spacing captures, six notification/session/Peek-expiry captures and five Store
+  images. Both horizontal readings remain visible above context. Fitting covers
+  sparse and hidden choices, signed/decimal/zero values, units, Unicode minus,
+  artwork retention/removal, text truncation, low battery and white/black text.
+  **36 focused full/Peek screenshots** meet measured horizontal margins of at
+  least 4px for extra-large text and 16px for standard text. Complete `00:00`,
+  `08:08`, `11:11` and `23:59` render without ellipses. The compact rain icon
+  scales with the smaller row and clears the tall `1:05` clock.
+- Classic and four-step procedural bezels are byte-identical in RGB to beta 10
+  under an empty-reading, neutral-foreground fixture. Date/time margin changes
+  are excluded from that comparison. Context stays clear of the bottom dots
+  and yields as soon as native Peek begins to cover the screen.
+- Independent transition frames affect only the footer; both readings, date,
+  clock and bezel remain still. Identical lease heartbeats and transition-off
+  captures remain pixel-identical. Expiry, explicit clears and malformed
+  private packets clear immediately. A notice is captured while visible, then
+  hidden by Peek, and never restored after its original expiry. Wrong session
+  boundaries cannot unlock notices; a matching empty boundary permits fresh
+  delivery. The local emulator transport required a backed-up state reset
+  after repeated hot installs; the same final binary passed afterward. This is
+  a tooling recovery, not physical Bluetooth verification.
+- All native captures use the final binary/resources with an idle phone-script
+  derivative and production-encoded AppMessage fixtures. Phone/plugin delivery,
+  permission prompts, actual media apps and Bluetooth loss/recovery still need
+  physical confirmation. See the [layout preview](images/horizontal-layout-states.png)
+  and [native Peek capture](images/horizontal-peek.png).
+- Five unretouched **200 × 228** native PNGs and the refreshed **720 × 320**
+  banner meet the prepared listing dimensions and file limits. The banner uses
+  the final orange screenshot and bundled Fira font. Asset hashes and fixture
+  provenance are recorded in [asset-provenance.json](../store/asset-provenance.json).
+  Listing text, release notes, current privacy disclosure, licenses and the
+  publication hold/checklist are included in the store package.
+- Source and Store archives are reproducible with fixed ZIP metadata and are
+  byte-checked against current files. The source excludes dependencies, build
+  output, credentials and nested release archives. The Store archive contains
+  the exact verified PBW and an internal checksum manifest. Outer artifact
+  hashes are recorded in `dist/SHA256SUMS.txt`.
+
+Permission-packaged PBW SHA-256:
+
+`51a91538f4fbb52cc85b6b0e8d4645efdc5666724c595d42da90045af94bf2f7`
+
+Historical results below apply only to their named versions.
 
 ## 1.8.0 beta 10 — two large readings and panel presentation
 

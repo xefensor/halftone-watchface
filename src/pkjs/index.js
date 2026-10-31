@@ -5,7 +5,7 @@ var createComplications = require('./complications');
 var createContext = require('./context');
 var createMessageQueue = require('./message-queue');
 var localization = require('./localization');
-var clay = new Clay(clayConfig, null, {autoHandleEvents: false});
+var clay = new Clay(clayConfig, require('./settings-page'), {autoHandleEvents: false});
 
 function settingsLanguage() {
   var watchLanguage;
@@ -112,7 +112,7 @@ Pebble.addEventListener('showConfiguration', function() {
       } else if (issue && status.message) { issue += ' · ' + status.message; }
       // Clay text fields support HTML. Source diagnostics remain literal text,
       // including provider-supplied error messages and category/item names.
-      item.defaultValue = escapeHtml('Halftone 1.8.0 beta 10. ' + summary +
+      item.defaultValue = escapeHtml('Halftone 1.9.0 rc.1. ' + summary +
         (issue ? ' · ' + t('complicationsError', {error: issue}) : ''));
     });
   });

@@ -1,8 +1,7 @@
 {
   "name": "halftone",
   "author": "Xef",
-  "version": "1.8.0",
-  "halftoneBeta": 10,
+  "version": "1.9.0",
   "scripts": {
     "test": "node --test tests/*.test.js"
   },
@@ -259,5 +258,6 @@
         }
       ]
     }
-  }
+  },
+  "halftoneReleaseCandidate": 1
 }

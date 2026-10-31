@@ -1,6 +1,6 @@
 # Two complications in the adaptive layout
 
-**Halftone 1.8.0 beta 10** uses the first two global complication choices in the
+**Halftone 1.9.0 rc.1** uses the first two global complication choices in the
 Pebble phone app. A complication is a source reading: a temperature, phone
 battery level, calendar time, condition or another plugin property. Clock and
 date remain native watch functions and do not consume a slot.
@@ -22,19 +22,27 @@ aggregation. Saved time format, colors and effects survive relaunching.
 
 | Global complication | Normal presentation | During music or a new notification |
 | --- | --- | --- |
-| 1 | Large, centered, full-width primary reading below the clock | Remains in the same area |
-| 2 | Slightly smaller, centered, full-width reading below the primary | Replaced by two wide, left-aligned context lines |
+| 1 | Large, centered reading in the left column | Smaller reading in the left half of a compact row above the panel |
+| 2 | Large, centered reading in the right column | Smaller reading in the right half of the same compact row |
 | 3–5 | Not used by Halftone | Not used by Halftone |
 
-An empty first slot does not move the second slot upward. A selected reading
-waiting for data, denied permission or an unsupported format shows `--`.
+The two columns share a baseline and equal widths. A missing slot keeps its
+left/right position; an empty first slot does not move the second into its
+place. A selected reading waiting for data, denied permission or an unsupported
+format shows `--`.
 
 The date stays plain and the wide clock stays anchored while the lower content
 changes. During **Timeline Peek / Quick View**, the clock and date compress
 around Pebble's native area with **complication 1 only**. Complication 2, music
 and notification summaries stay hidden until Peek closes. Halftone does not
 read or duplicate Timeline's own events. Small battery/connection indicators
-use the primary-reading area when enabled.
+sit beside the reading row when enabled.
+
+![Normal and contextual reading positions](images/horizontal-layout-states.png)
+
+Both complications remain visible during music and notification panels. They
+return to their larger size when the panel clears. Timeline Peek is the native
+exception: only complication 1 remains while Pebble owns the lower screen.
 
 ## Numbers, units and artwork
 

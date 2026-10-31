@@ -1,61 +1,137 @@
-# Halftone 1.3.1 publishing checklist
+# Halftone publishing package
 
-## Store listing
+## Current status
 
-- Type: Watchface
-- Title: Halftone
-- Developer: Xef
-- Platform: Pebble Time 2 / Emery
-- Version: 1.3.1
-- UUID: `d4dd5046-53be-4624-99e8-46e0b377fe66`
-- Description: copy `description.txt`
-- Release notes: copy `release-notes.txt`
-- Binary: upload `Halftone-1.3.1.pbw`
-- Screenshots: upload the `emery_*.png` files in filename order
-- Banner: `halftone-banner-720x320.png` is optional for a watchface
-- Source URL and website: optional; add them only after a real public URL exists
-- Support email: leaving this empty uses the developer-account email
+The files in this directory describe the 1.9.0 release candidate 1 build.
+They replace the former 1.3.1 listing, which described a weather client that is
+no longer used.
 
-The screenshots are raw 200 × 228 Emery captures and must not be placed inside
-a watch frame for the screenshot fields. The framed promotional layout is used
-only in the optional banner.
+This package is prepared for a release candidate. **Do not submit this
+plugin-dependent build to the public appstore while Pebble's preview restriction
+remains in place.** Checked on 31 October 2026, the official [Plugins guide](https://developer.repebble.com/guides/plugins/) says: "Do not publish apps that
+use plugins to the appstore yet". Its linked publishing guide limits plugin
+publishing to invited developers. This watchface consumes plugins; it does not
+supply a plugin. Preparing these files or distributing the PBW for sideload
+testing does not establish appstore approval.
 
-## Publish from the command line
+The implementation targets the plugin contract documented for Pebble mobile
+**1.16.0.5**, with the plugin preview enabled. This is not a claim of physical
+phone/watch verification. Music and notification sources are currently Android
+features. Current build/emulator results and remaining device checks are in
+[validation](../docs/VALIDATION.md).
 
-Install the current tool and sign in:
+The candidate bundle is `Halftone-1.9.0-rc.1-store-package.zip`. The PBW keeps
+the numeric SDK version **1.9.0**; `rc.1` identifies the test package, not a
+separate native version. If another 1.9.0 is already in the dashboard, choose a
+new unused numeric version before uploading.
 
-```sh
-uv tool install pebble-tool
-pebble sdk install 4.33.1
-pebble login
-```
+The normal layout uses two equal horizontal complication columns. Both readings
+condense above music or notification context; neither is replaced. Native
+Timeline Peek keeps only the primary reading.
 
-From the project directory run `pebble publish`. For a new listing, answer the
-prompts using the values above and select the prepared screenshots. Leave the
-release as a draft first, verify its public preview, and only then publish it.
+## Listing fields
 
-The same files can instead be uploaded through the Pebble Developer Dashboard:
-https://developer.repebble.com/dashboard
+| Field | Prepared value |
+| --- | --- |
+| Type | Watchface |
+| Title | Halftone |
+| Developer | Xef |
+| Platform | Pebble Time 2 / Emery only |
+| Version | 1.9.0 — verify it has not already been used in this listing |
+| UUID | `d4dd5046-53be-4624-99e8-46e0b377fe66` |
+| Description | [description.txt](description.txt) |
+| Release notes | [release-notes.txt](release-notes.txt) |
+| Binary | `Halftone-1.9.0-rc.1.pbw` |
+| Website/source URL | https://github.com/xefensor/halftone-watchface |
+| Privacy information | https://github.com/xefensor/halftone-watchface/blob/main/store/PRIVACY.md |
+| Support | https://github.com/xefensor/halftone-watchface/issues |
+| Source license | PolyForm Noncommercial 1.0.0; retain Xef's attribution notice |
 
-## Final checks before making it public
+Use the existing Halftone listing and UUID. The developer's existing account
+identity and support-email settings should be checked in its preview. This
+project does not specify a separate companion app. Keep the bundled font's SIL
+Open Font License with source distributions.
 
-- Install the exact release PBW on a physical Pebble Time 2.
-- Open settings and save every option at least once.
-- Confirm weather after granting location permission.
-- Keep the face open for at least 35 minutes; confirm a successful weather
-  refresh without opening a menu or restarting the face. If the temperature
-  stays the same, check the delivery log rather than assuming no refresh happened.
-- Compare the selected unit with Pebble weather at the same coordinates.
-- Disconnect and reconnect the phone; confirm a prompt weather refresh.
-- Stay offline across hour changes; confirm ~ marks the correct cached forecast.
-- Restart the watchface offline; confirm the forecast cache remains available.
-- Confirm the forecast expires six hours after fetching and a placeholder appears
-  when no recent observation remains.
-- Review the changed weather privacy disclosure (Pebble first, Open-Meteo fallback).
-- Show and dismiss Timeline Quick View.
-- Verify normal and extra-large text at 00:00, 11:11 and 23:59.
-- Toggle 12-hour time and Fahrenheit, then confirm 13:00 becomes 1:00 and a
-  known Celsius value converts to the expected Fahrenheit value.
-- Switch PebbleOS between English, Czech and Polish; confirm the weekday updates
-  automatically and the longest date line remains on one line.
-- Confirm the developer name and support email in the listing preview.
+## Images
+
+The included screenshots were captured from the final candidate native binary
+and resources. Their hashes and fixture provenance are recorded in
+[asset-provenance.json](asset-provenance.json). Recapture them after any future
+native change, keeping the names below:
+
+| Order | File | Content |
+| --- | --- | --- |
+| 1 | `emery_01_orange.png` | Orange, two balanced complication columns |
+| 2 | `emery_02_blue_large.png` | Blue, extra-large clock |
+| 3 | `emery_03_green_shadow.png` | Green theme with text shadow |
+| 4 | `emery_04_music.png` | Dynamic music panel |
+| 5 | `emery_05_notification.png` | Optional notification panel with fictional sample text |
+
+Emery screenshots must be raw **200 × 228** images without a watch frame; at
+most five can be used. A promotional banner is optional and must be **720 × 320**.
+Image files and the PBW each have a **4.4 MB** upload limit. Watchapp icons are
+not required for this watchface. The prepared PNGs meet the image format choice.
+The description is kept below 1,600 characters for compatibility with older
+listing forms; the current submission guide specifies plain text.
+
+`banner-source.svg` references `emery_01_orange.png` and the bundled Fira font.
+The included 720 × 320 banner was re-rendered from that final screenshot.
+Re-render it after changing the screenshot so the banner and release agree. Framing belongs in the banner only. Emulator
+fixtures illustrate the design; sample weather is not a live accuracy claim.
+Do not use the Timeline emulator's blank system placeholder as a store screenshot.
+
+## Package verification
+
+- Confirm `package.json`, the exact PBW and the listing agree on numeric version,
+  UUID, watchface type and Emery target. Preserve the app identity for upgrades.
+- Verify the packaged PBW has `manifestVersion: 2` and declares `ReadMusic`.
+  Runtime source permissions remain Pebble's responsibility; no Internet
+  permission or provider-specific weather fallback is added.
+- Verify the release PBW's native binary, resources and JavaScript match the
+  tested SDK output. Check its SHA-256 against the included checksum file.
+- Use the current description, release notes and privacy information; do not
+  reuse the old independent-weather disclosure or six-hour-cache claims.
+- Confirm every image has the exact required size and current build provenance.
+- Keep a source archive with the licenses, and exclude dependencies, credentials
+  and nested release archives.
+
+## Remaining device checks
+
+Install the exact release PBW on a physical PT2 with a supported preview-enabled
+Pebble mobile app, then check:
+
+- Set global complications 1 and 2; verify empty choices retain their positions.
+  Change a provider and source units in Pebble, then verify the shown values.
+- Confirm source updates while the face remains open, including a source error
+  and recovery. Do not infer a failed refresh solely from an unchanged value.
+- Test 12/24-hour time, normal/extra-large text, longest localized dates, negative
+  and decimal values, colors, shadow and both border options.
+- Play, change, pause and stop music. Both readings must remain in the compact
+  row above it. Test short/long titles and missing artwork.
+- Opt into notification summaries. Verify existing notifications do not replay,
+  app filtering works, body text stays hidden by default, and turning it off or
+  disconnecting clears private content immediately.
+- Disconnect/reconnect the real phone. Verify data resumes and earlier private
+  content cannot replay. The emulator's Bluetooth flag is not proof of this path.
+- Show/dismiss Timeline Peek during normal readings, music and a notification.
+  A notification that expires while Peek is visible must not return afterward.
+- Confirm the settings translations and chosen source permissions on the phone.
+
+## Submission after the preview restriction is lifted
+
+Recheck [Preparing a Submission](https://developer.repebble.com/guides/appstore-publishing/preparing-a-submission/)
+and [Publishing an App](https://developer.repebble.com/guides/appstore-publishing/publishing-an-app/)
+before using these instructions. Requirements can change while plugins are in
+preview.
+
+Use the [Developer Dashboard](https://developer.repebble.com/dashboard), open the
+existing Halftone app and choose **New Release**. Upload the exact prepared PBW,
+add the release notes, and **uncheck Publish immediately** to keep it as a draft.
+Update the listing text and images through its Edit screen. Saving listing
+changes can affect the live listing; the new release should remain a draft until
+all eligibility and device checks are complete.
+
+Avoid using `pebble publish` just to prepare a preview: its uploads are published
+immediately, and it rebuilds the project. A dashboard draft allows the exact
+verified permission-packaged PBW to be uploaded without that rebuild. No public
+store submission has been performed by preparing this package.

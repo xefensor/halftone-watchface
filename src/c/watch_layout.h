@@ -40,7 +40,8 @@ static inline int watch_layout_interpolate(int full, int peek, int height) {
 
 // Indices are global: a missing slot never moves another slot to its place.
 static inline WatchLayoutGeometry watch_layout_geometry(int selected_style,
-                                                         int height, bool large) {
+                                                         int height, bool large,
+                                                         bool contextual) {
   WatchLayoutGeometry result = {0};
   (void)selected_style;
   (void)large;
@@ -49,9 +50,14 @@ static inline WatchLayoutGeometry watch_layout_geometry(int selected_style,
         watch_layout_interpolate(126, 118, height), 172, 38}, 28};
     return result;
   }
-  result.slots[0] = (WatchSlotGeometry){{14, 126, 172, 48}, 38};
-  result.slots[1] = (WatchSlotGeometry){{14, 174, 172, 40}, 32};
-  result.context = (WatchLayoutRect){14, 171, 172, 43};
+  const int y = contextual ? 128 : 126;
+  const int row_height = contextual ? 36 : 76;
+  const int font_size = contextual ? 28 : 38;
+  result.slots[0] = (WatchSlotGeometry){{18, y, 78, row_height}, font_size};
+  result.slots[1] = (WatchSlotGeometry){{104, y, 78, row_height}, font_size};
+  // A moving Peek edge brings its bezel upward before the compact threshold.
+  // Yield the footer immediately instead of letting text touch that edge.
+  if (height >= 228) { result.context = (WatchLayoutRect){18, 164, 164, 43}; }
   return result;
 }
 

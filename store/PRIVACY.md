@@ -1,93 +1,73 @@
 # Halftone privacy information
 
-Halftone does not require an account and contains no advertising, analytics or
-developer-operated tracking service.
+This information describes the current two-complication build. Archived releases
+through 1.5 used different weather clients and caches; their disclosures are
+included in their release archives.
 
-## Complications — 1.6 beta
+Halftone does not require an account with its developer and contains no
+advertising, analytics or developer-operated tracking service. The Pebble app
+and selected plugins may require their own accounts and have their own privacy
+practices.
 
-The 1.6 beta reads the five complication entries selected in the Pebble phone
-app. Depending on those choices, the entries may contain weather, phone state,
-calendar or other plugin data. Pebble and the selected plugin handle fetching,
-permissions and any accounts they need. Halftone requests only the selected
-source properties and their optional icons. It does not make its own weather
-HTTP request, request GPS coordinates, override a source's units or send these
-readings to a developer-operated service. The complication-only package declares
-no Internet permission; Pebble handles permissions required by each selected
-source when it is read.
+## Two selected complications
 
-The five current slot descriptors, bounded values/icons and original source-read
-times are cached locally on the phone and watch. They expire at the source's
-reported expiry or two hours after the successful source read, whichever is
-earlier. This is a receipt/confirmation time, not a provider's observation time.
-Reopening the face or changing its display settings does not renew it. Replacing
-or clearing a slot invalidates its old value. Temporary transport/source failures
-may retain an unexpired cached value; denied permission clears it. This cache is
-not a history of readings and is not uploaded to Halftone's developer.
+Halftone reads the first two global complication choices in the Pebble phone
+app. They can contain weather, phone state, calendar or other plugin data.
+It requests the chosen source properties and optional artwork. The remaining
+global choices are ignored by its new subscriptions and phone cache.
 
-Layout, color, clock and text preferences remain local. Settings translations
-use the watch language, then the phone language, and require no network request.
-Other plugins have their own privacy practices and permissions.
+Pebble and the selected source handle fetching and permissions. Halftone has
+no independent weather HTTP client, does not request GPS coordinates itself,
+and does not send source readings to a server operated by its developer.
+The package declares no Internet permission. Source units and formatted values
+are retained rather than converted locally.
 
-## Earlier versions through 1.5
+The two descriptors, bounded values/icons and original confirmation times are
+cached locally on the phone; a bounded snapshot is retained on the watch.
+They expire at the source's reported expiry or two hours after confirmation,
+whichever is earlier. Receipt/confirmation time is not an observation time.
+Reopening the face or changing display settings does not renew the cache.
+Changing or clearing a choice invalidates its old value. Temporary failures may
+retain an unexpired value; denied access clears it. This is a current-value
+cache, not a history uploaded to the developer.
 
-The following sections describe the archived builds and the prepared 1.3.1
-Store release. Their independent weather clients are not used by the 1.6 beta.
+A property explicitly chosen as a normal complication follows these cache
+rules, including a music or notification property. That differs from the
+separate dynamic panels described below. Older native snapshots can be decoded
+on upgrade, but only their first two positions are displayed; the new phone
+cache rejects five-reading cache records.
 
-## Shared weather (beta)
+## Dynamic music, notifications and status
 
-When the Pebble mobile app's plugin preview is enabled and its built-in Weather
-source is available, Halftone subscribes to that source. It receives weather
-for the selected saved location, including hourly forecasts, daily high/low
-and precipitation probability, and can follow
-Pebble's temperature unit preference. This path reads the same weather database
-as Pebble's Weather app and makes no independent weather or GPS request.
-Pebble and the weather provider chosen in its settings handle network fetching.
-The plugin requires Location permission. A permission denial or temporary error
-does not switch to a different provider.
+Music and low phone-battery indicators use additional built-in Pebble sources.
+The package declares `ReadMusic`. The dynamic source content is kept in memory,
+not persisted or logged by Halftone. Music and phone state require confirmation
+at least every two minutes. Paused music yields after five seconds.
 
-The selected location ID, unit preference, and bounded records of hourly
-forecast temperatures, UTC slots and their first-seen times are stored locally on the phone to
-prevent reconnecting from renewing stale data. These records are not uploaded
-to Halftone's developer. Up to six hours of hourly temperatures are also stored
-on the watch for offline use. The shared source currently exposes no observation
-timestamp. A successful source read confirms the current value stored by Pebble;
-current conditions expire two hours after the last successful source confirmation.
-Unchanged forecast hours keep their conservative first-seen age even when
-another hour changes. Existing first-seen records migrate without renewing
-their age. Optional daily details are stored on the watch with their day window
-and source confirmation time, and expire by that window's end or six hours
-after confirmation, whichever comes first. This confirmation time is not the
-provider's observation or model-generation time.
-The settings diagnostic shows the source, location and native temperature received
-locally; these diagnostic details are not uploaded to the developer.
+Notification summaries are off by default. Enabling them uses Pebble's source
+permission flow. Message text is a separate option and is also off by default.
+An optional comma-separated app-name filter limits the sources shown; an empty
+filter includes apps allowed by Pebble. New summaries can contain an app name,
+title and optional body. They last at most 12 seconds and retain their original
+expiry even if another source updates.
 
-Settings and watch labels use the watch language, with the phone language as a
-fallback for settings. Language selection is handled locally and adds no
-network request or permission.
+Existing notifications are not replayed on startup, reconnect or notification
+reconfiguration. Dynamic content disappears when its lease expires, on phone
+disconnection or when the native watchface relaunches. A local nonprivate
+session counter helps prevent delayed messages from replaying after reconnect.
+Native watch battery and phone-connection indicators do not require a remote
+service.
 
-## Compatibility weather client
+## Settings and diagnostics
 
-The following direct requests are used only on older apps, when plugins are
-disabled, or when the built-in Weather source is not installed/available.
+Colors, time format, display effects, panel preferences and app-name filters are
+stored locally. Translation selection uses the active watch language, then the
+phone language, and requires no network request. The settings status can show a
+bounded source error to help diagnose failures; it is not uploaded to the
+developer. Dynamic music and notification contents are not included in logs.
 
-To show local weather, the Pebble phone app requests an approximate location
-from the phone. The coordinates are sent to Pebble's weather service
-(`weather-api.repebble.com`) to request the current temperature. If that service
-fails or returns invalid or stale data, the same coordinates are sent directly
-to Open-Meteo (`api.open-meteo.com`) as a fallback. Open-Meteo also supplies a
-supplemental hourly forecast when Pebble's response lacks timestamped hourly
-data. Halftone does not send the
-location to a server operated by its developer and does not retain location
-history. Weather request logs do not include coordinates.
+Halftone does not operate its own cloud service. Source-plugin accounts,
+permissions and their data must be managed separately in Pebble or the source
+service.
 
-The last successful temperature, up to six hours of hourly forecasts and the
-selected visual preferences are stored
-locally so the watchface remains useful when the phone or network is temporarily
-unavailable. If location permission is denied, the watchface continues working
-and shows an available observation or the current hour's cached forecast.
-Forecast readings are marked with `~` and expire six hours after fetching.
-Observations expire after two hours. When neither is available, a placeholder
-is shown. Cached values without a timestamp from older versions are not shown
-until the first successful refresh. No location history is stored.
-
-Open-Meteo privacy policy: https://open-meteo.com/en/terms#privacy
+Project and support: https://github.com/xefensor/halftone-watchface

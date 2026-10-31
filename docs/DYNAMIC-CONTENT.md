@@ -1,8 +1,9 @@
 # Dynamic content
 
-Halftone 1.8.0 beta 10 uses one adaptive layout. The clock, plain date and primary
-complication stay in their established areas. The lower area shows complication
-2, music, or a brief new-notification summary. Complication 1 is larger and stays in its own full-width area.
+Halftone 1.9.0 rc.1 uses one adaptive layout. Two large complications sit side
+by side below the clock and plain date. When music or a brief new-notification
+summary appears, both readings shrink into a compact horizontal row above it.
+Neither selected reading is replaced by contextual content.
 
 ## Panel priority
 
@@ -10,16 +11,16 @@ complication stay in their established areas. The lower area shows complication
 | --- | --- |
 | A fresh new-notification summary | App/title and optional message text |
 | Music playing, or its short paused grace period | Song title, artist and artwork when supplied |
-| Neither | Global complication 2, centered and slightly smaller than the primary |
+| Neither | No contextual panel; the two global readings use their larger side-by-side presentation |
 
-Complication 1 is not replaced by these panels. During Timeline Peek / Quick
-View, all secondary content hides and the clock, date and complication 1 adapt
-to the space Pebble leaves available. Calendar events and other Timeline items
+Both complications remain visible above these panels. During Timeline Peek /
+Quick View, the panel and complication 2 hide; the clock, date and
+complication 1 adapt to the space Pebble leaves available. Calendar events and other Timeline items
 remain Pebble's responsibility; Halftone does not duplicate them in another
 panel.
 
 There is no timer integration, automatic rain-warning panel, separate calendar
-panel or automatic page rotation in this beta. Buttons and touch retain their
+panel or automatic page rotation in this candidate. Buttons and touch retain their
 normal Pebble behavior. Use Pebble's Music app for next/previous and play/pause;
 Halftone does not add motion-based playback controls.
 
@@ -43,16 +44,17 @@ it does not renew notification lifetimes or change the weather refresh cadence.
 
 ## Panel presentation and transitions
 
-The normal second reading is centered. Music and notification text use wide,
-left-aligned lines so titles have room. Short number/unit readings use larger
-digits and smaller recognized units without converting source values. The
-primary reading is not replaced or moved by contextual content.
+The normal readings use equal-width left and right columns. Both become
+smaller and move into a compact row above music or notifications, whose text
+uses wide, left-aligned lines. Short number/unit readings use larger digits and
+smaller recognized units without converting source values. Missing readings
+keep their positions; a selected but unusable reading shows `--`.
 
 **Brief halftone transitions** defaults to on. A real incoming panel-content
 change can reveal the new content with a 180 ms halftone dissolve, using three
 short timer callbacks. The effect is clipped to the lower interior: clock,
-primary reading and bezel remain still. Repeated snapshots with identical
-visible content do not restart it merely because receipt or expiry times change.
+date and bezel remain still. The reading row adjusts separately to make room
+for the panel. Repeated snapshots with identical visible content do not restart it merely because receipt or expiry times change.
 
 Expiry, privacy clearing, disconnection and Timeline Peek hide content
 immediately instead of waiting for an effect. Peek restoration is not animated.
@@ -60,7 +62,7 @@ The switch disables the effect while keeping the same layout and data behavior.
 
 ## Notification summaries
 
-**Show new notification summaries** defaults to off. Enable it in Halftone's
+**New notifications** defaults to off. Enable it in Halftone's
 settings and allow notification access through Pebble. **Include message text**
 is a separate switch and also defaults to off. With it disabled, the panel shows
 the app and notification title, which can itself contain a sender or other
@@ -88,8 +90,8 @@ provides no dismiss or reply action.
 
 ## Status indicators
 
-**Show low battery and connection indicators** defaults to on. It controls small
-indicators beside the primary complication:
+**Status indicators** defaults to on. It controls small
+indicators beside the complication row:
 
 - Watch battery at 10% or less while not charging, read on the watch.
 - Phone battery at 15% or less, read from `phone/phone_state`.

@@ -18,6 +18,7 @@ function fixture(settings = {}, locales = {}) {
     require: name => {
       if (name === 'message_keys') return keys;
       if (name === './config') return require('../src/pkjs/config');
+      if (name === './settings-page') return require('../src/pkjs/settings-page');
       if (name === './localization') return require('../src/pkjs/localization');
       if (name === '@rebble/clay') return function(config,_custom,opts) {
         assert.equal(opts.autoHandleEvents,false);
@@ -136,7 +137,7 @@ test('settings show complication counts/errors and no hard-coded weather picker'
   const f=fixture();Object.assign(f.status,{configured:2,ready:1,error:'PERMISSION_DENIED'});
   f.status.slots=[{slot:2,category:'weather',item:'location',error:'PERMISSION_DENIED',message:'Location permission required'}];
   f.handlers.showConfiguration();
-  assert.match(item(f,'complications-status').defaultValue,/Halftone 1\.8\.0 beta 10/);
+  assert.match(item(f,'complications-status').defaultValue,/Halftone 1\.9\.0 rc\.1/);
   assert.match(item(f,'complications-status').defaultValue,/1\/2 ready/);
   assert.match(item(f,'complications-status').defaultValue,/Complication error: #2 · weather\/location · PERMISSION_DENIED · Location permission required/);
   assert.equal(named(f,'WEATHER_LOCATION'),undefined);

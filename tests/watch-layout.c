@@ -4,43 +4,57 @@
 #include "../src/c/watch_layout.h"
 
 int main(void) {
-  const WatchLayoutRect expected[5] = {
-    {14,126,172,48},{14,174,172,40},{0,0,0,0},{0,0,0,0},{0,0,0,0}
-  };
   const int old_styles[] = {INT_MIN, -1, 0, 1, 2, 3, INT_MAX};
   for (size_t style = 0; style < sizeof(old_styles)/sizeof(old_styles[0]); ++style) {
     assert(watch_layout_sanitize(old_styles[style]) == WATCH_LAYOUT_CLASSIC);
     for (int large = 0; large <= 1; ++large) {
-      WatchLayoutGeometry full = watch_layout_geometry(old_styles[style], 228, large);
-      for (size_t i = 0; i < WATCH_LAYOUT_SLOT_COUNT; ++i) {
-        WatchLayoutRect rect = full.slots[i].rect;
-        assert(memcmp(&rect, &expected[i], sizeof(rect)) == 0);
-        assert(rect.x >= 0 && rect.x + rect.width <= 200);
-        assert(rect.y >= 0 && rect.y + rect.height <= 228);
-        assert(i >= 2 || full.slots[i].font_size >= 32);
-      }
-      assert(full.slots[0].font_size > full.slots[1].font_size);
-      assert(full.context.x == 14 && full.context.y == 171);
-      assert(full.context.width == 172 && full.context.height == 43);
-      assert(!full.divider_x && !full.minutes.width);
-      // Every transition height keeps the primary global ID, hides secondary
-      // content before Peek can cover it, and ignores old style preferences.
-      for (int height = 171; height <= 228; ++height) {
-        WatchLayoutGeometry g = watch_layout_geometry(old_styles[style], height, large);
-        assert(watch_layout_effective(old_styles[style], height) == WATCH_LAYOUT_CLASSIC);
-        assert(g.slots[0].rect.width == 172);
-        assert(g.slots[0].rect.y >= 118 && g.slots[0].rect.y <= 126);
-        if (height < 215) {
-          assert(!g.context.width);
-          for (size_t i = 1; i < WATCH_LAYOUT_SLOT_COUNT; ++i) assert(!g.slots[i].rect.width);
-        } else {
-          assert(g.context.width == 172);
-          assert(g.slots[1].rect.width == 172);
-          for (size_t i = 2; i < WATCH_LAYOUT_SLOT_COUNT; ++i) assert(!g.slots[i].rect.width);
+      for (int contextual = 0; contextual <= 1; ++contextual) {
+        WatchLayoutGeometry full = watch_layout_geometry(old_styles[style], 228, large, contextual);
+        const WatchLayoutRect expected[5] = {
+          {18,contextual ? 128 : 126,78,contextual ? 36 : 76},
+          {104,contextual ? 128 : 126,78,contextual ? 36 : 76},
+          {0,0,0,0},{0,0,0,0},{0,0,0,0}
+        };
+        for (size_t i = 0; i < WATCH_LAYOUT_SLOT_COUNT; ++i) {
+          WatchLayoutRect rect = full.slots[i].rect;
+          assert(memcmp(&rect, &expected[i], sizeof(rect)) == 0);
+          assert(rect.x >= 0 && rect.x + rect.width <= 200);
+          assert(rect.y >= 0 && rect.y + rect.height <= 228);
+          assert(i >= 2 || full.slots[i].font_size == (contextual ? 28 : 38));
         }
+        assert(full.slots[0].rect.y == full.slots[1].rect.y);
+        assert(full.slots[0].rect.height == full.slots[1].rect.height);
+        assert(full.slots[1].rect.x - full.slots[0].rect.x - full.slots[0].rect.width == 8);
+        // Both columns remain usable even with two compact low-battery icons
+        // at the left and a lost-phone indicator at the right.
+        assert(full.slots[0].rect.width - 24 >= 54);
+        assert(full.slots[1].rect.width - 12 >= 66);
+        assert(full.context.x == 18 && full.context.y == 164);
+        assert(full.context.width == 164 && full.context.height == 43);
+        assert(!full.divider_x && !full.minutes.width);
+        if (contextual) {
+          assert(full.slots[0].rect.y + full.slots[0].rect.height <= full.context.y);
+        }
+        // Timeline owns the bottom area. Its compact state preserves global
+        // ID1 without pulling a missing value or the second ID into its place.
+        for (int height = 171; height <= 228; ++height) {
+          WatchLayoutGeometry g = watch_layout_geometry(old_styles[style], height, large, contextual);
+          assert(watch_layout_effective(old_styles[style], height) == WATCH_LAYOUT_CLASSIC);
+          if (height < 215) {
+            assert(g.slots[0].rect.width == 172);
+            assert(g.slots[0].rect.y >= 118 && g.slots[0].rect.y <= 126);
+            assert(!g.context.width);
+            for (size_t i = 1; i < WATCH_LAYOUT_SLOT_COUNT; ++i) assert(!g.slots[i].rect.width);
+          } else {
+            assert(g.context.width == (height >= 228 ? 164 : 0));
+            if (g.context.width) { assert(g.context.y + g.context.height <= height - 18); }
+            assert(g.slots[0].rect.width == 78 && g.slots[1].rect.width == 78);
+            for (size_t i = 2; i < WATCH_LAYOUT_SLOT_COUNT; ++i) assert(!g.slots[i].rect.width);
+          }
+        }
+        WatchLayoutGeometry peek = watch_layout_geometry(old_styles[style], 171, large, contextual);
+        assert(peek.slots[0].rect.y == 118);
       }
-      WatchLayoutGeometry peek = watch_layout_geometry(old_styles[style], 171, large);
-      assert(peek.slots[0].rect.y == 118);
     }
   }
   char unicode[32] = "Český";

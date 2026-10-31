@@ -1,16 +1,18 @@
-Halftone makes the color e-paper display feel like part of the Pebble Time 2 body. A precise halftone border grows out of the black bezel and curves around the screen with the same rounded shape as the metal frame.
+Halftone brings comic-book halftone dots to Pebble Time 2. Its rounded black border blends into the bezel, with a wide digital clock and two large complications in balanced side-by-side columns.
+
+Choose the first two entries in Pebble's Complications settings: temperature and rain chance, phone battery, or other supported plugin readings. Both readings condense above the lower panel when music or a new notification appears.
 
 Features:
-- Large, readable digital time with 12-hour and 24-hour options
-- Weekday automatically localized to the PebbleOS language
-- Current local temperature in °C or °F, using Pebble weather with Open-Meteo fallback
-- Six-hour offline forecast cache, with estimated readings marked by ~
-- Layout that automatically adapts to Timeline Quick View
-- Configurable background and text colors
-- Original 3-step or denser 4-step dot transition
-- Optional edge-to-edge text and floating shadow
-- Minute-only clock updates for low battery use
+- Large digital time with 12-hour and 24-hour options
+- Plain weekday and date, with support for 17 languages
+- Two balanced columns with big numbers and smaller units
+- Rain droplet for precipitation probability
+- Music title and artist, with artwork when it fits
+- Optional notification summaries, app filtering and separate message-text control
+- Native Timeline Peek support
+- Configurable colors, extra-large text, text shadow and three/four-step dot border
+- Optional brief halftone panel transitions
 
-Designed specifically for Pebble Time 2 (Emery). Fetching weather requires a connected phone, internet access and location permission. Halftone sends the coordinates requested by the Pebble phone app to Pebble's weather service, or to Open-Meteo for fallback weather or a supplemental hourly forecast. Weather refreshes every 30 minutes, retries missed updates and refreshes after reconnecting. Cached forecasts can cover up to six hours offline for the last fetched location; estimates are marked with ~. A placeholder appears after all usable weather expires. It contains no account, advertising or analytics.
+Requires Pebble Time 2 and a Pebble mobile app supporting the 1.16 plugin preview, with plugins enabled. Music and notification sources are currently available on Android. Set up and allow access to the sources you choose in Pebble. Weather, units and updates come from your selected provider; Halftone does not fetch its own weather.
 
-Included weekday languages: English, Czech, Slovak, German, French, Spanish, Italian, Portuguese, Dutch, Polish, Danish, Swedish, Norwegian, Finnish, Hungarian, Romanian and Turkish. Unsupported locales fall back to English.
+No Halftone account, advertising or analytics. Notification summaries and message text are off by default. Source code and privacy information: https://github.com/xefensor/halftone-watchface
