@@ -75,6 +75,20 @@ static inline bool reading_hide_artwork(int title_width, int full_width, int art
   return title_width > full_width - artwork_inset && title_width <= full_width;
 }
 
+static inline int reading_context_artwork_size(bool music, bool image,
+                                               bool two_lines, int panel_height) {
+  if (music && image) { return two_lines ? panel_height : 32; }
+  return 24;
+}
+
+typedef struct { int x, y, size; } ReadingCoverCrop;
+
+static inline ReadingCoverCrop reading_cover_crop(int width, int height) {
+  if (width <= 0 || height <= 0) { return (ReadingCoverCrop){0,0,0}; }
+  const int size = width < height ? width : height;
+  return (ReadingCoverCrop){(width - size) / 2, (height - size) / 2, size};
+}
+
 static inline unsigned reading_dissolve_radius(unsigned frame) {
   return frame < 3 ? 3 - frame : 0;
 }

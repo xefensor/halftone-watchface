@@ -49,6 +49,7 @@ static GFont s_small_date_font;
 static GFont s_compact_time_font;
 static GFont s_large_date_font;
 static GFont s_large_time_fonts[LARGE_TIME_FONT_COUNT];
+static const uint8_t s_large_time_font_sizes[LARGE_TIME_FONT_COUNT] = {80,84,88,92,96,100,104,108};
 static GFont s_large_compact_time_font;
 static GFont s_complication_fonts[COMPLICATION_FONT_COUNT];
 static const uint8_t s_complication_font_sizes[COMPLICATION_FONT_COUNT] = {44, 38, 32, 28, 24, 20, 18};
@@ -385,13 +386,14 @@ static void prv_set_text_pair_layout(TextLayer *shadow_layer,
   layer_set_frame(text_layer_get_layer(text_layer), frame);
 }
 
-static GFont prv_get_large_time_font(int available_width) {
+static GFont prv_get_large_time_font(int available_width, int maximum_size) {
   // Use the largest prepared bitmap font that fits the current digits. This
   // keeps both a wide time such as 00:00 and a narrow one such as 11:11 close
   // to the PT2 display edges without ever cropping a glyph.
   const GRect measurement_box = GRect(0, 0, 320, 130);
 
   for (int i = LARGE_TIME_FONT_COUNT - 1; i >= 0; i--) {
+    if (s_large_time_font_sizes[i] > maximum_size) { continue; }
     const GSize size = graphics_text_layout_get_content_size(
         s_time_buffer, s_large_time_fonts[i], measurement_box,
         GTextOverflowModeFill, GTextAlignmentCenter);
@@ -403,6 +405,14 @@ static GFont prv_get_large_time_font(int available_width) {
   // Wide digits can exceed the safe width even at 80px. The prepared 72px
   // time font keeps the complete clock visible rather than ellipsizing it.
   return s_large_compact_time_font;
+}
+
+static int prv_time_font_size(GFont font) {
+  for (unsigned i = 0; i < LARGE_TIME_FONT_COUNT; ++i) {
+    if (font == s_large_time_fonts[i]) { return s_large_time_font_sizes[i]; }
+  }
+  if (font == s_large_compact_time_font) { return 72; }
+  return font == s_compact_time_font ? 64 : 76;
 }
 
 static GFont prv_get_standard_time_font(int available_width) {
@@ -433,6 +443,13 @@ static GFont prv_get_date_font(GFont preferred, int available_width) {
   }
   if (prv_date_fits(s_small_date_font, available_width)) { return s_small_date_font; }
   return s_complication_fonts[COMPLICATION_FONT_COUNT - 1];
+}
+
+static int prv_date_font_size(GFont font) {
+  if (font == s_large_date_font) { return 28; }
+  if (font == s_date_font) { return 24; }
+  if (font == s_compact_date_font) { return 22; }
+  return font == s_small_date_font ? 20 : 18;
 }
 
 
@@ -561,17 +578,18 @@ static GFont prv_fit_complication(char *text, size_t capacity, int width, int he
 }
 
 static void prv_draw_bitmap(GContext *ctx, const ComplicationSlot *slot,
-                            int x, int y, int size, bool shadow) {
+                            int x, int y, int size, bool shadow, bool cover) {
   const int longest = slot->width > slot->height ? slot->width : slot->height;
   if (longest <= 0) { return; }
-  const int width = (slot->width * size + longest / 2) / longest;
-  const int height = (slot->height * size + longest / 2) / longest;
+  const ReadingCoverCrop crop = reading_cover_crop(slot->width, slot->height);
+  const int width = cover ? size : (slot->width * size + longest / 2) / longest;
+  const int height = cover ? size : (slot->height * size + longest / 2) / longest;
   x += (size - width) / 2;
   y += (size - height) / 2;
   for (int row = 0; row < height; ++row) {
-    const int sy = row * slot->height / height;
+    const int sy = cover ? crop.y + row * crop.size / height : row * slot->height / height;
     for (int column = 0; column < width; ++column) {
-      const int sx = column * slot->width / width;
+      const int sx = cover ? crop.x + column * crop.size / width : column * slot->width / width;
       const uint8_t pair = slot->bitmap[sy * slot->stride + sx / 2];
       const uint8_t index = sx % 2 ? pair & 15 : pair >> 4;
       const uint8_t source = slot->palette[index];
@@ -642,7 +660,7 @@ static bool prv_draw_number_reading(GContext *ctx, const ComplicationSlot *slot,
         prv_draw_droplet(ctx, x + offset, (bounds.size.h - droplet_height) / 2 + offset,
                          color, small_droplet);
       } else if (bitmap && (!shadow || !(slot->flags & COMPLICATION_FLAG_IMAGE))) {
-        prv_draw_bitmap(ctx, slot, x + offset, (bounds.size.h - 16) / 2 + offset, 16, shadow);
+        prv_draw_bitmap(ctx, slot, x + offset, (bounds.size.h - 16) / 2 + offset, 16, shadow, false);
       }
       const int text_x = x + icon_width + icon_gap + offset;
       prv_draw_number_text(ctx, parts->number, font, GRect(text_x, y + offset,
@@ -692,9 +710,9 @@ static void prv_draw_complication(Layer *layer, GContext *ctx) {
   if (bitmap) {
     const int y = (bounds.size.h - bitmap_size) / 2;
     if (s_text_shadow_enabled && !(slot->flags & COMPLICATION_FLAG_IMAGE)) {
-      prv_draw_bitmap(ctx, slot, x + 1, y + 1, bitmap_size, true);
+      prv_draw_bitmap(ctx, slot, x + 1, y + 1, bitmap_size, true, false);
     }
-    prv_draw_bitmap(ctx, slot, x, y, bitmap_size, false);
+    prv_draw_bitmap(ctx, slot, x, y, bitmap_size, false, false);
   }
   if (has_text) {
     const GRect frame = GRect(x + bitmap_size + gap, (bounds.size.h - text_size.h) / 2,
@@ -754,7 +772,9 @@ static bool prv_context_bitmap_visible(const ComplicationSlot *title, ContextMod
     }
     const GSize full_title = graphics_text_layout_get_content_size(title->text, title_font,
         GRect(0, 0, 2048, 100), GTextOverflowModeFill, GTextAlignmentLeft);
-    if (reading_hide_artwork(full_title.w, bounds.size.w - 2, 30)) { bitmap = false; }
+    const int artwork = reading_context_artwork_size(true,
+        (title->flags & COMPLICATION_FLAG_IMAGE) != 0, has_subtitle, bounds.size.h);
+    if (reading_hide_artwork(full_title.w, bounds.size.w - 2, artwork + 6)) { bitmap = false; }
   }
   return bitmap;
 }
@@ -772,8 +792,13 @@ static void prv_draw_context(Layer *layer, GContext *ctx) {
   const int preferred = has_subtitle ? (s_large_text_enabled ? 24 : 20)
       : (s_large_text_enabled ? 28 : 24);
   const bool bitmap = prv_context_bitmap_visible(title, mode, bounds, has_subtitle);
-  const int text_x = bitmap ? 30 : 0;
-  if (bitmap) { prv_draw_bitmap(ctx, title, 0, (bounds.size.h - 24) / 2, 24, false); }
+  const int artwork = reading_context_artwork_size(mode == CONTEXT_MUSIC,
+      (title->flags & COMPLICATION_FLAG_IMAGE) != 0, has_subtitle, bounds.size.h);
+  const int text_x = bitmap ? artwork + 6 : 0;
+  if (bitmap) {
+    prv_draw_bitmap(ctx, title, 0, (bounds.size.h - artwork) / 2, artwork, false,
+        mode == CONTEXT_MUSIC && (title->flags & COMPLICATION_FLAG_IMAGE) != 0);
+  }
   if (has_subtitle) {
     prv_draw_context_text(ctx, title, GRect(text_x, 0, bounds.size.w - text_x, line_height), preferred);
     prv_draw_context_text(ctx, subtitle, GRect(text_x, line_height,
@@ -962,6 +987,7 @@ static void prv_apply_unobstructed_layout(void) {
   if (s_window_layer == NULL || s_date_layer == NULL || s_time_layer == NULL) { return; }
   const GRect root_bounds = layer_get_bounds(s_window_layer);
   const int visible_height = layer_get_unobstructed_bounds(s_window_layer).size.h;
+  const bool has_context = context_mode(&s_context, time(NULL)) != CONTEXT_NONE;
   if (!s_compact_layout && visible_height <= COMPACT_FONT_ENTER_HEIGHT) { s_compact_layout = true; }
   else if (s_compact_layout && visible_height >= COMPACT_FONT_EXIT_HEIGHT) { s_compact_layout = false; }
   const int date_x = s_large_text_enabled ? 12 : 16;
@@ -975,18 +1001,19 @@ static void prv_apply_unobstructed_layout(void) {
   const GFont time_font = s_compact_layout
       ? (s_large_text_enabled ? s_large_compact_time_font : s_compact_time_font)
       : (s_large_text_enabled ? prv_get_large_time_font(time_width -
-          (s_text_shadow_enabled ? 10 : 8)) :
+          (s_text_shadow_enabled ? 10 : 8), has_context ? 88 : 108) :
           prv_get_standard_time_font(time_width - (s_text_shadow_enabled ? 4 : 2)));
-  const int full_time_y = s_large_text_enabled
-      ? (time_font == s_large_compact_time_font ? 34 : 26) : 46;
+  const int date_y = watch_layout_date_y(prv_date_font_size(date_font), s_date_buffer,
+      prv_layout_value(s_large_text_enabled ? 22 : 26,
+          s_large_text_enabled ? 20 : 22, visible_height),
+      visible_height, has_context, s_text_shadow_enabled);
   prv_set_text_pair_layout(s_date_shadow_layer, s_date_layer,
-      GRect(date_x, prv_layout_value(s_large_text_enabled ? 22 : 26,
-          s_large_text_enabled ? 20 : 22, visible_height), date_width,
+      GRect(date_x, date_y, date_width,
           prv_layout_value(s_large_text_enabled ? 44 : 38,
           s_large_text_enabled ? 34 : 30, visible_height)), date_font, 1);
   prv_set_text_pair_layout(s_time_shadow_layer, s_time_layer,
-      GRect(time_x, prv_layout_value(full_time_y,
-          s_large_text_enabled ? 41 : TIMELINE_TIME_Y, visible_height), time_width,
+      GRect(time_x, watch_layout_clock_y(prv_time_font_size(time_font),
+          visible_height, has_context), time_width,
           prv_layout_value(s_large_text_enabled ? 120 : 102,
           s_large_text_enabled ? 86 : 78, visible_height)), time_font, 2);
   text_layer_set_text(s_date_layer, s_date_buffer);

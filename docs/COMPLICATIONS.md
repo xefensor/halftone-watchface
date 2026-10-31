@@ -1,6 +1,6 @@
 # Two complications in the adaptive layout
 
-**Halftone 1.9.0 rc.2** uses the first two global complication choices in the
+**Halftone 1.9.0 rc.3** uses the first two global complication choices in the
 Pebble phone app. A complication is a source reading: a temperature, phone
 battery level, calendar time, condition or another plugin property. Clock and
 date remain native watch functions and do not consume a slot.
@@ -31,8 +31,10 @@ left/right position; an empty first slot does not move the second into its
 place. A selected reading waiting for data, denied permission or an unsupported
 format shows `--`.
 
-The date stays plain and the wide clock stays anchored while the lower content
-changes. During **Timeline Peek / Quick View**, the clock and date compress
+The date stays plain. The clock uses the visible bounds of its compiled digit
+fonts to balance its position between date and readings. Its size and vertical
+position adapt when context needs space; it stays still during the short
+dissolve frames. During **Timeline Peek / Quick View**, the clock and date compress
 around Pebble's native area with **both complications side by side**. Music
 and notification summaries stay hidden until Peek closes. Halftone does not
 read or duplicate Timeline's own events. Small battery/connection indicators
@@ -77,8 +79,12 @@ packets retain at most 48 UTF-8 bytes without cutting a scalar. Missing data
 never becomes a fake zero. Series are not automatically sampled at their first
 value; select a current scalar reading instead.
 
-Music/notification artwork and the short halftone panel transition are described
-in [dynamic content](DYNAMIC-CONTENT.md).
+These global-reading icons remain small; generic images fit inside their
+boxes without cropping. Music album art in the separate contextual panel is
+center-cropped to a square and scaled to match that block without stretching,
+while its incoming source bitmap
+is still capped at 24 pixels. Display sizes and the short halftone panel
+transition are described in [dynamic content](DYNAMIC-CONTENT.md).
 
 ## Sources, access and cache
 

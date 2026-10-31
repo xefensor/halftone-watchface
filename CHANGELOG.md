@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.9.0 rc.3
+
+- Positions the clock using visible bounds measured from compiled font glyphs,
+  balancing shorter times such as `22:14` without crowding taller `1:05`.
+- Fits the clock to the space available above active context. The visible clock
+  center is 96 pixels normally and 88 with context; Big text caps contextual
+  clock fonts at 88 pixels. The clock remains still during dissolve frames.
+- Keeps accented weekday tails clear of the clock across all 17 languages.
+- Displays album art at the height of its two-line music block: 40 pixels
+  normally, 48 with Big text, or 32 for a single-line music panel. Source
+  bitmaps remain capped at 24 pixels and are scaled for display. Rectangular
+  music images are center-cropped to a square without stretching; generic
+  complication images and notification icons keep their contain-fit behavior.
+- Sizes the title inset to the displayed artwork while retaining the existing
+  rule that hides art when doing so lets the full title fit. Notification
+  icons remain 24 pixels.
+- Retains both horizontal complications under native Timeline Peek, Big text,
+  the established dot border and the plugin-preview publishing hold.
+
 ## 1.9.0 rc.2
 
 - Keeps both selected complications in equal horizontal columns when native

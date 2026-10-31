@@ -4,6 +4,33 @@
 #include "../src/c/watch_layout.h"
 
 int main(void) {
+  const struct { int size, top, bottom; } clock_fonts[] = {
+    {64,20,66},{72,21,74},{76,23,78},{80,24,82},{84,25,86},
+    {88,27,90},{92,27,94},{96,29,98},{100,30,102},{104,32,107},{108,33,111}
+  };
+  for (size_t i = 0; i < sizeof(clock_fonts)/sizeof(clock_fonts[0]); ++i) {
+    const int y = watch_layout_clock_y(clock_fonts[i].size, 228, false);
+    // Date ink ends at46; full-view readings start at148. Even the tallest
+    // narrow12-hour font must retain breathing room on both sides.
+    assert(y + clock_fonts[i].top >= 56);
+    assert(y + clock_fonts[i].bottom <= 136);
+    if (clock_fonts[i].size <= 88) {
+      const int compact = watch_layout_clock_y(clock_fonts[i].size, 228, true);
+      assert(compact + clock_fonts[i].top >= 56);
+      assert(compact + clock_fonts[i].bottom <= 121);
+    }
+    for (int height = 171; height < 228; ++height) {
+      int change = watch_layout_clock_y(clock_fonts[i].size, height + 1, false) -
+          watch_layout_clock_y(clock_fonts[i].size, height, false);
+      assert(change >= 0 && change <= 1);
+    }
+  }
+  assert(watch_layout_clock_y(72,171,false)==41);
+  assert(watch_layout_clock_y(64,171,false)==45);
+  assert(watch_layout_date_y(24,"SATURDAY · 31.10.",26,228,false,false)==26);
+  assert(watch_layout_date_y(28,"MARȚI · 1.1.",22,228,false,true)==12);
+  assert(watch_layout_date_y(28,"MARȚI · 1.1.",22,228,true,true)==11);
+  assert(watch_layout_date_y(28,"MARȚI · 1.1.",20,171,false,true)==11);
   const int old_styles[] = {INT_MIN, -1, 0, 1, 2, 3, INT_MAX};
   for (size_t style = 0; style < sizeof(old_styles)/sizeof(old_styles[0]); ++style) {
     assert(watch_layout_sanitize(old_styles[style]) == WATCH_LAYOUT_CLASSIC);

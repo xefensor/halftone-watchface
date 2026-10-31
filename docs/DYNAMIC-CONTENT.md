@@ -1,6 +1,6 @@
 # Dynamic content
 
-Halftone 1.9.0 rc.2 uses one adaptive layout. Two large complications sit side
+Halftone 1.9.0 rc.3 uses one adaptive layout. Two large complications sit side
 by side below the clock and plain date. When music or a brief new-notification
 summary appears, both readings shrink into a compact horizontal row above it.
 Neither selected reading is replaced by contextual content.
@@ -28,9 +28,17 @@ Halftone does not add motion-based playback controls.
 
 **Show music while playing** defaults to on. Halftone subscribes to the phone's
 `music/track` source and reads title, artist, playing state and artwork. The
-built-in source is currently an Android feature. Artwork is optional, static
-and at most 24 pixels. Title and artist use two wide, left-aligned lines. When
-removing artwork allows the full title to fit, the artwork is omitted. If the
+built-in source is currently an Android feature. Incoming artwork is optional,
+static and capped at 24 pixels. The watch scales album art to match the height
+of the two-line music block: **40 pixels normally or 48 with Big text**. A
+single-line music panel uses **32-pixel** album art. This increases its displayed
+size without adding source-image detail. Rectangular music images are
+center-cropped to a square before scaling, so the art fills the block height
+without stretching. Generic complication images and notification icons fit
+inside their boxes without cropping; notification icons remain 24 pixels.
+Title and artist use two wide, left-aligned lines, with an inset based on the
+displayed artwork box plus a gap. When removing artwork allows the
+full title to fit, the artwork is omitted. If the
 title still cannot fit, it uses a clean ellipsis; it does not continuously scroll
 or force smaller and smaller text.
 There is no playback-position or duration reading in that source, so Halftone
@@ -52,9 +60,19 @@ keep their positions; a selected but unusable reading shows `--`.
 
 **Brief halftone transitions** defaults to on. A real incoming panel-content
 change can reveal the new content with a 180 ms halftone dissolve, using three
-short timer callbacks. The effect is clipped to the lower interior: clock,
-date and bezel remain still. The reading row adjusts separately to make room
-for the panel. Repeated snapshots with identical visible content do not restart it merely because receipt or expiry times change.
+short timer callbacks. The effect is clipped to the lower interior. When a
+context mode needs space, the clock and reading row fit to that space before
+the reveal; the clock, date and bezel stay still during the dissolve frames.
+Repeated snapshots with identical visible content do not restart the effect
+merely because receipt or expiry times change.
+
+Clock placement uses measured visible glyph bounds from the compiled fonts,
+rather than their line boxes. At full height, its normal vertical ink center
+is 96 pixels;
+active context centers it at 88 pixels, and the Timeline Peek layout also
+centers it at 88. Big text chooses a contextual clock font no larger than
+88 pixels, fitting down further for wide times. This keeps tall narrow clocks
+clear of the reading row while giving shorter clocks a balanced position.
 
 Expiry, privacy clearing, disconnection and Timeline Peek hide content
 immediately instead of waiting for an effect. Peek restoration is not animated.

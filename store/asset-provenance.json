@@ -1,10 +1,10 @@
 {
   "version": "1.9.0",
-  "releaseCandidate": 2,
+  "releaseCandidate": 3,
   "pbw": {
-    "file": "Halftone-1.9.0-rc.2.pbw",
-    "sha256": "2037ec0af28197f8f73f8f28062c2e9d024288d4534638ccc38f5fc7265c58e5",
-    "nativeBinarySha256": "68f768fdf6c422ce5794aececfcfeaaba3fc348466d9c00cd826a212dd9d4542",
+    "file": "Halftone-1.9.0-rc.3.pbw",
+    "sha256": "b1fe582f1da703d26e294e9961180bf69a9d4a6704edc1a9eda8ca67ce08be3d",
+    "nativeBinarySha256": "a738a5dcb1c5ef37feb704a64239399bd6b1515efdecec5b24bb862204f48a2b",
     "resourcesSha256": "b52b3456e45f5bdeb4e97ecec2ddf188953f6cdade42aa33feaf58070433e803"
   },
   "screenshots": {
@@ -12,7 +12,7 @@
     "files": [
       {
         "file": "emery_01_orange.png",
-        "sha256": "fff0674e823ab6528b258245771ea49450b5b6447a669ebcec701e965b7d0b76",
+        "sha256": "d75e736b20791b5683d2df634b0d371e29e63e0b87cceefc941fc5893e875267",
         "pixels": [
           200,
           228
@@ -20,7 +20,7 @@
       },
       {
         "file": "emery_02_blue_large.png",
-        "sha256": "77820f4a9982637bd444be7cd43076ac409924a50573451a4fed20cc11b825fd",
+        "sha256": "445b3a5664dc38c5bf3f4c412e956c82a03a3c9880e7bc305cb40cb3fb8b42eb",
         "pixels": [
           200,
           228
@@ -28,7 +28,7 @@
       },
       {
         "file": "emery_03_green_shadow.png",
-        "sha256": "4c33a467400ccc8254ac35f261c468675cb9d0a3556bc73dd0afa569faa7dda8",
+        "sha256": "1aa48c51073bbc9a29bd93534debe53cbf73726e9e8629705bf7ab9533e91bbc",
         "pixels": [
           200,
           228
@@ -36,7 +36,7 @@
       },
       {
         "file": "emery_04_music.png",
-        "sha256": "5848ac17b8b043d604e4b8b73d21b67172d6012eee3d9560279146a290a6b757",
+        "sha256": "051f754dd3af47708822746d747a5d83cf943d27a16ffcac753a9aedba3ae555",
         "pixels": [
           200,
           228
@@ -44,7 +44,7 @@
       },
       {
         "file": "emery_05_notification.png",
-        "sha256": "5f5042f474c583ae199e3ec43222062c272f570be0aa0d4a644e42d33056cd37",
+        "sha256": "af34aca1f94748c28cc739393dbe0dafd041b36a7840634f0dd15542880c7f04",
         "pixels": [
           200,
           228
@@ -54,7 +54,7 @@
   },
   "banner": {
     "file": "halftone-banner-720x320.png",
-    "sha256": "2865103be9c9041859da0b06fcb599b49631393c73600270d0b704c3b169ab1c",
+    "sha256": "e166f451c58a2b6f48addce6c1d4a075a7169180145a8258f1cd35b0b3d011de",
     "pixels": [
       720,
       320

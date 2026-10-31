@@ -3,11 +3,11 @@ Halftone brings comic-book halftone dots to Pebble Time 2. Its rounded black bor
 Choose the first two entries in Pebble's Complications settings: temperature and rain chance, phone battery, or other supported plugin readings. Both readings condense above music, new notifications or native Timeline Peek.
 
 Features:
-- Large digital time with 12-hour and 24-hour options
+- Balanced clock with 12/24-hour time and adaptive sizing
 - Plain weekday and date, with support for 17 languages
 - Two balanced columns with big numbers and smaller units
 - Rain droplet for precipitation probability
-- Music title and artist, with artwork when it fits
+- Music title and artist, with album art sized to the music block
 - Optional notification summaries, app filtering and separate message-text control
 - Both readings remain visible above native Timeline Peek
 - Big text enlarges the date, time, readings, units and contextual text

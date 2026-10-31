@@ -33,6 +33,27 @@ int main(void) {
   assert(reading_hide_artwork(150, 170, 30));
   assert(!reading_hide_artwork(130, 170, 30));
   assert(!reading_hide_artwork(180, 170, 30));
+  assert(reading_context_artwork_size(true,true,true,48)==48);
+  assert(reading_context_artwork_size(true,true,true,40)==40);
+  assert(reading_context_artwork_size(true,true,false,48)==32);
+  assert(reading_context_artwork_size(true,false,true,48)==24);
+  assert(reading_context_artwork_size(false,true,true,48)==24);
+  // The larger cover keeps short titles, while a title that fits only in the
+  // full row can still reclaim its width instead of shrinking unnecessarily.
+  assert(!reading_hide_artwork(80,170,54));
+  assert(reading_hide_artwork(130,170,54));
+  const ReadingCoverCrop landscape = reading_cover_crop(24,12);
+  assert(landscape.x==6 && landscape.y==0 && landscape.size==12);
+  const ReadingCoverCrop portrait = reading_cover_crop(12,24);
+  assert(portrait.x==0 && portrait.y==6 && portrait.size==12);
+  const ReadingCoverCrop square = reading_cover_crop(24,24);
+  assert(square.x==0 && square.y==0 && square.size==24);
+  assert(reading_cover_crop(0,24).size==0);
+  for (int width=1;width<=24;++width) for (int height=1;height<=24;++height) {
+    const ReadingCoverCrop crop = reading_cover_crop(width,height);
+    assert(crop.x>=0 && crop.y>=0 && crop.size>0);
+    assert(crop.x+crop.size<=width && crop.y+crop.size<=height);
+  }
   assert(reading_dissolve_radius(0) == 3 && reading_dissolve_radius(1) == 2);
   assert(reading_dissolve_radius(2) == 1 && reading_dissolve_radius(3) == 0);
   assert(reading_dissolve_radius(1000) == 0);

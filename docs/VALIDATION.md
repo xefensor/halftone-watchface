@@ -1,5 +1,79 @@
 # Halftone release validation
 
+## 1.9.0 rc.3 — balanced clock and full-height album art
+
+- The clock is positioned from compiled glyph ink bounds, with a 96px visible
+  center in the normal view and 88px with active context or Timeline Peek.
+  Big contextual clocks fit within an 88px font cap. This lowers shorter clocks
+  such as `22:14` while preserving clearance around tall narrow clocks.
+- Album art fills the two-line music block: **40×40px normally, 48×48px with
+  Big text**, or 32×32px for one line. Rectangular music images are center-cropped
+  before scaling; source images remain capped at 24px. Generic complication
+  images and notification icons retain their contain fit. Text insets and the
+  hide-art-to-fit rule use the actual displayed artwork width.
+- Accented weekday tails are guarded against the clock. The release verifier
+  reads the exact packaged PFO font resources and checks the C metric tables.
+  **25,920 clock checks** cover 2,160 formatted 12/24-hour values across 12
+  size/context/shadow presentations. **522,648 date checks** cover 43,554
+  weekday/date strings from all 17 languages across those presentations.
+  All 11 clock fonts, five date fonts and eight date-tail rows agree with the
+  compiled glyphs. Minimum corpus date/clock gap is 7px; date ink starts at
+  least 20px below the top. These are compiled-font checks, not screenshots
+  from 17 installed language packs. Stale packages and deliberately altered
+  clock/date metric tables are rejected.
+- **225 JavaScript tests and nine strict C99 suites pass.** Both changed helper
+  suites also pass AddressSanitizer/UndefinedBehaviorSanitizer with unsupported
+  leak scanning disabled. Crop bounds cover all 576 source dimensions from
+  1×1 through 24×24. Existing layout checks cover every visible height from
+  171 through 228px, either size, equal columns and footer clearance.
+- **68 actual Clay browser cases pass:** 17 languages × two widths × light/dark.
+  No overflow or clipped controls; toggle/save behavior and the rc.3 diagnostic
+  label pass. The form and translations are unchanged from rc.2, so the approved
+  settings-preview images are retained.
+- **356 broad native captures pass** across both sizes, six representative
+  clocks, normal/music/notification/Peek states, empty and sparse slots,
+  loading/stale data, extreme values, ranges, status indicators, artwork
+  shown/hidden/missing, long titles and one-line panels. All 108 whole-image
+  Peek comparisons hide context consistently. Pixel checks verify rectangular
+  covers are center-cropped into 40/48px squares. Minimum measured gaps are
+  7px from date to clock and 7px from clock to readings.
+- Broad checks include notification expiry back to music, pause grace, expiry
+  during Peek, explicit and malformed clears, context transitions, identical
+  heartbeat updates and disabled transitions. Only the footer changes during
+  dissolve frames. This broad run used the pre-date-guard package
+  `05b5a09e5c6643e218e45c5a306e4bf4010631a5e590c3ab2c88f36b8da13698`,
+  native binary `e904a66e25eb8d5c61900ebab3d93c8d8576ea64620336da0f52cd0891b1967d`.
+  Its resources are identical to the final candidate. The final native change
+  adds only the date-tail clearance guard.
+- **16 final-candidate endpoint captures pass**, including the reported
+  `22:14` with shadow, normal/Big full/Peek/music, narrow tall clocks, artwork
+  hidden to fit and rectangular covers. Minimum measured endpoint gaps are
+  9px/9px. Both selected complications remain horizontal in Peek. Final listing
+  screenshots and documentation previews use this candidate's native payloads.
+- Native captures use an idle phone-script derivative and production-encoded
+  AppMessage fixtures. The emulator's system Peek card is blank; real event
+  text, physical phone/plugin data, actual playback and Bluetooth-disconnect
+  callbacks still need device confirmation. No physical-device result is claimed.
+- SDK 4.33.1 builds Emery with **149,964 resource bytes**, a **26,831-byte RAM
+  footprint** and **104,241 bytes free heap**. Exact packaged SDK payloads,
+  all 31 C/JS keys, eight current phone-source modules, the original UUID and
+  `ReadMusic` permission pass release audit. Seven complication fonts contain
+  real Unicode minus glyphs. No legacy weather client is active.
+
+Final PBW SHA-256:
+
+`b1fe582f1da703d26e294e9961180bf69a9d4a6704edc1a9eda8ca67ce08be3d`
+
+Final native binary SHA-256:
+
+`a738a5dcb1c5ef37feb704a64239399bd6b1515efdecec5b24bb862204f48a2b`
+
+Resources SHA-256:
+
+`b52b3456e45f5bdeb4e97ecec2ddf188953f6cdade42aa33feaf58070433e803`
+
+Earlier sections describe their named historical builds.
+
 ## 1.9.0 rc.2 — two readings during Timeline Peek and Big text
 
 - Native Timeline Peek now retains both selected complications in equal left/right

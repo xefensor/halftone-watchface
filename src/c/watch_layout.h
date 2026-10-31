@@ -38,6 +38,50 @@ static inline int watch_layout_interpolate(int full, int peek, int height) {
   return peek + ((full - peek) * (height - 171) + 28) / 57;
 }
 
+// Ink bounds of the bundled clock glyphs (digits and colon), measured from
+// the compiled resources. Position visible glyphs, not the font's line box.
+static inline int watch_layout_clock_y(int font_size, int height, bool contextual) {
+  const struct { uint8_t size, top, bottom; } fonts[] = {
+    {64,20,66}, {72,21,74}, {76,23,78}, {80,24,82}, {84,25,86},
+    {88,27,90}, {92,27,94}, {96,29,98}, {100,30,102},
+    {104,32,107}, {108,33,111}
+  };
+  int top = 23, bottom = 78;
+  for (size_t i = 0; i < sizeof(fonts) / sizeof(fonts[0]); ++i) {
+    if (fonts[i].size == font_size) { top = fonts[i].top; bottom = fonts[i].bottom; break; }
+  }
+  const int center = watch_layout_interpolate(contextual ? 88 : 96, 88, height);
+  return center - (top + bottom) / 2;
+}
+
+// Some Latin capitals extend below the nominal date-font line (especially
+// Romanian comma-below letters). Keep those tails clear of the clock too.
+static inline int watch_layout_date_y(int font_size, const char *text, int base_y,
+                                      int height, bool contextual, bool shadow) {
+  const uint8_t sizes[] = {28,24,22,20,18};
+  const struct { const char *text; uint8_t bottom[5]; } tails[] = {
+    {"9",{29,25,23,21,18}}, {"J",{33,28,26,23,21}},
+    {"Q",{32,27,25,23,20}}, {"Ç",{35,31,28,25,23}},
+    {"Ø",{31,27,25,22,20}}, {"Ą",{35,30,27,24,22}},
+    {"Ş",{35,31,28,26,23}}, {"Ț",{37,32,29,26,24}}
+  };
+  size_t index = 4;
+  for (size_t i = 0; i < sizeof(sizes)/sizeof(sizes[0]); ++i) {
+    if (sizes[i] == font_size) { index = i; break; }
+  }
+  int bottom = font_size;
+  if (text != NULL) {
+    for (size_t i = 0; i < sizeof(tails)/sizeof(tails[0]); ++i) {
+      if (strstr(text, tails[i].text) != NULL && tails[i].bottom[index] > bottom) {
+        bottom = tails[i].bottom[index];
+      }
+    }
+  }
+  const int limit = watch_layout_interpolate(contextual ? 49 : 50, 49, height);
+  const int overflow = base_y + bottom + (shadow ? 1 : 0) - limit;
+  return base_y - (overflow > 0 ? overflow : 0);
+}
+
 // Indices are global: a missing slot never moves another slot to its place.
 static inline WatchLayoutGeometry watch_layout_geometry(int selected_style,
                                                          int height, bool large,
