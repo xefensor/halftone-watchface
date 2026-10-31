@@ -1,8 +1,8 @@
 {
   "name": "halftone",
   "author": "Xef",
-  "version": "1.6.0",
-  "halftoneBeta": 7,
+  "version": "1.6.1",
+  "halftoneBeta": 8,
   "scripts": {
     "test": "node --test tests/*.test.js"
   },

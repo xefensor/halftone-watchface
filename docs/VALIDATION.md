@@ -1,5 +1,42 @@
 # Halftone beta validation
 
+## 1.6.1 beta 8 — source recovery and diagnostic checks
+
+This update addresses a recovery gap and exposes the original source failure
+message. It does not establish or claim a fix for the reported on-device
+weather failure across multiple watchfaces.
+
+- All **176 JavaScript tests** pass. New checks cover source registration after
+  `PLUGIN_UNAVAILABLE`, one bounded 5/15/60/120-second retry timer, unrelated
+  successful groups, synchronous failures, old callbacks, pending watch delivery,
+  preference changes and API loss. The normal 30-minute backup remains separate.
+- Retry/configuration replay does not renew source receipt times or select an
+  alternate weather service. Successful data clears its own diagnostic; other
+  sources cannot reset an unavailable source's backoff.
+- Full diagnostic messages are bounded and sanitized, matched to their slot/code,
+  and escaped as literal text in Clay. They are not persisted, sent in the watch
+  snapshot or logged. Existing translated framing is reused for all 17 languages;
+  original provider/host messages remain source data.
+- SDK **4.33.1** builds the update successfully. Permission packaging verifies the
+  original UUID, manifest version 2 and unchanged SDK payloads. Native sources,
+  snapshot format, settings IDs and font resources are unchanged from beta 7.
+  The packaged native watch binary and resources are byte-identical to beta 7.
+  Its native layout checks below therefore remain relevant; no new physical
+  phone/watch testing is claimed.
+- Read-only checks of ČHMÚ 0.5.0's real entry handler/client with public fixtures
+  succeed for a saved České Budějovice location and GPS fallback. Its PBW/script
+  packaging also validates. These checks do not prove live phone/plugin behavior
+  or upstream data availability, and no ČHMÚ code change was justified.
+
+The [weather troubleshooting guide](WEATHER-TROUBLESHOOTING.md) distinguishes
+provider availability, the demo face's private picker, missing locations and
+permission errors. The complete error detail and exact phone-app version are
+still needed if the user's failure persists.
+
+Permission-packaged PBW SHA-256:
+
+`0f20c7b75f390e8021dd90357839648578e9c2128c936b7d34b5d075cc349578`
+
 ## 1.6.0 beta 7 — five-complication checks
 
 All source data now comes from five fixed global complication slots. Clock and

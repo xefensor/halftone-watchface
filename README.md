@@ -1,14 +1,14 @@
 # Halftone
 
-## Five-complication beta — 1.6.0 beta 7
+## Five-complication beta — 1.6.1 beta 8
 
 Halftone displays five readings chosen in the Pebble phone app's global
 **Complications** settings. Choose weather, phone battery, calendar data or
 other installed plugin readings. The clock and date continue to run on the
 watch, with Halftone's existing 12-hour/24-hour option.
 
-Install [Halftone-1.6.0-beta.7.pbw](dist/Halftone-1.6.0-beta.7.pbw).
-Source: [Halftone-1.6.0-beta.7-source.zip](dist/Halftone-1.6.0-beta.7-source.zip).
+Install [Halftone-1.6.1-beta.8.pbw](dist/Halftone-1.6.1-beta.8.pbw).
+Source: [Halftone-1.6.1-beta.8-source.zip](dist/Halftone-1.6.1-beta.8-source.zip).
 This is a sideloadable testing build. Automated checks and native emulator
 results are recorded in [validation](docs/VALIDATION.md); physical phone/watch
 testing is still needed.
@@ -17,6 +17,10 @@ All five data areas now follow global complications. This build has no weather
 preset, independent weather HTTP client, pinned weather provider, temperature
 unit override or hourly forecast cache. Pebble and the selected sources supply
 the readings, units and any source-specific permission or sign-in flow.
+
+Beta 8 adds faster recovery from an unavailable source and shows the full failure
+message in settings. It does not establish the cause of a phone-side weather
+failure. See [weather troubleshooting](docs/WEATHER-TROUBLESHOOTING.md).
 
 ## Set up
 
@@ -73,7 +77,7 @@ Each reading can be retained for up to two hours from its confirmed receipt,
 or until the source's expiry if earlier. Restarting, changing layout or
 replaying a cached value does not renew that time. Receipt time is not the
 provider's observation time. There is no six-hour forecast or separate HTTP
-fallback in beta 7. The clock and date continue while the phone is unavailable.
+fallback in beta 8. The clock and date continue while the phone is unavailable.
 
 Generic complications do not make a provider more accurate or refresh it more
 often. Direct plugin readings can also differ from the values normalized for
@@ -104,21 +108,21 @@ python3 scripts/package-beta.py
 ```
 
 The clean step regenerates SDK message keys. The final step produces
-`dist/Halftone-1.6.0-beta.7.pbw` with manifest version 2 and verifies the existing
+`dist/Halftone-1.6.1-beta.8.pbw` with manifest version 2 and verifies the existing
 UUID and byte-identical SDK-built payloads. This watchface consumes plugin data;
 it does not install a plugin of its own or need a plugin-only SDK project.
 
 Install the packaged build in the Emery emulator:
 
 ```sh
-pebble install --emulator emery dist/Halftone-1.6.0-beta.7.pbw
+pebble install --emulator emery dist/Halftone-1.6.1-beta.8.pbw
 ```
 
 For a real PT2, enable Dev Connection in the Pebble phone app and use:
 
 ```sh
 pebble login
-pebble install --cloudpebble dist/Halftone-1.6.0-beta.7.pbw
+pebble install --cloudpebble dist/Halftone-1.6.1-beta.8.pbw
 ```
 
 See [version-specific validation and remaining device checks](docs/VALIDATION.md).
@@ -141,7 +145,7 @@ package.json         Emery target, permissions and message keys
 Previous PBWs and source archives remain in `dist/`. The 1.4.x–1.5.x betas used
 a weather preset; the older 1.3.1 release used an independent weather client.
 Their caches, settings, permissions and screenshots describe those versions,
-not beta 7. Historical Store materials remain in `store/`, and previous test
+not beta 8. Historical Store materials remain in `store/`, and previous test
 results remain under their own versions in `docs/VALIDATION.md`.
 
 ## License

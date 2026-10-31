@@ -1,10 +1,10 @@
 # Weather through Pebble complications
 
-This guide applies to **Halftone 1.6.0 beta 7**. Its five data areas use the
+This guide applies to **Halftone 1.6.1 beta 8**. Its five data areas use the
 Pebble app's global complications. Earlier betas had a weather preset; those
 settings and six-hour forecasts are not active in this build.
 
-The current package is `Halftone-1.6.0-beta.7.pbw`, internal version `1.6.0`,
+The current package is `Halftone-1.6.1-beta.8.pbw`, internal version `1.6.1`,
 with the existing Halftone UUID. This is a testing build rather than a new
 Store release. See [all slot positions and formats](COMPLICATIONS.md).
 
@@ -67,7 +67,7 @@ expiry if earlier. Its original confirmation survives caching; replaying it,
 reopening the face or changing layout does not renew its age. Confirmation
 means receipt from Pebble, not a new measurement by the weather provider.
 
-There is no hourly forecast cache or independent weather fallback in beta 7.
+There is no hourly forecast cache or independent weather fallback in beta 8.
 An expired or unavailable selected reading shows `--`. An unconfigured slot
 is hidden without moving the other slots. The native clock and date keep
 running while data is unavailable.
@@ -78,6 +78,10 @@ settings diagnostic. Missing values never become zero; a supplied `0%` remains
 valid. If a provider is absent, a permission is denied, or an instance position
 no longer exists, check Halftone's per-slot diagnostics and the global source
 configuration.
+
+For `PLUGIN_UNAVAILABLE` across multiple faces, use the [weather troubleshooting
+guide](WEATHER-TROUBLESHOOTING.md). Beta 8 shows the full reason in Halftone
+settings and retries source registration with bounded backoff.
 
 ## Device checks
 

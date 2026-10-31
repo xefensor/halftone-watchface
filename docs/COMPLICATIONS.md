@@ -1,6 +1,6 @@
 # Five fixed complications
 
-**Halftone 1.6.0 beta 7** uses the five global complication choices in the
+**Halftone 1.6.1 beta 8** uses the five global complication choices in the
 Pebble phone app. A complication is a source reading: a temperature, phone
 battery level, calendar time, condition or another plugin property. The clock
 and date remain native watch functions and do not consume a slot.

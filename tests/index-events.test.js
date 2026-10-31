@@ -124,14 +124,23 @@ test('cancelled or invalid settings do nothing, empty valid settings reconfigure
 
 test('settings show complication counts/errors and no hard-coded weather picker',()=>{
   const f=fixture();Object.assign(f.status,{configured:5,ready:4,error:'PERMISSION_DENIED'});
-  f.status.slots=[{slot:4,error:'PERMISSION_DENIED'}];
+  f.status.slots=[{slot:4,category:'weather',item:'location',error:'PERMISSION_DENIED',message:'Location permission required'}];
   f.handlers.showConfiguration();
-  assert.match(item(f,'complications-status').defaultValue,/Halftone 1\.6\.0 beta 7/);
+  assert.match(item(f,'complications-status').defaultValue,/Halftone 1\.6\.1 beta 8/);
   assert.match(item(f,'complications-status').defaultValue,/4\/5 ready/);
-  assert.match(item(f,'complications-status').defaultValue,/Complication error: #4 · PERMISSION_DENIED/);
+  assert.match(item(f,'complications-status').defaultValue,/Complication error: #4 · weather\/location · PERMISSION_DENIED · Location permission required/);
   assert.equal(named(f,'WEATHER_LOCATION'),undefined);
   assert.equal(named(f,'SHOW_DAILY_RANGE'),undefined);
   assert.deepEqual(f.urls,['data:text/html,settings']);
+});
+
+test('provider error messages are displayed as literal text in Clay settings',()=>{
+  const f=fixture();Object.assign(f.status,{configured:1,ready:0,error:'PLUGIN_UNAVAILABLE'});
+  f.status.slots=[{slot:1,category:'weather',item:'location',error:'PLUGIN_UNAVAILABLE',message:'No plugin <b>Weather</b> & "missing"'}];
+  f.handlers.showConfiguration();
+  const text=item(f,'complications-status').defaultValue;
+  assert.match(text,/PLUGIN_UNAVAILABLE · No plugin &lt;b&gt;Weather&lt;\/b&gt; &amp; &quot;missing&quot;/);
+  assert.doesNotMatch(text,/<b>|<\/b>/);
 });
 
 test('complication controls/status follow the active watch language and rebuild after a language change',()=>{

@@ -24,6 +24,11 @@ function savedSettings() {
 }
 function send(payload, success, failure) { Pebble.sendAppMessage(payload, success, failure); }
 function log(message) { console.log(message); }
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, function(character) {
+    return {'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[character];
+  });
+}
 
 // Every data field comes from the user's global complication slots. There is
 // no direct weather client, provider override, GPS lookup or local unit rewrite.
@@ -57,9 +62,14 @@ Pebble.addEventListener('showConfiguration', function() {
         t('complicationsWaiting');
       var issue = status.error;
       var problem = (status.slots || []).filter(function(slot) { return slot.error === issue; })[0];
-      if (issue && problem) { issue = '#' + problem.slot + ' · ' + issue; }
-      item.defaultValue = 'Halftone 1.6.0 beta 7. ' + summary +
-        (issue ? ' · ' + t('complicationsError', {error: issue}) : '');
+      if (issue && problem) {
+        issue = '#' + problem.slot + ' · ' + problem.category + '/' + problem.item + ' · ' + issue +
+          (problem.message ? ' · ' + problem.message : '');
+      } else if (issue && status.message) { issue += ' · ' + status.message; }
+      // Clay text fields support HTML. Source diagnostics remain literal text,
+      // including provider-supplied error messages and category/item names.
+      item.defaultValue = escapeHtml('Halftone 1.6.1 beta 8. ' + summary +
+        (issue ? ' · ' + t('complicationsError', {error: issue}) : ''));
     });
   });
   Pebble.openURL(clay.generateUrl());

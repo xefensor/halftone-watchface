@@ -15,6 +15,22 @@ function textOf(property) { return object(property) && object(property.shortText
 function codeOf(error) {
   return error && typeof error.code === 'string' && /^[A-Z0-9_]{1,48}$/.test(error.code) ? error.code : 'UNKNOWN';
 }
+function messageOf(error) {
+  if (!error || typeof error.message !== 'string') { return ''; }
+  var text = error.message.replace(/[\x00-\x1f\x7f-\x9f\u00ad\u061c\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff\ufff9-\ufffb]/g, ' ')
+    .replace(/ +/g, ' ').trim();
+  var out = '';
+  for (var i = 0; i < text.length; i++) {
+    var character = text[i];
+    var code = text.charCodeAt(i);
+    if (code >= 0xd800 && code <= 0xdbff && text.charCodeAt(i + 1) >= 0xdc00 && text.charCodeAt(i + 1) <= 0xdfff) {
+      character += text[++i];
+    } else if (code >= 0xd800 && code <= 0xdfff) { character = '\ufffd'; }
+    if (out.length + character.length > 180) { break; }
+    out += character;
+  }
+  return out;
+}
 function bytesOf(value, max) {
   if (typeof value !== 'string' || value.length > Math.ceil(max / 3) * 4 ||
       !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) { return null; }
@@ -83,6 +99,7 @@ module.exports = function(options) {
   var records = [null,null,null,null,null];
   var states = [0,0,0,0,0];
   var errors = ['','','','',''];
+  var messages = ['','','','',''];
   var hasPreferences = false;
   var signature = '';
   var preferenceGeneration = 0;
@@ -93,6 +110,9 @@ module.exports = function(options) {
   var expiryTimer = null;
   var available = typeof pebble.subscribeToSource === 'function';
   var preferenceError = '';
+  var preferenceMessage = '';
+  var recoveryTimer = null;
+  var recoveryAttempt = 0;
   var pending = null;
   var sending = false;
   var deliveryTimer = null;
@@ -123,6 +143,30 @@ module.exports = function(options) {
     deliveryGeneration++;
     if (deliveryTimer !== null) { options.cancelLater(deliveryTimer); }
     deliveryTimer = null; pending = null; sending = false;
+  }
+  function cancelRecovery() {
+    if (recoveryTimer !== null) { options.cancelLater(recoveryTimer); }
+    recoveryTimer = null;
+    recoveryAttempt = 0;
+  }
+  function needsRecovery() {
+    return available && hasPreferences && descriptors.some(function(slot, i) {
+      return slot && !slot.invalid && errors[i] === 'PLUGIN_UNAVAILABLE';
+    });
+  }
+  function scheduleRecovery() {
+    if (!needsRecovery()) { cancelRecovery(); return; }
+    if (recoveryTimer !== null) { return; }
+    var expected = signature;
+    var delay = [5000,15000,60000,120000][recoveryAttempt];
+    recoveryTimer = options.later(function() {
+      recoveryTimer = null;
+      if (signature !== expected || !needsRecovery()) { return; }
+      recoveryAttempt = Math.min(recoveryAttempt + 1, 3);
+      // Re-resolve the same generic sources. Keep the normal thirty-minute
+      // preferences refresh independent from this bounded registration retry.
+      sources(); publish(); scheduleRecovery();
+    }, delay);
   }
   function pump() {
     if (sending || !pending) { return; }
@@ -163,7 +207,7 @@ module.exports = function(options) {
     if (!hasPreferences && available) { return; }
     var slots = records.map(function(record, i) {
       if (valid(record)) { return rendered(record); }
-      if (record) { records[i] = null; states[i] = STATUS.UNAVAILABLE; errors[i] = 'SOURCE_EXPIRED'; }
+      if (record) { records[i] = null; states[i] = STATUS.UNAVAILABLE; errors[i] = 'SOURCE_EXPIRED'; messages[i] = ''; }
       return {status:states[i]};
     });
     var payload = {};
@@ -192,9 +236,10 @@ module.exports = function(options) {
     var terminal = ['PERMISSION_DENIED','PLUGIN_DISABLED','PLUGIN_UNAVAILABLE','SOURCE_UNAVAILABLE','SOURCE_NOT_FOUND','NOT_FOUND','UNSUPPORTED','INVALID_REQUEST'].indexOf(code) >= 0;
     group.slots.forEach(function(i) {
       errors[i] = code;
+      messages[i] = messageOf(error);
       if (terminal || !valid(records[i])) { records[i] = null; states[i] = status; }
     });
-    publish(); save(); scheduleExpiry();
+    publish(); save(); scheduleExpiry(); scheduleRecovery();
   }
   function sources() {
     closeSources();
@@ -215,13 +260,14 @@ module.exports = function(options) {
         var handle = pebble.subscribeToSource({category:group.category,item:group.item,properties:group.properties,
           iconPixelSize:{w:24,h:24},onData:function(envelope) {
             if (generation !== sourceGeneration) { return; }
+            group.slots.forEach(function(i) { messages[i] = ''; });
             var confirmedAt = now();
             var until = Math.min(confirmedAt + MAX_AGE, MAX_EPOCH);
             var expiry = envelope && envelope.validUntilMs;
             if (expiry !== undefined && expiry !== null) {
               if (!finite(expiry)) {
                 group.slots.forEach(function(i) { records[i] = null; states[i] = STATUS.UNAVAILABLE; errors[i] = 'INVALID_EXPIRY'; });
-                publish(); save(); scheduleExpiry(); return;
+                publish(); save(); scheduleExpiry(); scheduleRecovery(); return;
               }
               until = Math.min(until, Math.floor(expiry / 1000));
             }
@@ -236,7 +282,7 @@ module.exports = function(options) {
                 records[i] = parsed.value ? Object.assign({}, parsed.value, {confirmedAt:confirmedAt,validUntil:until}) : null;
               });
             }
-            publish(); save(); scheduleExpiry();
+            publish(); save(); scheduleExpiry(); scheduleRecovery();
           },onError:function(error) { if (generation === sourceGeneration) { sourceError(group,error); } }});
         if (generation === sourceGeneration) { subscriptions.push(handle); }
         else if (handle && handle.unsubscribe) { handle.unsubscribe(); }
@@ -244,7 +290,7 @@ module.exports = function(options) {
     });
   }
   function preferred(envelope) {
-    if (!envelope || !Array.isArray(envelope.instances)) { preferenceError = 'INVALID_DATA'; return; }
+    if (!envelope || !Array.isArray(envelope.instances)) { preferenceError = 'INVALID_DATA'; preferenceMessage = ''; return; }
     var next = [null,null,null,null,null];
     var seen = {};
     envelope.instances.forEach(function(instance) {
@@ -259,13 +305,15 @@ module.exports = function(options) {
     });
     var nextSignature = JSON.stringify(next);
     preferenceError = '';
+    preferenceMessage = '';
     if (hasPreferences && nextSignature === signature) { return; }
     var first = !hasPreferences;
-    closeSources(); cancelDelivery();
+    cancelRecovery(); closeSources(); cancelDelivery();
     descriptors = next; signature = nextSignature; hasPreferences = true;
     records = [null,null,null,null,null];
     states = descriptors.map(function(slot) { return !slot ? STATUS.EMPTY : slot.invalid ? STATUS.UNSUPPORTED : STATUS.LOADING; });
     errors = descriptors.map(function(slot) { return slot && slot.invalid ? 'INVALID_PREFERENCE' : ''; });
+    messages = ['','','','',''];
     if (first) { load(); }
     publish(); save(); scheduleExpiry(); sources();
   }
@@ -273,8 +321,14 @@ module.exports = function(options) {
     available = typeof pebble.subscribeToSource === 'function';
     if (refreshTimer !== null) { options.cancelLater(refreshTimer); }
     if (!available) {
+      cancelRecovery();
+      preferenceGeneration++;
+      try { if (preferenceSubscription && preferenceSubscription.unsubscribe) { preferenceSubscription.unsubscribe(); } } catch (ignored) {}
+      preferenceSubscription = null;
       closeSources(); cancelDelivery(); states = [3,3,3,3,3]; records = [null,null,null,null,null];
-      preferenceError = 'API_UNAVAILABLE'; publish(); return;
+      errors = ['API_UNAVAILABLE','API_UNAVAILABLE','API_UNAVAILABLE','API_UNAVAILABLE','API_UNAVAILABLE'];
+      messages = ['','','','',''];
+      preferenceError = 'API_UNAVAILABLE'; preferenceMessage = ''; publish(); return;
     }
     var alreadyConfigured = hasPreferences;
     var previousSourceGeneration = sourceGeneration;
@@ -284,18 +338,24 @@ module.exports = function(options) {
     try {
       var handle = pebble.subscribeToSource({category:'preferences',item:'complications',
         onData:function(envelope) { if (generation === preferenceGeneration) { preferred(envelope); } },
-        onError:function(error) { if (generation === preferenceGeneration) { preferenceError = codeOf(error); } }});
+        onError:function(error) {
+          if (generation === preferenceGeneration) { preferenceError = codeOf(error); preferenceMessage = messageOf(error); }
+        }});
       if (generation === preferenceGeneration) { preferenceSubscription = handle; }
       else if (handle && handle.unsubscribe) { handle.unsubscribe(); }
-    } catch (error) { preferenceError = codeOf(error); }
+    } catch (error) { preferenceError = codeOf(error); preferenceMessage = messageOf(error); }
     if (alreadyConfigured && sourceGeneration === previousSourceGeneration) { sources(); publish(); }
+    scheduleRecovery();
     refreshTimer = options.later(function() { refreshTimer = null; refresh(); }, REFRESH);
   }
   return {refresh:refresh,configure:function() { publish(); scheduleExpiry(); },status:function() {
+    var firstError = -1;
+    for (var i = 0; i < errors.length; i++) { if (errors[i]) { firstError = i; break; } }
     return {available:available,configured:descriptors.filter(function(slot) { return slot; }).length,
       ready:records.filter(valid).length,error:preferenceError || errors.filter(function(error) { return error; })[0] || '',
+      message:preferenceError ? preferenceMessage : firstError >= 0 ? messages[firstError] : '',
       slots:descriptors.map(function(slot, i) { return {slot:i+1,category:slot && slot.category || '',item:slot && slot.item || '',
         index:slot && slot.index !== undefined ? slot.index : null,property:slot && slot.property || '',
-        status:NAMES[records[i] && !valid(records[i]) ? STATUS.UNAVAILABLE : states[i]],error:errors[i]}; })};
+        status:NAMES[records[i] && !valid(records[i]) ? STATUS.UNAVAILABLE : states[i]],error:errors[i],message:messages[i]}; })};
   }};
 };

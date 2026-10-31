@@ -30,6 +30,7 @@ function fixture(overrides={}) {
   const subscriptions=[];
   const deliveries=[];
   const callbacks=[];
+  const logs=[];
   const settings={language:'en',use12Hour:false};
   const pebble={subscribeToSource:request=>{
     const handle={request,closed:false,unsubscribe(){this.closed=true;}};
@@ -39,7 +40,7 @@ function fixture(overrides={}) {
   }};
   const options={pebble,keys:{COMPLICATION_DATA:KEY},storage:{getItem:key=>values.get(key)||null,setItem:(key,value)=>values.set(key,value)},
     now:()=>now,later:(fn,delay)=>{const id=++sequence;timers.set(id,{at:now+delay,fn});return id;},cancelLater:id=>timers.delete(id),
-    getSettings:()=>settings,localizeBoolean:(value,language)=>language==='cs'?(value?'Zapnuto':'Vypnuto'):(value?'On':'Off'),log:()=>{},
+    getSettings:()=>settings,localizeBoolean:(value,language)=>language==='cs'?(value?'Zapnuto':'Vypnuto'):(value?'On':'Off'),log:message=>logs.push(message),
     send:(payload,success,failure)=>{deliveries.push(payload);callbacks.push({success,failure});if(!hold)success();}
   };
   if(overrides.unavailable) delete pebble.subscribeToSource;
@@ -48,7 +49,7 @@ function fixture(overrides={}) {
     assert.ok(sub,'missing '+category+'/'+item);
     return sub.request;
   }
-  const result={values,timers,subscriptions,deliveries,callbacks,settings,pebble,
+  const result={values,timers,subscriptions,deliveries,callbacks,logs,settings,pebble,time:()=>now,
     prefs:instances=>latest('preferences','complications').onData({instances}),
     prefError:code=>latest('preferences','complications').onError({code}),
     source:(body,category='test',item='reading')=>latest(category,item).onData(body),
@@ -255,4 +256,133 @@ test('Compact source bitmap rows are repacked into the watch stride with zeroed 
   // A four-byte-aligned source payload is not the public ImageShape format.
   f.source(envelope({icon:{...image,pixels:Buffer.from([0x01,0x10,0,0,0x10,0,0,0]).toString('base64')}}));
   assert.equal(f.packet()[0].status,3);
+});
+
+test('Unavailable sources retry once per bounded backoff without postponing the normal backup timer',()=>{
+  const attempts=[];
+  const f=fixture({subscribe:request=>{
+    if(request.category==='weather') {
+      attempts.push(f.time()-NOW);
+      request.onError({code:'PLUGIN_UNAVAILABLE',message:'No plugin found for weather/location'});
+    }
+  }});
+  f.client.refresh();f.prefs([preference(0,'weather','location')]);
+  assert.deepEqual(attempts,[0]);
+  f.tick(4999);assert.equal(attempts.length,1);
+  f.tick(1);f.tick(15000);f.tick(60000);f.tick(120000);f.tick(120000);
+  assert.deepEqual(attempts,[0,5000,20000,80000,200000,320000]);
+  assert.equal(f.timers.size,2,'one recovery and one original thirty-minute backup remain');
+  const preferenceCount=()=>f.subscriptions.filter(sub=>sub.request.category==='preferences').length;
+  assert.equal(preferenceCount(),1,'recovery rebinds sources, not global preferences');
+  f.tick(1800000-320000);
+  assert.equal(preferenceCount(),2,'normal backup was not pushed out by each recovery');
+});
+
+test('Source registration recovery accepts the new provider and ignores callbacks from old dead subscriptions',()=>{
+  let registered=false;
+  const f=fixture({subscribe:request=>{
+    if(request.category==='weather') {
+      if(registered) request.onData(envelope({shortText:{text:'registered'}}));
+      else request.onError({code:'PLUGIN_UNAVAILABLE',message:'Provider is not registered yet'});
+    }
+  }});
+  f.client.refresh();f.prefs([preference(0,'weather','location')]);
+  const old=f.latest('weather','location');
+  f.tick(5000);registered=true;f.tick(15000);
+  assert.equal(f.packet()[0].text,'registered');
+  assert.equal(f.client.status().slots[0].error,'');assert.equal(f.client.status().slots[0].message,'');
+  const count=f.subscriptions.length;
+  old.onData(envelope({shortText:{text:'obsolete'}}));old.onError({code:'PLUGIN_UNAVAILABLE',message:'obsolete error'});
+  f.tick(120000);
+  assert.equal(f.subscriptions.length,count,'successful recovery cancels the pending recovery timer');
+  assert.equal(f.packet()[0].text,'registered');
+  assert.equal(f.packet()[0].confirmedAt,(NOW+20000)/1000);
+});
+
+test('Unrelated successful groups never reset a still-failed source backoff or create parallel retries',()=>{
+  const weather=[];
+  const other=[];
+  const f=fixture({subscribe:request=>{
+    if(request.category==='weather') {weather.push(f.time()-NOW);request.onError({code:'PLUGIN_UNAVAILABLE'});}
+    if(request.category==='phone') {other.push(f.time()-NOW);request.onData(envelope({shortText:{text:'battery'}}));}
+    if(request.category==='missing') request.onError({code:'PLUGIN_UNAVAILABLE'});
+  }});
+  f.client.refresh();f.prefs([preference(0,'weather','location'),preference(1,'phone','battery'),preference(2,'missing','other')]);
+  f.tick(5000);f.tick(15000);f.tick(60000);f.tick(120000);
+  assert.deepEqual(weather,[0,5000,20000,80000,200000]);
+  assert.deepEqual(other,weather);
+  assert.equal(f.client.status().slots[1].status,'ready');
+  assert.equal(f.timers.size,3,'one expiry, one recovery and one backup only');
+});
+
+test('Preference changes and API unavailability cancel recovery and clear obsolete source diagnostics',()=>{
+  const f=fixture({subscribe:request=>{
+    if(request.category==='weather') request.onError({code:'PLUGIN_UNAVAILABLE',message:'Old weather error'});
+  }});
+  f.client.refresh();f.prefs([preference(0,'weather','location')]);
+  const old=f.latest('weather','location');
+  f.prefs([preference(4,'phone','battery')]);
+  const count=f.subscriptions.length;
+  f.tick(120000);
+  assert.equal(f.subscriptions.length,count);
+  assert.equal(f.client.status().slots[0].message,'');
+  old.onError({code:'PLUGIN_UNAVAILABLE',message:'Late old error'});
+  assert.equal(f.client.status().message,'');
+  f.prefs([preference(0,'weather','location')]);
+  delete f.pebble.subscribeToSource;
+  f.client.refresh();
+  const unavailableCount=f.subscriptions.length;
+  f.tick(120000);
+  assert.equal(f.subscriptions.length,unavailableCount);
+  assert.equal(f.client.status().error,'API_UNAVAILABLE');
+  assert.equal(f.timers.size,0);
+});
+
+test('Denied, unsupported and ordinary network errors do not trigger provider-registration retries',()=>{
+  for(const code of ['PERMISSION_DENIED','UNSUPPORTED','INVALID_REQUEST','NETWORK_ERROR','TIMEOUT']) {
+    const f=fixture({subscribe:request=>{if(request.category==='test') request.onError({code,message:'detail'});}});
+    f.client.refresh();f.prefs([preference(0)]);
+    const count=f.subscriptions.length;f.tick(120000);
+    assert.equal(f.subscriptions.length,count,code);
+  }
+});
+
+test('Diagnostics preserve a bounded printable source message locally and pair the top message with its error',()=>{
+  const f=fixture();f.client.refresh();f.prefs([preference(0,'phone','battery'),preference(1,'weather','location')]);
+  const detail='Weather failed at https://private.invalid/location?city=České Budějovice';
+  f.latest('weather','location').onError({code:'PLUGIN_UNAVAILABLE',message:detail+'\n\t\u0000\u202e\u200b'+'x'.repeat(300)+'🙂'});
+  const message=f.client.status().slots[1].message;
+  assert.ok(message.startsWith(detail));assert.ok(message.length<=180);
+  assert.ok(!/[\x00-\x1f\x7f-\x9f\u2028-\u202e\u200b]/.test(message));
+  assert.equal(f.client.status().message,message);
+  assert.equal(f.logs.some(value=>value.includes('private.invalid')),false);
+  f.latest('phone','battery').onError({code:'PERMISSION_DENIED',message:'Phone permission missing'});
+  assert.equal(f.client.status().error,'PERMISSION_DENIED');
+  assert.equal(f.client.status().message,'Phone permission missing','top error and message must come from the same slot');
+  f.source(envelope({shortText:{text:'recovered'}}),'phone','battery');
+  assert.equal(f.client.status().slots[0].message,'');
+  assert.equal(f.client.status().message,message);
+  f.source(envelope({shortText:{text:'weather recovered'}}),'weather','location');
+  assert.equal(f.client.status().error,'');assert.equal(f.client.status().message,'');
+});
+
+test('Preference error messages are preserved without overwriting offline data and clear on a valid preference snapshot',()=>{
+  const f=fixture();f.client.refresh();
+  f.latest('preferences','complications').onError({code:'PLUGIN_UNAVAILABLE',message:'Preferences are starting\r\nTry again'});
+  assert.equal(f.client.status().message,'Preferences are starting Try again');assert.equal(f.deliveries.length,0);
+  f.prefs([]);assert.equal(f.client.status().error,'');assert.equal(f.client.status().message,'');
+});
+
+test('A late failed watch delivery cannot replace the newest recovered source packet',()=>{
+  let registered=false;
+  const f=fixture({subscribe:request=>{
+    if(request.category==='weather') {
+      if(registered) request.onData(envelope({shortText:{text:'newest'}}));
+      else request.onError({code:'PLUGIN_UNAVAILABLE'});
+    }
+  }});
+  f.client.refresh();f.hold(true);f.prefs([preference(0,'weather','location')]);
+  const old=f.callbacks.at(-1);registered=true;f.tick(5000);
+  f.hold(false);old.failure();
+  assert.equal(f.packet()[0].text,'newest');assert.equal(f.packet()[0].status,2);
 });
