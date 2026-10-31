@@ -1,8 +1,8 @@
 {
   "name": "halftone",
   "author": "Xef",
-  "version": "1.7.0",
-  "halftoneBeta": 9,
+  "version": "1.8.0",
+  "halftoneBeta": 10,
   "scripts": {
     "test": "node --test tests/*.test.js"
   },
@@ -63,7 +63,8 @@
       "SHOW_NOTIFICATIONS",
       "NOTIFICATION_PREVIEW",
       "NOTIFICATION_APPS",
-      "SHOW_STATUS"
+      "SHOW_STATUS",
+      "PANEL_TRANSITIONS"
     ],
     "resources": {
       "media": [
@@ -206,7 +207,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_38",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£]",
+          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
           "targetPlatforms": [
             "emery"
           ]
@@ -215,7 +216,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_28",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£]",
+          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
           "targetPlatforms": [
             "emery"
           ]
@@ -224,7 +225,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_24",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£]",
+          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
           "targetPlatforms": [
             "emery"
           ]
@@ -233,7 +234,7 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_20",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£]",
+          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
           "targetPlatforms": [
             "emery"
           ]
@@ -242,7 +243,16 @@
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_18",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
-          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£]",
+          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_COMPLICATION_32",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[ -~ÁÀÂÃÄÅĄĂÆÇĆČĎÉĚĘÍÌÎİĹĽŁŇÑÓÔÕÖŐØŔŘŚŠŞȘŤȚÚŮÜŰÝŹŻŽáàâãäåąăæçćčďéěęíìîıĺľłňñóôõöőøŕřśšşșťțúůüűýźżžßẞ°µ²³…·‘’“”€£−]",
           "targetPlatforms": [
             "emery"
           ]

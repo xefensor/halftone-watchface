@@ -35,6 +35,11 @@ typedef enum {
   COMPLICATION_STATUS_DISABLED = 6,
 } ComplicationStatus;
 
+enum {
+  COMPLICATION_DISPLAY_GENERIC = 0,
+  COMPLICATION_DISPLAY_PRECIPITATION = 1,
+};
+
 typedef struct {
   uint8_t flags;
   uint8_t status;
@@ -42,6 +47,7 @@ typedef struct {
   uint8_t height;
   uint8_t stride;
   uint8_t text_length;
+  uint8_t display_kind;
   uint16_t pixel_bytes;
   uint32_t confirmed_at;
   uint32_t valid_until;
@@ -135,16 +141,21 @@ static inline bool complications_records_read(const uint8_t *bytes,
     const uint8_t text_length = record[2];
     const uint8_t width = record[3];
     const uint8_t height = record[4];
+    const uint8_t display_kind = record[5];
     const uint32_t confirmed = complications_u32(record + 6);
     const uint32_t until = complications_u32(record + 10);
     const uint16_t pixel_bytes = complications_u16(record + 14);
     const uint32_t timestamp = complications_u32(record + 16);
-    if ((flags & ~known_flags) || status > COMPLICATION_STATUS_DISABLED || record[5] != 0 ||
+    if ((flags & ~known_flags) || status > COMPLICATION_STATUS_DISABLED ||
+        display_kind > COMPLICATION_DISPLAY_PRECIPITATION ||
+        (bytes[0] == 1 && display_kind != COMPLICATION_DISPLAY_GENERIC) ||
         text_length > COMPLICATION_MAX_TEXT_BYTES ||
         width > COMPLICATION_MAX_BITMAP_WIDTH || height > COMPLICATION_MAX_BITMAP_HEIGHT ||
         ((flags & COMPLICATION_FLAG_IMAGE) && !(flags & COMPLICATION_FLAG_BITMAP))) { return false; }
     const uint8_t stride = (uint8_t)(((width + 7) >> 3) * 4);
     if (status == COMPLICATION_STATUS_READY) {
+      if (display_kind != COMPLICATION_DISPLAY_GENERIC &&
+          (!(flags & COMPLICATION_FLAG_TEXT) || (flags & COMPLICATION_FLAG_TIMESTAMP))) { return false; }
       if (!(flags & (COMPLICATION_FLAG_TEXT | COMPLICATION_FLAG_BITMAP | COMPLICATION_FLAG_TIMESTAMP)) ||
           ((flags & COMPLICATION_FLAG_TEXT) ? text_length == 0 : text_length != 0) ||
           ((flags & COMPLICATION_FLAG_TIMESTAMP) ? timestamp == 0 : timestamp != 0) ||
@@ -153,7 +164,7 @@ static inline bool complications_records_read(const uint8_t *bytes,
       if (flags & COMPLICATION_FLAG_BITMAP) {
         if (width == 0 || height == 0 || pixel_bytes != (unsigned)stride * height) { return false; }
       } else if (width != 0 || height != 0 || pixel_bytes != 0) { return false; }
-    } else if (flags != 0 || text_length != 0 || width != 0 || height != 0 ||
+    } else if (flags != 0 || display_kind != 0 || text_length != 0 || width != 0 || height != 0 ||
                confirmed != 0 || until != 0 || pixel_bytes != 0 || timestamp != 0) { return false; }
 
     at += COMPLICATION_RECORD_HEADER_BYTES;
@@ -167,6 +178,7 @@ static inline bool complications_records_read(const uint8_t *bytes,
       slot->flags = flags;
       slot->status = status;
       slot->text_length = text_length;
+      slot->display_kind = display_kind;
       slot->width = width;
       slot->height = height;
       slot->stride = stride;
@@ -192,7 +204,7 @@ static inline bool complications_read(const uint8_t *bytes, size_t length,
                                        ComplicationSet *result) {
   if (bytes == NULL || length < COMPLICATION_HEADER_BYTES +
       COMPLICATION_SLOT_COUNT * COMPLICATION_RECORD_HEADER_BYTES ||
-      length > COMPLICATION_MAX_BYTES || bytes[0] != 1 || bytes[1] != 0 ||
+      length > COMPLICATION_MAX_BYTES || (bytes[0] != 1 && bytes[0] != 2) || bytes[1] != 0 ||
       complications_u16(bytes + 2) != length ||
       complications_u16(bytes + 4) != complications_crc16(bytes, length) ||
       !complications_records_read(bytes, length, NULL)) { return false; }

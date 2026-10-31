@@ -8,7 +8,8 @@ const config=require('../src/pkjs/config');
 const DYNAMIC=['complicationsStatus','complicationsWaiting','complicationsDisabled','complicationsError','stateOn','stateOff',
   'contextWaiting','contextReady','contextError'];
 const ADAPTIVE_KEYS=['adaptiveLayout','adaptiveHelp','adaptivePeek','dynamicContent','showMusic','showNotifications',
-  'notificationPreview','notificationApps','notificationAppsHelp','notificationsHelp','showStatus'];
+  'notificationPreview','notificationApps','notificationAppsHelp','notificationsHelp','showStatus',
+  'panelTransitions','panelTransitionsHelp'];
 
 function visible(config) {
   const out=[];
@@ -70,12 +71,14 @@ test('All seventeen languages translate every visible setting and complication s
 test('Czech settings include established controls, the single layout and dynamic content',()=>{
   const strings=visible(localization.translateConfig(config,'cs-CZ'));
   for(const text of ['Nastavení Halftone','Barva pozadí','Čas','Komplikace','Uložit nastavení']) assert.ok(strings.includes(text));
-  assert.ok(strings.some(text=>text.includes('pozice 1–5')&&text.includes('Pebble')));
+  assert.ok(strings.some(text=>text.includes('pozice 1 a 2')&&text.includes('Pebble')));
   assert.ok(strings.includes('Přizpůsobivé rozložení'));
   assert.ok(strings.includes('Zobrazit hudbu při přehrávání'));
   assert.ok(strings.includes('Zobrazit souhrny nových oznámení'));
-  assert.ok(strings.some(text=>text.includes('Komplikace 1')&&text.includes('pozice 2–5')));
+  assert.ok(strings.some(text=>text.includes('Komplikace 1 je větší')&&text.includes('komplikaci 2')));
   assert.ok(strings.some(text=>text.includes('Timeline Peek')&&text.includes('souhrny oznámení se skryjí')));
+  assert.ok(strings.includes('Krátké tečkované přechody'));
+  assert.ok(strings.some(text=>text.includes('Čas a rámeček zůstanou nehybné')));
 });
 
 test('Unknown text and locales fall back safely, and English literals remain translation keys',()=>{
@@ -88,9 +91,9 @@ test('Unknown text and locales fall back safely, and English literals remain tra
 });
 
 test('Complication status translations preserve zero counts and source error data',()=>{
-  const parameters={ready:0,configured:5,error:'PERMISSION_DENIED'};
+  const parameters={ready:0,configured:2,error:'PERMISSION_DENIED'};
   for(const language of localization.languages) {
-    assert.ok(localization.t('complicationsStatus',language,parameters).includes('0/5'),language);
+    assert.ok(localization.t('complicationsStatus',language,parameters).includes('0/2'),language);
     assert.ok(localization.t('complicationsError',language,parameters).includes('PERMISSION_DENIED'),language);
     assert.equal(localization.t('complicationsStatus',language).match(/\{[^}]+\}/g).join(','),'{ready},{configured}');
     assert.equal(localization.t('complicationsError',language).match(/\{[^}]+\}/g).join(','),'{error}');
@@ -98,9 +101,9 @@ test('Complication status translations preserve zero counts and source error dat
     assert.ok(localization.t('contextError',language,parameters).includes('PERMISSION_DENIED'),language);
     assert.notEqual(localization.t('stateOn',language),localization.t('stateOff',language),language);
   }
-  assert.equal(localization.t('complicationsStatus','en',parameters),'Complications: 0/5 ready');
+  assert.equal(localization.t('complicationsStatus','en',parameters),'Complications: 0/2 ready');
   assert.equal(localization.t('complicationsError','cs',parameters),'Chyba komplikace: PERMISSION_DENIED');
-  assert.deepEqual(parameters,{ready:0,configured:5,error:'PERMISSION_DENIED'});
+  assert.deepEqual(parameters,{ready:0,configured:2,error:'PERMISSION_DENIED'});
 });
 
 test('Translation deep-clones Clay data while preserving keys, IDs, saved values, colors and units',()=>{
@@ -134,7 +137,7 @@ test('Translation deep-clones Clay data while preserving keys, IDs, saved values
 test('Active settings retain appearance controls and add opt-in notification settings without a layout picker',()=>{
   const messageKeys=items(config).filter(item=>item.messageKey).map(item=>item.messageKey);
   assert.deepEqual(messageKeys,['BACKGROUND_COLOR','TEXT_COLOR','USE_12_HOUR','SHOW_MUSIC','SHOW_NOTIFICATIONS',
-    'NOTIFICATION_PREVIEW','NOTIFICATION_APPS','SHOW_STATUS','LARGE_TEXT','DEPTH_EFFECT','TEXT_SHADOW']);
+    'NOTIFICATION_PREVIEW','NOTIFICATION_APPS','SHOW_STATUS','LARGE_TEXT','PANEL_TRANSITIONS','DEPTH_EFFECT','TEXT_SHADOW']);
   assert.ok(!items(config).some(item=>item.id==='weather-status'));
   const status=items(config).find(item=>item.id==='complications-status');
   assert.equal(status.defaultValue,'Complications: waiting for Pebble');
@@ -147,6 +150,7 @@ test('Active settings retain appearance controls and add opt-in notification set
   assert.equal(items(config).find(item=>item.messageKey==='NOTIFICATION_PREVIEW').defaultValue,false);
   assert.equal(items(config).find(item=>item.messageKey==='NOTIFICATION_APPS').defaultValue,'');
   assert.equal(items(config).find(item=>item.messageKey==='SHOW_STATUS').defaultValue,true);
+  assert.equal(items(config).find(item=>item.messageKey==='PANEL_TRANSITIONS').defaultValue,true);
   const context=items(config).find(item=>item.id==='context-status');
   assert.equal(context.defaultValue,'Dynamic content: waiting for Pebble');
   assert.equal(context.messageKey,undefined);
@@ -155,9 +159,11 @@ test('Active settings retain appearance controls and add opt-in notification set
 test('Every language explains the adaptive layout and the primary-only Peek behavior',()=>{
   for(const language of localization.languages) {
     const help=localization.t('complicationsHelp',language);
-    assert.ok(help.includes('1–5')&&help.includes('Pebble'),language);
+    assert.ok(help.includes('1')&&help.includes('2')&&help.includes('Pebble'),language);
+    assert.ok(!help.includes('1–5'),language+' must explain the two visible choices');
     const adaptive=localization.t('adaptiveHelp',language);
-    assert.ok(adaptive.includes('1')&&adaptive.includes('2–5'),language);
+    assert.ok(adaptive.includes('1')&&adaptive.includes('2'),language);
+    assert.ok(!adaptive.includes('2–5'),language+' must describe only the second reading yielding');
     const peek=localization.t('adaptivePeek',language);
     assert.ok(peek.includes('Timeline Peek')&&peek.includes('1'),language);
     const rendered=visible(localization.translateConfig(config,language));
@@ -192,6 +198,7 @@ test('All new controls translate while preserving app filters, privacy defaults 
     assert.equal(apps.attributes.maxlength,160);
     assert.equal(translated.find(item=>item.messageKey==='SHOW_NOTIFICATIONS').defaultValue,false);
     assert.equal(translated.find(item=>item.messageKey==='NOTIFICATION_PREVIEW').defaultValue,false);
+    assert.equal(translated.find(item=>item.messageKey==='PANEL_TRANSITIONS').defaultValue,true);
     assert.equal(translated.find(item=>item.id==='context-status').defaultValue,localization.t('contextWaiting',language));
   }
   assert.deepEqual(config,original);

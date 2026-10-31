@@ -163,6 +163,37 @@ int main(void) {
     assert(complication_is_fresh(&result.slots[i], NOW));
   }
 
+  // V2 retains the exact old record boundaries, with one presentation byte.
+  // Legacy V1 cache packets remain readable, but cannot claim the new hint.
+  Packet styled;
+  text_packet(&styled, "40%", 3);
+  styled.bytes[0] = 2;
+  styled.bytes[styled.records[0] + 5] = COMPLICATION_DISPLAY_PRECIPITATION;
+  reseal(&styled);
+  assert(complications_read(styled.bytes, styled.length, &result));
+  assert(strcmp(result.slots[0].text, "40%") == 0);
+  assert(result.slots[0].display_kind == COMPLICATION_DISPLAY_PRECIPITATION);
+  assert(result.slots[1].display_kind == COMPLICATION_DISPLAY_GENERIC);
+  changed = styled;
+  changed.bytes[0] = 1;
+  reseal(&changed);
+  assert_bad(&changed);
+  changed = styled;
+  changed.bytes[changed.records[0] + 5] = 2;
+  reseal(&changed);
+  assert_bad(&changed);
+  changed = styled;
+  changed.bytes[changed.records[1] + 5] = 1;
+  reseal(&changed);
+  assert_bad(&changed);
+  init(&styled);
+  styled.bytes[0] = 2;
+  add(&styled, COMPLICATION_FLAG_TIMESTAMP, COMPLICATION_STATUS_READY, NULL, 0, 0, 0, NOW + 1);
+  finish(&styled);
+  styled.bytes[styled.records[0] + 5] = 1;
+  reseal(&styled);
+  assert_bad(&styled);
+
   // Every byte participates in the checksum; rewriting the CRC field itself
   // does not affect its computed value. Invalid last slots cannot partly copy.
   const uint16_t crc = complications_crc16(packet.bytes, packet.length);
@@ -229,7 +260,7 @@ int main(void) {
   assert(!complications_read(packet.bytes, 0, &result));
   assert(!complications_read(packet.bytes, 5, &result));
   changed = packet;
-  changed.bytes[0] = 2;
+  changed.bytes[0] = 3;
   reseal(&changed);
   assert_bad(&changed);
   changed = packet;

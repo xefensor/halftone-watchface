@@ -1,124 +1,119 @@
-# Complications in the adaptive layout
+# Two complications in the adaptive layout
 
-**Halftone 1.7.0 beta 9** uses the five global complication choices in the
+**Halftone 1.8.0 beta 10** uses the first two global complication choices in the
 Pebble phone app. A complication is a source reading: a temperature, phone
-battery level, calendar time, condition or another plugin property. The clock
-and date remain native watch functions and do not consume a slot.
+battery level, calendar time, condition or another plugin property. Clock and
+date remain native watch functions and do not consume a slot.
 
-## Choose what each number means
+## Choose the two readings
 
 Open **Complications** in the Pebble phone app's Settings; some preview versions
-place it under **Settings → Plugins**. Configure slots 1–5. Halftone now has one
-adaptive layout; older saved layout styles no longer select separate designs.
-The saved time format and appearance settings survive relaunching the face.
+place it under **Settings → Plugins**. Configure slots **1 and 2**. Choices 3–5
+are ignored by Halftone: it does not subscribe to their sources, display them or
+retain their data in its phone cache. Those choices remain available to other
+watchfaces.
 
-A weather example is Temperature in slot 1, High in 2, Low in 3, Precipitation
-in 4 and Condition in 5, all for the same location. Alternatively, put phone
-battery in slot 1 or use any other supported source in any position. There is
-no fixed weather preset or weather inference in Halftone.
+Temperature in slot 1 and Precipitation in slot 2 make a compact weather setup.
+Alternatively, use phone battery, humidity or any other supported reading.
+There is no fixed weather preset, local unit conversion or automatic high/low
+aggregation. Saved time format, colors and effects survive relaunching.
 
-## Where the five readings appear
+## Where the readings appear
 
-Each number always refers to the same global complication, even when an earlier
-slot is empty. Unconfigured slots are hidden. A configured slot waiting for
-usable data, denied permission or an unsupported format shows `--`; later slots
-do not move into its position.
-
-| Global complication | Normal position | While music or a notification is shown |
+| Global complication | Normal presentation | During music or a new notification |
 | --- | --- | --- |
-| 1 | Large central reading below the clock | Remains visible in the same primary area |
-| 2 | Upper-left cell of the lower grid | Temporarily hidden |
-| 3 | Upper-right cell of the lower grid | Temporarily hidden |
-| 4 | Bottom-left cell | Temporarily hidden |
-| 5 | Bottom-right cell | Temporarily hidden |
+| 1 | Large, centered, full-width primary reading below the clock | Remains in the same area |
+| 2 | Slightly smaller, centered, full-width reading below the primary | Replaced by two wide, left-aligned context lines |
+| 3–5 | Not used by Halftone | Not used by Halftone |
 
-The date is plain, and the wide clock stays in place as the lower area changes.
-A two-line music or new-notification panel replaces the lower grid. This uses
-additional source subscriptions, not a permanent change to any of the five
-complication choices. When the panel ends, the four readings return to their
-original positions. See [dynamic content](DYNAMIC-CONTENT.md).
+An empty first slot does not move the second slot upward. A selected reading
+waiting for data, denied permission or an unsupported format shows `--`.
 
-During **Timeline Peek / Quick View**, clock and date compress around Pebble's
-native area with **complication 1 only**. Complications 2–5, music and notification
-summaries stay hidden until Peek closes. Halftone does not read or duplicate
-Timeline's own events and other content. Small battery/connection indicators
+The date stays plain and the wide clock stays anchored while the lower content
+changes. During **Timeline Peek / Quick View**, the clock and date compress
+around Pebble's native area with **complication 1 only**. Complication 2, music
+and notification summaries stay hidden until Peek closes. Halftone does not
+read or duplicate Timeline's own events. Small battery/connection indicators
 use the primary-reading area when enabled.
 
-## How a selected reading is drawn
+## Numbers, units and artwork
 
 A property can supply several formats. Halftone prefers usable `shortText`,
-then supports a numeric value, longer text, a boolean or a timestamp. It uses
-the source's units and formatted text instead of applying weather-specific
-rounding or conversions. A real zero is valid.
+then supports a numeric value, longer text, a boolean or a timestamp. Source
+formatting and units are preserved; a real zero is valid.
+
+Recognized number/unit strings use large digits with a smaller unit, such as
+`7` with `°C`. Locale decimal punctuation and signs remain as supplied. Dates,
+times, numeric ranges and unrecognized text are drawn as a whole readable
+string rather than guessed into a numeric format. Long text fits the area or
+ends in an ellipsis.
+
+A droplet is reserved for **weather/location → precipitation** with a valid
+0–100% probability. The coordinator supplies an explicit presentation hint;
+the renderer also checks the percentage syntax. Battery, humidity and arbitrary
+percentages remain generic readings. A condition is never inferred from a
+percentage or another slot.
 
 | Source format | Display |
 | --- | --- |
 | `shortText` | Source's compact text; preferred when available |
 | `numericValue` | Number and its supplied unit |
-| `longText` | Text fitted or ellipsized to the slot |
+| `longText` | Text fitted or ellipsized to the reading area |
 | `boolean` | Localized state text |
-| `timestamp` | Time in the watch's local timezone, respecting the 12-hour/24-hour choice |
-| `icon` / `image` | Small source-supplied artwork, alongside text when both are supplied |
+| `timestamp` | Watch-local time respecting the 12-hour/24-hour choice |
+| `icon` / `image` | Small source artwork, with text when both are supplied |
 | Series only | `--` and an unsupported-format diagnostic |
 
-Artwork is capped at 24 pixels. Beside text it occupies a 16-pixel area;
-bitmap-only readings are centered in a 24-pixel area. A source `icon` is
-preferred over its `image` when both exist. Icons use Halftone's chosen text
-color; images retain their source palette. A condition is displayed only as
-the selected source provides it, not derived from precipitation or another slot.
+Source icons use the chosen text color; images retain their palette. Text
+packets retain at most 48 UTF-8 bytes without cutting a scalar. Missing data
+never becomes a fake zero. Series are not automatically sampled at their first
+value; select a current scalar reading instead.
 
-Text packets retain at most 48 UTF-8 bytes, and the renderer fits or ellipsizes
-long values within the fixed cell. This is suitable for compact readings rather
-than long messages. Empty or malformed formats do not become fake zeros.
-An hourly or daily series is not automatically sampled at its first value;
-select a scalar current reading instead.
+Music/notification artwork and the short halftone panel transition are described
+in [dynamic content](DYNAMIC-CONTENT.md).
 
-## Sources, units and access
+## Sources, access and cache
 
-The Pebble app chooses the provider for each category/item. Source configuration,
-units and sign-in belong to Pebble or the provider, while layout, colors and
-12-hour/24-hour time remain Halftone settings. Changing one global slot changes
-that numbered reading without affecting the music or notification sources.
+Pebble chooses the provider for each category/item. Units and provider sign-in
+belong to Pebble or the provider. Halftone declares `ReadMusic` and no Internet
+or hard-coded Location permission. Pebble requests access needed by selected
+sources through its normal flow; notification summaries are opt-in.
 
-Halftone declares `ReadMusic`, but no Internet or hard-coded Location permission.
-Pebble requests access required by selected sources through its normal permission
-flow. Notification summaries are opt-in and request notification access when
-enabled. A complication source can need Location, Calendar or another
-permission. Provider credentials and authentication are configured with that provider, not in
-Halftone's settings.
+The two readings can be cached for at most **two hours from their original
+confirmed receipt**, capped by an earlier source expiry. Reopening or replaying
+data cannot renew confirmation. Receipt time is not the measurement or model
+issue time. After expiry, a selected reading shows `--` until data arrives.
+There is no independent HTTP fallback; clock and date continue on the watch.
 
-A direct source can differ from the normalized data displayed in Pebble's native
-Weather app. Generic complication support does not itself change weather
-accuracy or provider refresh intervals. See [weather setup and comparison](PLUGIN-WEATHER.md).
+The phone cache uses a two-reading signature and does not restore an older
+five-reading cache. Native version-1 snapshots can still be decoded during an
+upgrade, but only the first two positions can be displayed. Contextual music
+and notifications have separate short leases and are never persisted as
+context. Choosing such a property as one of the two global readings follows
+the generic reading-cache rules instead.
 
-## Cache and expiry
+A direct source may differ from Pebble's normalized native Weather display.
+See [weather setup and comparison](PLUGIN-WEATHER.md).
 
-A slot's cached reading lasts at most **two hours from its original confirmed
-receipt**, capped by an earlier source expiry. Reopening the watchface or
-replaying saved data cannot renew that confirmation. Receipt time is
-not the source's measurement or model issue time. There is no generic observation
-timestamp and no six-hour weather forecast cache in this build.
+## Source and packet contract
 
-After expiry, a still-configured slot shows `--` until usable data arrives.
-If plugins are unavailable or a source cannot be read, Halftone does not start
-an independent HTTP fallback. Clock and date continue on the watch. These cache
-rules apply to global complications, not the ephemeral music/notification panel;
-its shorter limits and privacy rules are documented separately.
+Halftone reads `preferences/complications`, then subscribes to sources selected
+by preference IDs `"0"` and `"1"` only. Empty choices are omitted from the
+preference envelope, so array position is not the slot number. The separate
+`index.numericValue.value` selects an underlying source instance by zero-based
+position, not by stable instance ID. Reordering instances can retarget a choice.
 
-## Source contract for developers
+The transport still has five records because contextual snapshots share its
+codec. The global-reading encoder emits EMPTY records at indices 2–4. Version 2
+keeps the 20-byte record header and uses byte 5 as `displayKind`: 0 is generic,
+1 is precipitation probability. The native decoder accepts version 1 and
+version 2; version 1 requires that byte to remain zero. Unknown hints and invalid
+record combinations fail complete-snapshot validation. Context records require
+kind 0 and do not accept weather presentation hints.
 
-Halftone reads `preferences/complications` with `Pebble.subscribeToSource`, then
-subscribes to each selected category/item and property. Global UI slots 1–5
-have preference `instanceId` values `"0"`–`"4"`. Empty slots are omitted from the
-preference envelope, so its array position is not a slot number. The entry's
-separate `index.numericValue.value` selects an instance of the underlying source
-by zero-based position, not by stable instance ID. Reordering source instances
-can therefore retarget a configured slot.
-
-`validUntilMs` is milliseconds. A `timestamp.value` is epoch seconds representing
-the reading itself, not its freshness. Series-only properties remain unsupported
-even if a source declares them. Missing or unsupported data is diagnosed per
-slot rather than replaced with a different reading.
+`validUntilMs` is milliseconds. `timestamp.value` is epoch seconds representing
+the displayed moment, not freshness. Unsupported or malformed readings are
+diagnosed rather than replaced with a different source.
 
 References: [plugin guide](https://developer.repebble.com/guides/plugins/preview/),
 [preference serialization](https://github.com/coredevices/mobileapp/blob/master/pebble/src/commonMain/kotlin/coredevices/pebble/plugin/PreferencesPlugin.kt),

@@ -112,7 +112,7 @@ Pebble.addEventListener('showConfiguration', function() {
       } else if (issue && status.message) { issue += ' · ' + status.message; }
       // Clay text fields support HTML. Source diagnostics remain literal text,
       // including provider-supplied error messages and category/item names.
-      item.defaultValue = escapeHtml('Halftone 1.7.0 beta 9. ' + summary +
+      item.defaultValue = escapeHtml('Halftone 1.8.0 beta 10. ' + summary +
         (issue ? ' · ' + t('complicationsError', {error: issue}) : ''));
     });
   });
@@ -122,7 +122,7 @@ Pebble.addEventListener('showConfiguration', function() {
 function watchSettings(payload) {
   var result = {};
   ['BACKGROUND_COLOR', 'TEXT_COLOR', 'DEPTH_EFFECT', 'TEXT_SHADOW', 'LARGE_TEXT',
-    'USE_12_HOUR', 'SHOW_STATUS'].forEach(function(name) {
+    'USE_12_HOUR', 'SHOW_STATUS', 'PANEL_TRANSITIONS'].forEach(function(name) {
     var value = messageValue(payload, name);
     if (value === undefined) { return; }
     if (name === 'BACKGROUND_COLOR' || name === 'TEXT_COLOR') {

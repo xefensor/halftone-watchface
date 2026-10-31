@@ -46,15 +46,12 @@ static inline WatchLayoutGeometry watch_layout_geometry(int selected_style,
   (void)large;
   if (height < 215) {
     result.slots[0] = (WatchSlotGeometry){{14,
-        watch_layout_interpolate(132, 118, height), 172, 38}, 28};
+        watch_layout_interpolate(126, 118, height), 172, 38}, 28};
     return result;
   }
-  result.slots[0] = (WatchSlotGeometry){{14, 132, 172, 38}, 28};
-  result.slots[1] = (WatchSlotGeometry){{18, 166, 78, 25}, 20};
-  result.slots[2] = (WatchSlotGeometry){{104, 166, 78, 25}, 20};
-  result.slots[3] = (WatchSlotGeometry){{18, 187, 78, 25}, 20};
-  result.slots[4] = (WatchSlotGeometry){{104, 187, 78, 25}, 20};
-  result.context = (WatchLayoutRect){14, 164, 172, 48};
+  result.slots[0] = (WatchSlotGeometry){{14, 126, 172, 48}, 38};
+  result.slots[1] = (WatchSlotGeometry){{14, 174, 172, 40}, 32};
+  result.context = (WatchLayoutRect){14, 171, 172, 43};
   return result;
 }
 

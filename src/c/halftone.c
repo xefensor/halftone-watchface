@@ -2,6 +2,7 @@
 #include "complication_data.h"
 #include "context_data.h"
 #include "watch_layout.h"
+#include "reading_presentation.h"
 
 #define PERSIST_KEY_BACKGROUND_COLOR 2
 #define PERSIST_KEY_TEXT_COLOR 3
@@ -13,6 +14,7 @@
 #define PERSIST_KEY_SHOW_STATUS 19
 #define PERSIST_KEY_COMPLICATION_FIRST 20
 #define PERSIST_KEY_CONTEXT_SESSION 61
+#define PERSIST_KEY_PANEL_TRANSITIONS 62
 #define COMPLICATION_CACHE_CHUNKS 8
 #define COMPLICATION_CACHE_CHUNK_BYTES 256
 
@@ -27,13 +29,14 @@
 #define TIMELINE_DATE_Y 25
 #define TIMELINE_TIME_Y 45
 #define LARGE_TIME_FONT_COUNT 8
-#define COMPLICATION_FONT_COUNT 5
+#define COMPLICATION_FONT_COUNT 6
 
 static Window *s_window;
 static Layer *s_window_layer;
 static Layer *s_background_layer;
 static Layer *s_complication_layers[COMPLICATION_SLOT_COUNT];
 static Layer *s_context_layer;
+static Layer *s_transition_layer;
 static Layer *s_status_layer;
 static TextLayer *s_date_layer;
 static TextLayer *s_time_layer;
@@ -48,7 +51,7 @@ static GFont s_large_date_font;
 static GFont s_large_time_fonts[LARGE_TIME_FONT_COUNT];
 static GFont s_large_compact_time_font;
 static GFont s_complication_fonts[COMPLICATION_FONT_COUNT];
-static const uint8_t s_complication_font_sizes[COMPLICATION_FONT_COUNT] = {38, 28, 24, 20, 18};
+static const uint8_t s_complication_font_sizes[COMPLICATION_FONT_COUNT] = {38, 32, 28, 24, 20, 18};
 static GColor s_background_color;
 static GColor s_text_color;
 static bool s_compact_layout;
@@ -57,10 +60,20 @@ static bool s_text_shadow_enabled;
 static bool s_large_text_enabled;
 static bool s_use_12_hour;
 static bool s_show_status;
+static bool s_panel_transitions;
 static bool s_phone_connected;
 static BatteryChargeState s_battery;
 static ComplicationSet s_context;
 static AppTimer *s_context_timer;
+static AppTimer *s_transition_timer;
+static uint8_t s_transition_frame = 3;
+static bool s_panel_signature_known;
+static bool s_panel_content_seen;
+static uint32_t s_panel_signature;
+static ContextMode s_panel_mode;
+static GPath *s_drop_path;
+static GPoint s_drop_points[] = {{0, -10}, {-7, 2}, {7, 2}};
+static const GPathInfo s_drop_info = {.num_points = 3, .points = s_drop_points};
 static bool s_context_rebaseline = true;
 static bool s_context_awaiting_baseline = true;
 static bool s_context_rebaseline_in_flight;
@@ -555,6 +568,65 @@ static void prv_draw_bitmap(GContext *ctx, const ComplicationSlot *slot,
   }
 }
 
+static void prv_draw_droplet(GContext *ctx, int x, int y, GColor color) {
+  graphics_context_set_fill_color(ctx, color);
+  graphics_context_set_antialiased(ctx, true);
+  graphics_fill_circle(ctx, GPoint(x + 8, y + 13), 8);
+  if (s_drop_path != NULL) {
+    gpath_move_to(s_drop_path, GPoint(x + 8, y + 10));
+    gpath_draw_filled(ctx, s_drop_path);
+  }
+}
+
+static void prv_draw_number_text(GContext *ctx, const char *text, GFont font,
+                                 GRect rect, GColor color) {
+  graphics_context_set_text_color(ctx, color);
+  graphics_draw_text(ctx, text, font, rect, GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+}
+
+static bool prv_draw_number_reading(GContext *ctx, const ComplicationSlot *slot,
+                                    const ReadingParts *parts, GRect bounds,
+                                    int preferred, bool bitmap) {
+  const bool droplet = slot->display_kind == COMPLICATION_DISPLAY_PRECIPITATION &&
+      reading_is_probability(parts);
+  const int icon_width = droplet ? 18 : bitmap ? 16 : 0;
+  const int icon_gap = icon_width ? 5 : 0;
+  for (unsigned i = 0; i < COMPLICATION_FONT_COUNT; ++i) {
+    if (s_complication_font_sizes[i] > preferred) { continue; }
+    const GFont font = s_complication_fonts[i];
+    const GFont unit_font = s_complication_fonts[s_complication_font_sizes[i] >= 38 ? 4 : 5];
+    const GSize unit = parts->unit[0] ? graphics_text_layout_get_content_size(parts->unit,
+        unit_font, GRect(0, 0, 2048, 100), GTextOverflowModeFill, GTextAlignmentLeft) : GSize(0, 0);
+    const GSize number = graphics_text_layout_get_content_size(parts->number, font,
+        GRect(0, 0, 2048, 100), GTextOverflowModeFill, GTextAlignmentLeft);
+    const int unit_gap = unit.w ? 2 : 0;
+    const int width = icon_width + icon_gap + number.w + unit_gap + unit.w + 2;
+    if (width > bounds.size.w || number.h > bounds.size.h || unit.h > bounds.size.h) { continue; }
+    const int x = (bounds.size.w - width) / 2;
+    const int y = (bounds.size.h - number.h) / 2;
+    for (unsigned shadow = s_text_shadow_enabled ? 1 : 0; ; --shadow) {
+      const int offset = shadow ? 1 : 0;
+      const GColor color = shadow ? GColorBlack : s_text_color;
+      if (droplet) {
+        prv_draw_droplet(ctx, x + offset, (bounds.size.h - 22) / 2 + offset, color);
+      } else if (bitmap && (!shadow || !(slot->flags & COMPLICATION_FLAG_IMAGE))) {
+        prv_draw_bitmap(ctx, slot, x + offset, (bounds.size.h - 16) / 2 + offset, 16, shadow);
+      }
+      const int text_x = x + icon_width + icon_gap + offset;
+      prv_draw_number_text(ctx, parts->number, font, GRect(text_x, y + offset,
+          number.w + 2, bounds.size.h), color);
+      if (unit.w) {
+        const int unit_y = y + number.h - unit.h - (number.h > unit.h ? 2 : 0) + offset;
+        prv_draw_number_text(ctx, parts->unit, unit_font,
+            GRect(text_x + number.w + unit_gap, unit_y, unit.w + 2, bounds.size.h), color);
+      }
+      if (!shadow) { break; }
+    }
+    return true;
+  }
+  return false;
+}
+
 static void prv_draw_complication(Layer *layer, GContext *ctx) {
   const unsigned index = *(uint8_t *)layer_get_data(layer);
   if (!s_has_complications || index >= COMPLICATION_SLOT_COUNT) { return; }
@@ -571,6 +643,10 @@ static void prv_draw_complication(Layer *layer, GContext *ctx) {
   const WatchLayoutGeometry geometry = watch_layout_geometry(WATCH_LAYOUT_CLASSIC,
       layer_get_unobstructed_bounds(s_window_layer).size.h, s_large_text_enabled);
   const int preferred = geometry.slots[index].font_size;
+  ReadingParts parts;
+  if (fresh && has_text && !(slot->flags & COMPLICATION_FLAG_TIMESTAMP) &&
+      reading_parts(text, &parts) &&
+      prv_draw_number_reading(ctx, slot, &parts, bounds, preferred, bitmap)) { return; }
   GFont font = s_complication_fonts[COMPLICATION_FONT_COUNT - 1];
   GSize text_size = GSize(0, 0);
   if (has_text) {
@@ -628,6 +704,26 @@ static void prv_draw_context_text(GContext *ctx, const ComplicationSlot *slot,
   graphics_draw_text(ctx, text, font, rect, GTextOverflowModeFill, GTextAlignmentLeft, NULL);
 }
 
+static bool prv_context_bitmap_visible(const ComplicationSlot *title, ContextMode mode,
+                                       GRect bounds, bool has_subtitle) {
+  const int line_height = has_subtitle ? bounds.size.h / 2 : bounds.size.h;
+  const int preferred = has_subtitle ? 20 : 24;
+  bool bitmap = title->flags & COMPLICATION_FLAG_BITMAP;
+  if (bitmap && mode == CONTEXT_MUSIC) {
+    GFont title_font = s_complication_fonts[COMPLICATION_FONT_COUNT - 1];
+    for (unsigned i = 0; i < COMPLICATION_FONT_COUNT; ++i) {
+      if (s_complication_font_sizes[i] <= preferred &&
+          prv_text_fits(title->text, s_complication_fonts[i], 2046, line_height)) {
+        title_font = s_complication_fonts[i]; break;
+      }
+    }
+    const GSize full_title = graphics_text_layout_get_content_size(title->text, title_font,
+        GRect(0, 0, 2048, 100), GTextOverflowModeFill, GTextAlignmentLeft);
+    if (reading_hide_artwork(full_title.w, bounds.size.w - 2, 30)) { bitmap = false; }
+  }
+  return bitmap;
+}
+
 static void prv_draw_context(Layer *layer, GContext *ctx) {
   const ContextMode mode = context_mode(&s_context, time(NULL));
   if (mode == CONTEXT_NONE) { return; }
@@ -637,15 +733,121 @@ static void prv_draw_context(Layer *layer, GContext *ctx) {
   const GRect bounds = layer_get_bounds(layer);
   const bool has_subtitle = context_slot_fresh(subtitle, time(NULL)) &&
       (subtitle->flags & COMPLICATION_FLAG_TEXT);
-  const bool bitmap = title->flags & COMPLICATION_FLAG_BITMAP;
+  const int line_height = has_subtitle ? bounds.size.h / 2 : bounds.size.h;
+  const int preferred = has_subtitle ? 20 : 24;
+  const bool bitmap = prv_context_bitmap_visible(title, mode, bounds, has_subtitle);
   const int text_x = bitmap ? 30 : 0;
   if (bitmap) { prv_draw_bitmap(ctx, title, 0, (bounds.size.h - 24) / 2, 24, false); }
   if (has_subtitle) {
-    prv_draw_context_text(ctx, title, GRect(text_x, 0, bounds.size.w - text_x, 24), 20);
-    prv_draw_context_text(ctx, subtitle, GRect(text_x, 24, bounds.size.w - text_x, 24), 20);
+    prv_draw_context_text(ctx, title, GRect(text_x, 0, bounds.size.w - text_x, line_height), preferred);
+    prv_draw_context_text(ctx, subtitle, GRect(text_x, line_height,
+        bounds.size.w - text_x, bounds.size.h - line_height), preferred);
   } else {
     prv_draw_context_text(ctx, title, GRect(text_x, 0, bounds.size.w - text_x, bounds.size.h), 24);
   }
+}
+
+static void prv_apply_unobstructed_layout(void);
+
+static void prv_cancel_panel_transition(void) {
+  if (s_transition_timer != NULL) { app_timer_cancel(s_transition_timer); s_transition_timer = NULL; }
+  s_transition_frame = 3;
+  if (s_transition_layer != NULL) { layer_set_hidden(s_transition_layer, true); }
+}
+
+static void prv_transition_next(void *context) {
+  s_transition_timer = NULL;
+  if (s_transition_frame < 3) { ++s_transition_frame; }
+  if (s_transition_layer != NULL) {
+    layer_set_hidden(s_transition_layer, s_transition_frame >= 3);
+    layer_mark_dirty(s_transition_layer);
+  }
+  if (s_transition_frame < 3) {
+    s_transition_timer = app_timer_register(60, prv_transition_next, NULL);
+    if (s_transition_timer == NULL) { prv_cancel_panel_transition(); }
+  }
+}
+
+static void prv_draw_transition(Layer *layer, GContext *ctx) {
+  const unsigned radius = reading_dissolve_radius(s_transition_frame);
+  if (!radius) { return; }
+  const GRect bounds = layer_get_bounds(layer);
+  graphics_context_set_fill_color(ctx, s_background_color);
+  graphics_context_set_antialiased(ctx, false);
+  // Keep every temporary reveal dot inside the lower content interior. These
+  // never overlap the clock, pinned reading or the established bezel rings.
+  for (int y = 8; y < bounds.size.h - 6; y += 8) {
+    for (int x = 8; x < bounds.size.w - 8; x += 8) {
+      graphics_fill_circle(ctx, GPoint(x, y), radius);
+    }
+  }
+}
+
+static uint32_t prv_hash_visible_slot(uint32_t hash, const ComplicationSlot *slot,
+                                      bool selected, bool bitmap_visible) {
+  const uint8_t fresh = selected && complication_is_fresh(slot, time(NULL));
+  hash = reading_hash_bytes(hash, &selected, sizeof(selected));
+  hash = reading_hash_bytes(hash, &fresh, sizeof(fresh));
+  if (!fresh) { return hash; }
+  const uint8_t visible_flags = bitmap_visible ? slot->flags :
+      slot->flags & ~(COMPLICATION_FLAG_BITMAP | COMPLICATION_FLAG_IMAGE);
+  hash = reading_hash_bytes(hash, &visible_flags, sizeof(visible_flags));
+  hash = reading_hash_bytes(hash, &slot->display_kind, sizeof(slot->display_kind));
+  hash = reading_hash_bytes(hash, slot->text, slot->text_length);
+  if (slot->flags & COMPLICATION_FLAG_TIMESTAMP) {
+    hash = reading_hash_bytes(hash, &slot->timestamp, sizeof(slot->timestamp));
+  }
+  if (bitmap_visible && (slot->flags & COMPLICATION_FLAG_BITMAP)) {
+    hash = reading_hash_bytes(hash, &slot->width, sizeof(slot->width));
+    hash = reading_hash_bytes(hash, &slot->height, sizeof(slot->height));
+    hash = reading_hash_bytes(hash, slot->palette, sizeof(slot->palette));
+    hash = reading_hash_bytes(hash, slot->bitmap, slot->pixel_bytes);
+  }
+  return hash;
+}
+
+static void prv_refresh_panel_transition(const WatchLayoutGeometry *geometry) {
+  if (s_transition_layer == NULL) { return; }
+  const ContextMode mode = context_mode(&s_context, time(NULL));
+  uint32_t signature = reading_hash_bytes(UINT32_C(2166136261), &mode, sizeof(mode));
+  bool incoming;
+  if (mode == CONTEXT_NONE) {
+    const ComplicationSlot *slot = &s_complications.slots[1];
+    const bool selected = s_has_complications && complication_is_selected(slot);
+    ReadingParts parts;
+    const bool droplet = slot->display_kind == COMPLICATION_DISPLAY_PRECIPITATION &&
+        reading_parts(slot->text, &parts) && reading_is_probability(&parts);
+    signature = prv_hash_visible_slot(signature, slot, selected, !droplet);
+    incoming = selected && complication_is_fresh(slot, time(NULL));
+  } else {
+    const unsigned first = mode == CONTEXT_NOTIFICATION ? 2 : 0;
+    const WatchLayoutRect rect = geometry->context.width ? geometry->context :
+        watch_layout_geometry(WATCH_LAYOUT_CLASSIC, FULL_LAYOUT_HEIGHT, s_large_text_enabled).context;
+    const bool has_subtitle = context_slot_fresh(&s_context.slots[first + 1], time(NULL)) &&
+        (s_context.slots[first + 1].flags & COMPLICATION_FLAG_TEXT);
+    const bool bitmap = prv_context_bitmap_visible(&s_context.slots[first], mode,
+        prv_layout_rect(rect), has_subtitle);
+    signature = prv_hash_visible_slot(signature, &s_context.slots[first], true, bitmap);
+    signature = prv_hash_visible_slot(signature, &s_context.slots[first + 1], true, false);
+    incoming = true;
+  }
+  const bool changed = s_panel_signature_known && signature != s_panel_signature;
+  const bool private_clear = s_panel_mode != CONTEXT_NONE &&
+      (mode == CONTEXT_NONE || (s_panel_mode == CONTEXT_NOTIFICATION && mode != CONTEXT_NOTIFICATION));
+  if (!geometry->context.width || !s_panel_transitions || !s_phone_connected || !incoming || private_clear) {
+    prv_cancel_panel_transition();
+  } else if (changed && s_panel_content_seen) {
+    prv_cancel_panel_transition();
+    s_transition_frame = 0;
+    layer_set_hidden(s_transition_layer, false);
+    layer_mark_dirty(s_transition_layer);
+    s_transition_timer = app_timer_register(60, prv_transition_next, NULL);
+    if (s_transition_timer == NULL) { prv_cancel_panel_transition(); }
+  }
+  s_panel_signature = signature;
+  s_panel_signature_known = true;
+  if (incoming) { s_panel_content_seen = true; }
+  s_panel_mode = mode;
 }
 
 static void prv_draw_status(Layer *layer, GContext *ctx) {
@@ -770,6 +972,10 @@ static void prv_apply_unobstructed_layout(void) {
     layer_set_hidden(s_context_layer, !contextual);
     layer_mark_dirty(s_context_layer);
   }
+  if (s_transition_layer != NULL) {
+    layer_set_frame(s_transition_layer, prv_layout_rect(geometry.context));
+    prv_refresh_panel_transition(&geometry);
+  }
   if (s_status_layer != NULL) { layer_mark_dirty(s_status_layer); }
   layer_mark_dirty(s_background_layer);
 }
@@ -865,6 +1071,8 @@ static void prv_tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 }
 
 static void prv_unobstructed_area_will_change(GRect final_area, void *context) {
+  prv_cancel_panel_transition();
+  s_panel_signature_known = false;
   prv_apply_unobstructed_layout();
 }
 static void prv_unobstructed_area_change(AnimationProgress progress, void *context) {
@@ -950,6 +1158,7 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
   Tuple *large = dict_find(iterator, MESSAGE_KEY_LARGE_TEXT);
   Tuple *twelve = dict_find(iterator, MESSAGE_KEY_USE_12_HOUR);
   Tuple *show_status = dict_find(iterator, MESSAGE_KEY_SHOW_STATUS);
+  Tuple *transitions = dict_find(iterator, MESSAGE_KEY_PANEL_TRANSITIONS);
   if (background != NULL) {
     s_background_color = GColorFromHEX(background->value->int32);
     persist_write_int(PERSIST_KEY_BACKGROUND_COLOR, background->value->int32);
@@ -977,6 +1186,11 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
   if (show_status != NULL && (show_status->type == TUPLE_INT || show_status->type == TUPLE_UINT)) {
     s_show_status = show_status->value->int32 != 0;
     persist_write_bool(PERSIST_KEY_SHOW_STATUS, s_show_status);
+  }
+  if (transitions != NULL && (transitions->type == TUPLE_INT || transitions->type == TUPLE_UINT)) {
+    s_panel_transitions = transitions->value->int32 != 0;
+    persist_write_bool(PERSIST_KEY_PANEL_TRANSITIONS, s_panel_transitions);
+    if (!s_panel_transitions) { prv_cancel_panel_transition(); }
   }
   prv_update_clock();
   prv_apply_colors();
@@ -1036,10 +1250,12 @@ static void prv_window_load(Window *window) {
   s_large_time_fonts[7] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_108));
   s_large_compact_time_font = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_72));
   s_complication_fonts[0] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_38));
-  s_complication_fonts[1] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_28));
-  s_complication_fonts[2] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_24));
-  s_complication_fonts[3] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_20));
-  s_complication_fonts[4] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_18));
+  s_complication_fonts[1] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_32));
+  s_complication_fonts[2] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_28));
+  s_complication_fonts[3] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_24));
+  s_complication_fonts[4] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_20));
+  s_complication_fonts[5] = fonts_load_custom_font(resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_COMPLICATION_18));
+  s_drop_path = gpath_create(&s_drop_info);
   s_date_shadow_layer = text_layer_create(GRect(9, 29, bounds.size.w - 16, 38));
   prv_configure_shadow_layer(s_date_shadow_layer, s_date_font);
   layer_add_child(s_window_layer, text_layer_get_layer(s_date_shadow_layer));
@@ -1058,9 +1274,13 @@ static void prv_window_load(Window *window) {
     layer_set_update_proc(s_complication_layers[i], prv_draw_complication);
     layer_add_child(s_window_layer, s_complication_layers[i]);
   }
-  s_context_layer = layer_create(GRect(14, 164, 172, 48));
+  s_context_layer = layer_create(GRect(14, 171, 172, 43));
   layer_set_update_proc(s_context_layer, prv_draw_context);
   layer_add_child(s_window_layer, s_context_layer);
+  s_transition_layer = layer_create(GRect(14, 171, 172, 43));
+  layer_set_update_proc(s_transition_layer, prv_draw_transition);
+  layer_set_hidden(s_transition_layer, true);
+  layer_add_child(s_window_layer, s_transition_layer);
   s_status_layer = layer_create(bounds);
   layer_set_update_proc(s_status_layer, prv_draw_status);
   layer_add_child(s_window_layer, s_status_layer);
@@ -1076,6 +1296,9 @@ static void prv_window_load(Window *window) {
 
 static void prv_window_unload(Window *window) {
   unobstructed_area_service_unsubscribe();
+  prv_cancel_panel_transition();
+  layer_destroy(s_transition_layer);
+  s_transition_layer = NULL;
   layer_destroy(s_status_layer);
   layer_destroy(s_context_layer);
   for (unsigned i = 0; i < COMPLICATION_SLOT_COUNT; ++i) { layer_destroy(s_complication_layers[i]); }
@@ -1090,6 +1313,7 @@ static void prv_window_unload(Window *window) {
   fonts_unload_custom_font(s_compact_time_font);
   fonts_unload_custom_font(s_large_date_font);
   fonts_unload_custom_font(s_large_compact_time_font);
+  if (s_drop_path != NULL) { gpath_destroy(s_drop_path); s_drop_path = NULL; }
   for (unsigned i = 0; i < LARGE_TIME_FONT_COUNT; ++i) { fonts_unload_custom_font(s_large_time_fonts[i]); }
   for (unsigned i = 0; i < COMPLICATION_FONT_COUNT; ++i) { fonts_unload_custom_font(s_complication_fonts[i]); }
   layer_destroy(s_background_layer);
@@ -1104,6 +1328,7 @@ static void prv_init(void) {
   s_large_text_enabled = false;
   s_use_12_hour = false;
   s_show_status = true;
+  s_panel_transitions = true;
   s_context_session_token = context_next_session_token(
       persist_exists(PERSIST_KEY_CONTEXT_SESSION)
           ? (uint32_t)persist_read_int(PERSIST_KEY_CONTEXT_SESSION) : 0);
@@ -1119,6 +1344,7 @@ static void prv_init(void) {
   if (persist_exists(PERSIST_KEY_LARGE_TEXT)) { s_large_text_enabled = persist_read_bool(PERSIST_KEY_LARGE_TEXT); }
   if (persist_exists(PERSIST_KEY_USE_12_HOUR)) { s_use_12_hour = persist_read_bool(PERSIST_KEY_USE_12_HOUR); }
   if (persist_exists(PERSIST_KEY_SHOW_STATUS)) { s_show_status = persist_read_bool(PERSIST_KEY_SHOW_STATUS); }
+  if (persist_exists(PERSIST_KEY_PANEL_TRANSITIONS)) { s_panel_transitions = persist_read_bool(PERSIST_KEY_PANEL_TRANSITIONS); }
   persist_delete(PERSIST_KEY_LAYOUT_STYLE);
   prv_load_complications();
   s_window = window_create();
@@ -1139,6 +1365,7 @@ static void prv_init(void) {
 static void prv_deinit(void) {
   if (s_startup_timer != NULL) { app_timer_cancel(s_startup_timer); }
   if (s_context_timer != NULL) { app_timer_cancel(s_context_timer); }
+  prv_cancel_panel_transition();
   memset(&s_context, 0, sizeof(s_context));
   battery_state_service_unsubscribe();
   connection_service_unsubscribe();

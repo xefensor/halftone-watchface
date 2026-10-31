@@ -1,6 +1,6 @@
 'use strict';
 
-var VERSION = 1;
+var VERSION = 2;
 var SLOT_COUNT = 5;
 var TEXT = 1;
 var BITMAP = 2;
@@ -142,6 +142,9 @@ function record(slot, nowSec) {
   out[2] = text.length;
   out[3] = bitmap ? bitmap.width : 0;
   out[4] = bitmap ? bitmap.height : 0;
+  // V2 uses the former reserved byte for a provider-aware presentation hint.
+  // Generic percentages (battery, humidity) never acquire precipitation art.
+  out[5] = slot.displayKind === 1 && text.length ? 1 : 0;
   u32(out, 6, slot.confirmedAt);
   u32(out, 10, until);
   u16(out, 14, bitmap ? bitmap.pixels.length : 0);

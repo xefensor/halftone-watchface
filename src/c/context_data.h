@@ -52,7 +52,7 @@ static inline bool context_read(const uint8_t *bytes, size_t length,
     const uint8_t status = record[1];
     const uint8_t text_length = record[2];
     const uint16_t pixels = complications_u16(record + 14);
-    if (flags & COMPLICATION_FLAG_TIMESTAMP) { return false; }
+    if ((flags & COMPLICATION_FLAG_TIMESTAMP) || record[5] != COMPLICATION_DISPLAY_GENERIC) { return false; }
     if (status == COMPLICATION_STATUS_READY) {
       const uint32_t confirmed = complications_u32(record + 6);
       const uint32_t until = complications_u32(record + 10);

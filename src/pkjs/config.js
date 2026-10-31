@@ -11,8 +11,8 @@ module.exports = [
     "type": "section",
     "items": [
       {"type": "heading", "defaultValue": "Adaptive layout"},
-      {"type": "text", "defaultValue": "The clock stays in place. Complication 1 stays visible; music and new notifications replace slots 2–5."},
-      {"type": "text", "defaultValue": "Timeline Peek keeps the clock and complication 1; secondary readings, music and notification summaries hide."}
+      {"type": "text", "defaultValue": "The clock stays in place. Complication 1 is larger and stays visible; music and new notifications replace complication 2."},
+      {"type": "text", "defaultValue": "Timeline Peek keeps the clock and complication 1; complication 2, music and notification summaries hide."}
     ]
   },
   {
@@ -49,7 +49,7 @@ module.exports = [
     "items": [
       {"type": "heading", "defaultValue": "Complications"},
       {"type": "text", "id": "complications-status", "defaultValue": "Complications: waiting for Pebble"},
-      {"type": "text", "defaultValue": "Choose slots 1–5 in the Pebble app under Settings → Complications. Empty slots keep their positions."},
+      {"type": "text", "defaultValue": "Choose slots 1 and 2 in the Pebble app under Settings → Complications. Halftone ignores the other slots."},
       {"type": "text", "defaultValue": "Units come from Pebble and the selected plugin."}
     ]
   },
@@ -64,6 +64,8 @@ module.exports = [
     "type": "section",
     "items": [
       {"type": "heading", "defaultValue": "Optical effects"},
+      {"type": "toggle", "messageKey": "PANEL_TRANSITIONS", "defaultValue": true, "label": "Brief halftone transitions"},
+      {"type": "text", "defaultValue": "Animate panel changes briefly. The clock and border stay still."},
       {"type": "toggle", "messageKey": "DEPTH_EFFECT", "defaultValue": false, "label": "4-step dot transition"},
       {"type": "toggle", "messageKey": "TEXT_SHADOW", "defaultValue": false, "label": "Floating text shadow"}
     ]

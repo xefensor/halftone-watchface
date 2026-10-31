@@ -12,7 +12,7 @@ function decode(bytes) {
   const buffer=Buffer.from(bytes);
   let at=6;
   return Array.from({length:5},()=>{
-    const result={flags:buffer[at],status:buffer[at+1],confirmedAt:buffer.readUInt32LE(at+6),
+    const result={flags:buffer[at],status:buffer[at+1],displayKind:buffer[at+5],confirmedAt:buffer.readUInt32LE(at+6),
       validUntil:buffer.readUInt32LE(at+10),timestamp:buffer.readUInt32LE(at+16)};
     const length=buffer[at+2];
     const pixelBytes=buffer.readUInt16LE(at+14);
@@ -64,23 +64,94 @@ function fixture(overrides={}) {
   return result;
 }
 
-test('Global preference IDs preserve holes; source indices are independent and requests group properties without provider pinning',()=>{
+test('The first two global choices use independent source indices and group properties without provider pinning',()=>{
   const f=fixture();
   f.client.refresh();
   assert.equal(f.deliveries.length,0,'await actual preferences before replacing offline watch data');
   assert.equal(f.subscriptions[0].request.plugin,undefined);
-  f.prefs([preference(4,'test','reading',0,'a'),preference(1,'test','reading',1,'b')]);
+  f.prefs([preference(0,'test','reading',0,'a'),preference(1,'test','reading',1,'b')]);
   const request=f.latest('test','reading');
   assert.equal(request.plugin,undefined);
   assert.deepEqual(request.properties.sort(),['a','b']);
   assert.deepEqual(request.iconPixelSize,{w:24,h:24});
-  f.source({instances:[{instanceId:'not-slot-4',properties:{a:{shortText:{text:'four'}}}},
+  f.source({instances:[{instanceId:'not-slot-0',properties:{a:{shortText:{text:'zero'}}}},
     {instanceId:'not-slot-1',properties:{b:{shortText:{text:'one'}}}}]});
-  assert.deepEqual(f.packet().map(slot=>slot.status),[0,2,0,0,2]);
+  assert.deepEqual(f.packet().map(slot=>slot.status),[2,2,0,0,0]);
   assert.equal(f.packet()[1].text,'one');
-  assert.equal(f.packet()[4].text,'four');
+  assert.equal(f.packet()[0].text,'zero');
   assert.equal(f.client.status().configured,2);
   assert.equal(f.client.status().ready,2);
+});
+
+test('Hidden choices never subscribe, affect diagnostics, fill a missing first slot or change the two-slot cache signature',()=>{
+  const f=fixture();f.client.refresh();
+  f.prefs([preference(4,'hidden','four'),preference(1,'phone','battery'),preference(2,'weather','location'),preference(3,'hidden','three')]);
+  assert.deepEqual(f.subscriptions.map(s=>s.request.category),['preferences','phone']);
+  assert.equal(f.client.status().configured,1);
+  assert.equal(f.client.status().slots.length,2);
+  f.source(envelope({shortText:{text:'78%'}}),'phone','battery');
+  assert.deepEqual(f.packet().map(s=>s.status),[0,2,0,0,0]);
+  assert.equal(f.packet()[1].text,'78%');
+  const before=f.subscriptions.length;
+  const cached=JSON.parse(f.values.get('halftone-complications-v1'));
+  assert.equal(cached.records.length,2);
+  f.prefs([preference(1,'phone','battery'),preference(2,'different','provider'),preference(4,'also','changed')]);
+  assert.equal(f.subscriptions.length,before,'hidden edits do not rebind displayed providers');
+  assert.deepEqual(JSON.parse(f.values.get('halftone-complications-v1')),cached);
+});
+
+test('An old five-slot cache is rejected even when its first two source descriptors match',()=>{
+  const seed=fixture();seed.client.refresh();seed.prefs([preference(0)]);seed.source(envelope({shortText:{text:'current'}}));
+  const cached=JSON.parse(seed.values.get('halftone-complications-v1'));
+  const oldSignature=JSON.stringify([JSON.parse(cached.signature.slice('two:'.length))[0],null,null,null,null]);
+  seed.values.set('halftone-complications-v1',JSON.stringify({signature:oldSignature,
+    records:[cached.records[0],null,{...cached.records[0],text:'hidden old content'},null,null]}));
+  const f=fixture({values:seed.values});f.advance(60000);f.client.refresh();f.prefs([preference(0)]);
+  assert.deepEqual(f.packet().map(s=>s.status),[1,0,0,0,0]);
+  assert.ok(!JSON.stringify([...f.values.values()]).includes('hidden old content'));
+  assert.equal(JSON.parse(f.values.get('halftone-complications-v1')).records.length,2);
+});
+
+test('Only standard weather precipitation receives the droplet display hint; source text and precision remain unchanged',()=>{
+  const cases=[
+    {text:'0%',numeric:{value:0,unit:'%'}},
+    {text:'100%',numeric:{value:100,unit:'%'}},
+    {text:'40,5 %',numeric:{value:40.46,unit:'%'}},
+    {text:'40%',numeric:{value:40.4,unit:'%'}},
+    {text:'2.5%'},
+    {numeric:{value:0,unit:'%'}}
+  ];
+  for(const value of cases) {
+    const f=fixture();f.client.refresh();f.prefs([preference(0,'weather','location',0,'precipitation')]);
+    const property={};if(value.text!==undefined)property.shortText={text:value.text};
+    if(value.numeric!==undefined)property.numericValue=value.numeric;
+    f.source({instances:[{properties:{precipitation:property}}]},'weather','location');
+    assert.equal(f.packet()[0].displayKind,1,JSON.stringify(value));
+    assert.equal(f.packet()[0].text,value.text===undefined?'0 %':value.text);
+    const receipt=f.packet()[0].confirmedAt,expiry=f.packet()[0].validUntil;
+    f.advance(60000);f.client.configure();
+    assert.equal(f.packet()[0].confirmedAt,receipt);assert.equal(f.packet()[0].validUntil,expiry);
+    assert.equal(JSON.parse(f.values.get('halftone-complications-v1')).records[0].displayKind,1);
+  }
+});
+
+test('Battery, humidity, rainfall amounts and contradictory probabilities never acquire a droplet hint',()=>{
+  const cases=[
+    {category:'phone',item:'phone_state',property:'battery_level',value:{shortText:{text:'40%'},numericValue:{value:40,unit:'%'}}},
+    {category:'weather',item:'location',property:'humidity',value:{shortText:{text:'40%'},numericValue:{value:40,unit:'%'}}},
+    {value:{shortText:{text:'40%'},numericValue:{value:40,unit:'mm'}}},
+    {value:{shortText:{text:'40%'},numericValue:{value:90,unit:'%'}}},
+    {value:{shortText:{text:'40.5%'},numericValue:{value:40.4,unit:'%'}}},
+    {value:{shortText:{text:'40%'},numericValue:{value:NaN,unit:'%'}}},
+    {value:{shortText:{text:'40%'},numericValue:null}},
+    ...['-1%','101%','100.1%','Rain 40%','40% today','1/2','40 mm'].map(value=>({value:{shortText:{text:value}}}))
+  ];
+  for(const value of cases) {
+    const category=value.category||'weather',item=value.item||'location',property=value.property||'precipitation';
+    const f=fixture();f.client.refresh();f.prefs([preference(0,category,item,0,property)]);
+    f.source({instances:[{properties:{[property]:value.value}}]},category,item);
+    assert.equal(f.packet()[0].displayKind,0,JSON.stringify(value));
+  }
 });
 
 test('Initial preference errors preserve offline watch data while missing host API explicitly clears it',()=>{
@@ -91,31 +162,34 @@ test('Initial preference errors preserve offline watch data while missing host A
   assert.deepEqual(f.packet().map(slot=>slot.status),[0,0,0,0,0]);
   const missing=fixture({unavailable:true});missing.client.refresh();
   assert.equal(missing.client.status().available,false);
-  assert.deepEqual(missing.packet().map(slot=>slot.status),[3,3,3,3,3]);
+  assert.deepEqual(missing.packet().map(slot=>slot.status),[3,3,0,0,0]);
 });
 
 test('A source instance reorder follows the configured ordinal without moving the global slot',()=>{
-  const f=fixture();f.client.refresh();f.prefs([preference(3,'test','reading',1)]);
+  const f=fixture();f.client.refresh();f.prefs([preference(1,'test','reading',1)]);
   const first={instanceId:'home',properties:{value:{shortText:{text:'Home'}}}};
   const second={instanceId:'office',properties:{value:{shortText:{text:'Office'}}}};
   f.source({instances:[first,second]});
-  assert.equal(f.packet()[3].text,'Office');
+  assert.equal(f.packet()[1].text,'Office');
   f.source({instances:[second,first]});
-  assert.equal(f.packet()[3].text,'Home');
-  assert.deepEqual(f.packet().map(s=>s.status),[0,0,0,2,0]);
-  assert.equal(f.client.status().slots[3].index,1);
+  assert.equal(f.packet()[1].text,'Home');
+  assert.deepEqual(f.packet().map(s=>s.status),[0,2,0,0,0]);
+  assert.equal(f.client.status().slots[1].index,1);
 });
 
 test('Shape priority preserves supplied units, numeric zero and boolean false; series-only data is explicitly unsupported',()=>{
   const f=fixture();f.client.refresh();
-  f.prefs(Array.from({length:5},(_,i)=>preference(i,'test','reading',0,'p'+i)));
+  f.prefs([preference(0,'test','reading',0,'p0'),preference(1,'test','reading',0,'p1')]);
   const p={p0:{shortText:{text:'0°C'},numericValue:{value:99,unit:'wrong'}},p1:{numericValue:{value:0,unit:'%'}},
     p2:{boolean:{value:false}},p3:{timestamp:{value:NOW/1000+3600}},p4:{series:{numericValue:{values:[20]}}}};
   f.source({instances:[{properties:p}]});
-  const packet=f.packet();
-  assert.equal(packet[0].text,'0°C');assert.equal(packet[1].text,'0 %');assert.equal(packet[2].text,'Off');
-  assert.equal(packet[3].flags,8);assert.equal(packet[3].timestamp,NOW/1000+3600);
-  assert.equal(packet[4].status,5);assert.equal(packet[4].flags,0);
+  assert.equal(f.packet()[0].text,'0°C');assert.equal(f.packet()[1].text,'0 %');
+  f.prefs([preference(0,'test','reading',0,'p2'),preference(1,'test','reading',0,'p3')]);
+  f.source({instances:[{properties:p}]});
+  assert.equal(f.packet()[0].text,'Off');
+  assert.equal(f.packet()[1].flags,8);assert.equal(f.packet()[1].timestamp,NOW/1000+3600);
+  f.prefs([preference(1,'test','reading',0,'p4')]);f.source({instances:[{properties:p}]});
+  assert.equal(f.packet()[1].status,5);assert.equal(f.packet()[1].flags,0);
 });
 
 test('Numeric data outranks long text and localized booleans; timestamps remain raw across clock-format changes',()=>{
@@ -158,12 +232,12 @@ test('Source expiry is exclusive, malformed expiry clears, and expiry timers do 
 test('Changing global configuration clears all previous values atomically and ignores old callbacks',()=>{
   const f=fixture();f.client.refresh();f.prefs([preference(0)]);
   const old=f.latest('test','reading');f.source(envelope({shortText:{text:'old'}}));
-  f.prefs([preference(4,'new','source',0,'x')]);
-  assert.equal(f.packet()[0].status,0);assert.equal(f.packet()[4].status,1);
+  f.prefs([preference(1,'new','source',0,'x')]);
+  assert.equal(f.packet()[0].status,0);assert.equal(f.packet()[1].status,1);
   old.onData(envelope({shortText:{text:'must not return'}}));
-  assert.equal(f.packet()[0].status,0);assert.equal(f.packet()[4].status,1);
+  assert.equal(f.packet()[0].status,0);assert.equal(f.packet()[1].status,1);
   f.source({instances:[{properties:{x:{shortText:{text:'new'}}}}]},'new','source');
-  assert.equal(f.packet()[4].text,'new');assert.equal(f.packet()[0].text,'');
+  assert.equal(f.packet()[1].text,'new');assert.equal(f.packet()[0].text,'');
 });
 
 test('Explicit refresh and the thirty-minute timer rebind providers without replay renewing cached values',()=>{
@@ -192,9 +266,9 @@ test('Matching persisted data is used only after actual preferences; changed pre
 
 test('Invalid or duplicate global slot entries never guess a source index or compress fixed slots',()=>{
   const f=fixture();f.client.refresh();
-  const missingIndex=preference(3);delete missingIndex.properties.index;
+  const missingIndex=preference(1);delete missingIndex.properties.index;
   f.prefs([preference(0),preference(0),missingIndex,preference(8)]);
-  assert.deepEqual(f.packet().map(slot=>slot.status),[5,0,0,5,0]);
+  assert.deepEqual(f.packet().map(slot=>slot.status),[5,5,0,0,0]);
   assert.equal(f.subscriptions.filter(sub=>sub.request.category==='test').length,0);
 });
 
@@ -233,13 +307,13 @@ test('A failed preferences unsubscribe does not abort a later refresh or its pro
 
 test('A synchronous global preference replacement prevents remaining obsolete source subscriptions',()=>{
   const f=fixture({subscribe:request=>{
-    if(request.category==='first') f.prefs([preference(4,'replacement','reading')]);
+    if(request.category==='first') f.prefs([preference(1,'replacement','reading')]);
   }});
   f.client.refresh();
   f.prefs([preference(0,'first','reading'),preference(1,'obsolete','reading')]);
   assert.equal(f.subscriptions.some(sub=>sub.request.category==='obsolete'),false);
-  assert.equal(f.client.status().slots[4].category,'replacement');
-  assert.deepEqual(f.packet().map(slot=>slot.status),[0,0,0,0,1]);
+  assert.equal(f.client.status().slots[1].category,'replacement');
+  assert.deepEqual(f.packet().map(slot=>slot.status),[0,1,0,0,0]);
 });
 
 test('Compact source bitmap rows are repacked into the watch stride with zeroed padding',()=>{
@@ -305,9 +379,8 @@ test('Unrelated successful groups never reset a still-failed source backoff or c
   const f=fixture({subscribe:request=>{
     if(request.category==='weather') {weather.push(f.time()-NOW);request.onError({code:'PLUGIN_UNAVAILABLE'});}
     if(request.category==='phone') {other.push(f.time()-NOW);request.onData(envelope({shortText:{text:'battery'}}));}
-    if(request.category==='missing') request.onError({code:'PLUGIN_UNAVAILABLE'});
   }});
-  f.client.refresh();f.prefs([preference(0,'weather','location'),preference(1,'phone','battery'),preference(2,'missing','other')]);
+  f.client.refresh();f.prefs([preference(0,'weather','location'),preference(1,'phone','battery')]);
   f.tick(5000);f.tick(15000);f.tick(60000);f.tick(120000);
   assert.deepEqual(weather,[0,5000,20000,80000,200000]);
   assert.deepEqual(other,weather);
@@ -321,7 +394,7 @@ test('Preference changes and API unavailability cancel recovery and clear obsole
   }});
   f.client.refresh();f.prefs([preference(0,'weather','location')]);
   const old=f.latest('weather','location');
-  f.prefs([preference(4,'phone','battery')]);
+  f.prefs([preference(1,'phone','battery')]);
   const count=f.subscriptions.length;
   f.tick(120000);
   assert.equal(f.subscriptions.length,count);

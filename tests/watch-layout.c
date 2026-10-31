@@ -5,7 +5,7 @@
 
 int main(void) {
   const WatchLayoutRect expected[5] = {
-    {14,132,172,38},{18,166,78,25},{104,166,78,25},{18,187,78,25},{104,187,78,25}
+    {14,126,172,48},{14,174,172,40},{0,0,0,0},{0,0,0,0},{0,0,0,0}
   };
   const int old_styles[] = {INT_MIN, -1, 0, 1, 2, 3, INT_MAX};
   for (size_t style = 0; style < sizeof(old_styles)/sizeof(old_styles[0]); ++style) {
@@ -17,10 +17,11 @@ int main(void) {
         assert(memcmp(&rect, &expected[i], sizeof(rect)) == 0);
         assert(rect.x >= 0 && rect.x + rect.width <= 200);
         assert(rect.y >= 0 && rect.y + rect.height <= 228);
-        assert(full.slots[i].font_size >= 18);
+        assert(i >= 2 || full.slots[i].font_size >= 32);
       }
-      assert(full.context.x == 14 && full.context.y == 164);
-      assert(full.context.width == 172 && full.context.height == 48);
+      assert(full.slots[0].font_size > full.slots[1].font_size);
+      assert(full.context.x == 14 && full.context.y == 171);
+      assert(full.context.width == 172 && full.context.height == 43);
       assert(!full.divider_x && !full.minutes.width);
       // Every transition height keeps the primary global ID, hides secondary
       // content before Peek can cover it, and ignores old style preferences.
@@ -28,13 +29,14 @@ int main(void) {
         WatchLayoutGeometry g = watch_layout_geometry(old_styles[style], height, large);
         assert(watch_layout_effective(old_styles[style], height) == WATCH_LAYOUT_CLASSIC);
         assert(g.slots[0].rect.width == 172);
-        assert(g.slots[0].rect.y >= 118 && g.slots[0].rect.y <= 132);
+        assert(g.slots[0].rect.y >= 118 && g.slots[0].rect.y <= 126);
         if (height < 215) {
           assert(!g.context.width);
           for (size_t i = 1; i < WATCH_LAYOUT_SLOT_COUNT; ++i) assert(!g.slots[i].rect.width);
         } else {
           assert(g.context.width == 172);
-          for (size_t i = 1; i < WATCH_LAYOUT_SLOT_COUNT; ++i) assert(g.slots[i].rect.width == 78);
+          assert(g.slots[1].rect.width == 172);
+          for (size_t i = 2; i < WATCH_LAYOUT_SLOT_COUNT; ++i) assert(!g.slots[i].rect.width);
         }
       }
       WatchLayoutGeometry peek = watch_layout_geometry(old_styles[style], 171, large);

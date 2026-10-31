@@ -7,6 +7,7 @@ var CACHE = 'halftone-complications-v1';
 var REFRESH = 30 * 60000;
 var MAX_AGE = 7200;
 var MAX_EPOCH = 4294967295;
+var VISIBLE_SLOTS = 2;
 
 function object(value) { return value && typeof value === 'object' && !Array.isArray(value); }
 function finite(value) { return typeof value === 'number' && isFinite(value); }
@@ -93,13 +94,34 @@ function readingOf(property) {
     error:property.series ? 'SERIES_UNSUPPORTED' : 'INVALID_DATA'};
 }
 
+// A percentage alone is not evidence of rain. Only Pebble's standard weather
+// precipitation reading may request the droplet presentation, and its text
+// must still be a usable probability in the provider's own format.
+function precipitationStyle(slot, property, value) {
+  if (slot.category !== 'weather' || slot.item !== 'location' || slot.property !== 'precipitation' ||
+      !object(property) || !value || typeof value.text !== 'string') { return 0; }
+  var match = /^(\d+(?:[.,]\d+)?)\s*%$/.exec(value.text);
+  if (!match) { return 0; }
+  var shown = Number(match[1].replace(',', '.'));
+  if (!finite(shown) || shown < 0 || shown > 100) { return 0; }
+  if (property.numericValue !== undefined) {
+    var numeric = property.numericValue;
+    if (!object(numeric) || !finite(numeric.value) || numeric.value < 0 || numeric.value > 100 || numeric.unit !== '%') { return 0; }
+    // Compact text may round a more precise value. Accept only that rounding
+    // interval; a contradictory numeric reading must not acquire a rain icon.
+    var decimals = (match[1].split(/[.,]/)[1] || '').length;
+    if (Math.abs(shown - numeric.value) > 0.5 * Math.pow(10, -decimals) + 1e-10) { return 0; }
+  }
+  return 1;
+}
+
 module.exports = function(options) {
   var pebble = options.pebble || {};
-  var descriptors = [null,null,null,null,null];
-  var records = [null,null,null,null,null];
-  var states = [0,0,0,0,0];
-  var errors = ['','','','',''];
-  var messages = ['','','','',''];
+  var descriptors = [null,null];
+  var records = [null,null];
+  var states = [0,0];
+  var errors = ['',''];
+  var messages = ['',''];
   var hasPreferences = false;
   var signature = '';
   var preferenceGeneration = 0;
@@ -130,8 +152,8 @@ module.exports = function(options) {
   function load() {
     try {
       var cached = JSON.parse(options.storage.getItem(CACHE));
-      if (!cached || cached.signature !== signature || !Array.isArray(cached.records)) { return; }
-      cached.records.slice(0,5).forEach(function(record, i) {
+      if (!cached || cached.signature !== signature || !Array.isArray(cached.records) || cached.records.length !== VISIBLE_SLOTS) { return; }
+      cached.records.forEach(function(record, i) {
         if (descriptors[i] && !descriptors[i].invalid && valid(record) &&
             wire.packComplications([rendered(record)], now())[7] === STATUS.READY) {
           records[i] = record; states[i] = STATUS.READY;
@@ -277,7 +299,9 @@ module.exports = function(options) {
               group.slots.forEach(function(i) {
                 var slot = descriptors[i];
                 var instance = envelope.instances[slot.index];
-                var parsed = readingOf(instance && object(instance.properties) && instance.properties[slot.property]);
+                var property = instance && object(instance.properties) && instance.properties[slot.property];
+                var parsed = readingOf(property);
+                if (parsed.value) { parsed.value.displayKind = precipitationStyle(slot, property, parsed.value); }
                 states[i] = parsed.status; errors[i] = parsed.error || '';
                 records[i] = parsed.value ? Object.assign({}, parsed.value, {confirmedAt:confirmedAt,validUntil:until}) : null;
               });
@@ -291,10 +315,10 @@ module.exports = function(options) {
   }
   function preferred(envelope) {
     if (!envelope || !Array.isArray(envelope.instances)) { preferenceError = 'INVALID_DATA'; preferenceMessage = ''; return; }
-    var next = [null,null,null,null,null];
+    var next = [null,null];
     var seen = {};
     envelope.instances.forEach(function(instance) {
-      if (!instance || !/^[0-4]$/.test(instance.instanceId) || typeof instance.instanceId !== 'string') { return; }
+      if (!instance || !/^[01]$/.test(instance.instanceId) || typeof instance.instanceId !== 'string') { return; }
       var i = Number(instance.instanceId);
       var p = instance.properties || {};
       var slot = {category:textOf(p.category),item:textOf(p.item),property:textOf(p.property),
@@ -303,17 +327,19 @@ module.exports = function(options) {
           !Number.isSafeInteger(slot.index) || slot.index < 0) { slot = {invalid:true}; }
       seen[i] = true; next[i] = slot;
     });
-    var nextSignature = JSON.stringify(next);
+    // The namespace also rejects old five-slot cache records, even if their
+    // first two descriptors happen to match the new face's two choices.
+    var nextSignature = 'two:' + JSON.stringify(next);
     preferenceError = '';
     preferenceMessage = '';
     if (hasPreferences && nextSignature === signature) { return; }
     var first = !hasPreferences;
     cancelRecovery(); closeSources(); cancelDelivery();
     descriptors = next; signature = nextSignature; hasPreferences = true;
-    records = [null,null,null,null,null];
+    records = [null,null];
     states = descriptors.map(function(slot) { return !slot ? STATUS.EMPTY : slot.invalid ? STATUS.UNSUPPORTED : STATUS.LOADING; });
     errors = descriptors.map(function(slot) { return slot && slot.invalid ? 'INVALID_PREFERENCE' : ''; });
-    messages = ['','','','',''];
+    messages = ['',''];
     if (first) { load(); }
     publish(); save(); scheduleExpiry(); sources();
   }
@@ -325,9 +351,9 @@ module.exports = function(options) {
       preferenceGeneration++;
       try { if (preferenceSubscription && preferenceSubscription.unsubscribe) { preferenceSubscription.unsubscribe(); } } catch (ignored) {}
       preferenceSubscription = null;
-      closeSources(); cancelDelivery(); states = [3,3,3,3,3]; records = [null,null,null,null,null];
-      errors = ['API_UNAVAILABLE','API_UNAVAILABLE','API_UNAVAILABLE','API_UNAVAILABLE','API_UNAVAILABLE'];
-      messages = ['','','','',''];
+      closeSources(); cancelDelivery(); states = [3,3]; records = [null,null];
+      errors = ['API_UNAVAILABLE','API_UNAVAILABLE'];
+      messages = ['',''];
       preferenceError = 'API_UNAVAILABLE'; preferenceMessage = ''; publish(); return;
     }
     var alreadyConfigured = hasPreferences;

@@ -60,6 +60,12 @@ int main(void) {
   size_t length = fixture(bytes, records);
   ComplicationSet data;
   assert(context_read(bytes, length, &data));
+  bytes[0] = 2;
+  put16(bytes + 4, complications_crc16(bytes, length));
+  assert(context_read(bytes, length, &data));
+  bytes[records[0] + 5] = COMPLICATION_DISPLAY_PRECIPITATION;
+  assert_rejected(bytes, length);
+  length = fixture(bytes, records);
   assert(context_mode(&data, NOW) == CONTEXT_NOTIFICATION);
   assert(context_next_expiry(&data, NOW) == NOW + 12);
   assert(context_mode(&data, NOW + 11) == CONTEXT_NOTIFICATION);

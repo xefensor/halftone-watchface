@@ -3,6 +3,7 @@
 #
 # Feel free to customize this to your needs.
 #
+import json
 import os.path
 from waflib.TaskGen import after_method, feature
 
@@ -19,6 +20,21 @@ def message_key_cache_inputs(task_gen):
     for task in task_gen.tasks:
         if hasattr(task, 'message_keys') and 'MESSAGE_KEYS' not in task.vars:
             task.vars = list(task.vars) + ['MESSAGE_KEYS']
+
+
+@feature('generate_resource_ball')
+@after_method('process_resource_ball')
+def font_cache_inputs(task_gen):
+    # A font's regex and rendering options live on its resource definition,
+    # outside the SDK task's normal signature. Include them so an older cached
+    # font cannot silently omit newly requested glyphs, even after clean.
+    for task in task_gen.tasks:
+        definition = getattr(task, 'definition', None)
+        if definition is not None and definition.type == 'font':
+            task.env = task.env.derive()
+            task.env.HALFTONE_FONT_DEFINITION = json.dumps(
+                definition.__dict__, sort_keys=True)
+            task.vars = list(task.vars) + ['HALFTONE_FONT_DEFINITION']
 
 
 def options(ctx):

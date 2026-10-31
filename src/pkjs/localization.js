@@ -316,7 +316,7 @@ KEYS = KEYS.concat(['time','complications','complicationsWaiting','complications
 var COMPLICATION_ROWS = {
   en:[
     'Time','Complications','Complications: waiting for Pebble',
-    'Choose slots 1–5 in the Pebble app under Settings → Complications. Empty slots keep their positions.',
+    "Choose slots 1 and 2 in the Pebble app under Settings → Complications. Halftone ignores the other slots.",
     'Units come from Pebble and the selected plugin.',
     'Classic: 1 centered; 2/3 above 4/5 in the bottom grid.',
     'Comic cover: 1 large at lower left, 5 above it; 2, 3 and 4 down the right.',
@@ -328,7 +328,7 @@ var COMPLICATION_ROWS = {
   ],
   cs:[
     'Čas','Komplikace','Komplikace: čeká se na Pebble',
-    'Vyberte pozice 1–5 v aplikaci Pebble v Nastavení → Komplikace. Prázdné pozice zůstávají na svém místě.',
+    "Vyberte pozice 1 a 2 v aplikaci Pebble v Nastavení → Komplikace. Halftone ostatní pozice nepoužívá.",
     'Jednotky se přebírají z Pebble a vybraného pluginu.',
     'Klasické: 1 uprostřed; 2/3 nad 4/5 v dolní mřížce.',
     'Komiksová obálka: 1 velká vlevo dole, 5 nad ní; 2, 3 a 4 pod sebou vpravo.',
@@ -340,7 +340,7 @@ var COMPLICATION_ROWS = {
   ],
   sk:[
     'Čas','Komplikácie','Komplikácie: čaká sa na Pebble',
-    'Vyberte pozície 1–5 v aplikácii Pebble v Nastavenia → Komplikácie. Prázdne pozície zostávajú na svojom mieste.',
+    "Vyberte pozície 1 a 2 v aplikácii Pebble v Nastavenia → Komplikácie. Halftone ostatné pozície nepoužíva.",
     'Jednotky sa preberajú z Pebble a vybraného pluginu.',
     'Klasické: 1 uprostred; 2/3 nad 4/5 v dolnej mriežke.',
     'Komiksová obálka: 1 veľká vľavo dole, 5 nad ňou; 2, 3 a 4 pod sebou vpravo.',
@@ -352,7 +352,7 @@ var COMPLICATION_ROWS = {
   ],
   de:[
     'Uhrzeit','Komplikationen','Komplikationen: Warten auf Pebble',
-    'Wähle die Plätze 1–5 in der Pebble-App unter Einstellungen → Komplikationen. Leere Plätze behalten ihre Position.',
+    "Wähle die Plätze 1 und 2 in der Pebble-App unter Einstellungen → Komplikationen. Halftone verwendet die anderen Plätze nicht.",
     'Die Einheiten kommen von Pebble und dem gewählten Plugin.',
     'Klassisch: 1 mittig; 2/3 über 4/5 im unteren Raster.',
     'Comic-Cover: 1 groß unten links, 5 darüber; 2, 3 und 4 rechts untereinander.',
@@ -364,7 +364,7 @@ var COMPLICATION_ROWS = {
   ],
   fr:[
     'Heure','Complications','Complications : en attente de Pebble',
-    'Choisissez les emplacements 1–5 dans l’application Pebble sous Réglages → Complications. Les emplacements vides gardent leur position.',
+    "Choisissez les emplacements 1 et 2 dans l’application Pebble sous Réglages → Complications. Halftone n’utilise pas les autres emplacements.",
     'Les unités proviennent de Pebble et du plugin sélectionné.',
     'Classique : 1 au centre ; 2/3 au-dessus de 4/5 dans la grille du bas.',
     'Couverture de BD : 1 en grand en bas à gauche, 5 au-dessus ; 2, 3 et 4 à droite, de haut en bas.',
@@ -376,7 +376,7 @@ var COMPLICATION_ROWS = {
   ],
   es:[
     'Hora','Complicaciones','Complicaciones: esperando a Pebble',
-    'Elige las posiciones 1–5 en la aplicación Pebble, en Ajustes → Complicaciones. Las posiciones vacías conservan su lugar.',
+    "Elige las posiciones 1 y 2 en la aplicación Pebble, en Ajustes → Complicaciones. Halftone no usa las demás posiciones.",
     'Las unidades proceden de Pebble y del plugin seleccionado.',
     'Clásico: 1 centrada; 2/3 sobre 4/5 en la cuadrícula inferior.',
     'Portada de cómic: 1 grande abajo a la izquierda, 5 encima; 2, 3 y 4 de arriba abajo a la derecha.',
@@ -388,7 +388,7 @@ var COMPLICATION_ROWS = {
   ],
   it:[
     'Ora','Complicazioni','Complicazioni: in attesa di Pebble',
-    'Scegli le posizioni 1–5 nell’app Pebble in Impostazioni → Complicazioni. Le posizioni vuote restano al loro posto.',
+    "Scegli le posizioni 1 e 2 nell’app Pebble in Impostazioni → Complicazioni. Halftone non usa le altre posizioni.",
     'Le unità provengono da Pebble e dal plugin selezionato.',
     'Classico: 1 al centro; 2/3 sopra 4/5 nella griglia in basso.',
     'Copertina a fumetti: 1 grande in basso a sinistra, 5 sopra; 2, 3 e 4 dall’alto in basso a destra.',
@@ -400,7 +400,7 @@ var COMPLICATION_ROWS = {
   ],
   pt:[
     'Hora','Complicações','Complicações: à espera do Pebble',
-    'Escolha as posições 1–5 no aplicativo Pebble em Configurações → Complicações. As posições vazias mantêm seu lugar.',
+    "Escolha as posições 1 e 2 no aplicativo Pebble em Configurações → Complicações. O Halftone não usa as outras posições.",
     'As unidades vêm do Pebble e do plugin selecionado.',
     'Clássico: 1 no centro; 2/3 acima de 4/5 na grade inferior.',
     'Capa de quadrinhos: 1 grande embaixo à esquerda, 5 acima; 2, 3 e 4 de cima para baixo à direita.',
@@ -412,7 +412,7 @@ var COMPLICATION_ROWS = {
   ],
   nl:[
     'Tijd','Complicaties','Complicaties: wachten op Pebble',
-    'Kies posities 1–5 in de Pebble-app onder Instellingen → Complicaties. Lege posities behouden hun plaats.',
+    "Kies posities 1 en 2 in de Pebble-app onder Instellingen → Complicaties. Halftone gebruikt de andere posities niet.",
     'De eenheden komen van Pebble en de gekozen plugin.',
     'Klassiek: 1 in het midden; 2/3 boven 4/5 in het onderste raster.',
     'Stripomslag: 1 groot linksonder, 5 erboven; 2, 3 en 4 rechts onder elkaar.',
@@ -424,7 +424,7 @@ var COMPLICATION_ROWS = {
   ],
   pl:[
     'Czas','Komplikacje','Komplikacje: oczekiwanie na Pebble',
-    'Wybierz pozycje 1–5 w aplikacji Pebble w Ustawienia → Komplikacje. Puste pozycje pozostają na swoim miejscu.',
+    "Wybierz pozycje 1 i 2 w aplikacji Pebble w Ustawienia → Komplikacje. Halftone nie używa pozostałych pozycji.",
     'Jednostki pochodzą z Pebble i wybranej wtyczki.',
     'Klasyczny: 1 pośrodku; 2/3 nad 4/5 w dolnej siatce.',
     'Okładka komiksu: 1 duża na dole po lewej, 5 nad nią; 2, 3 i 4 po prawej od góry do dołu.',
@@ -436,7 +436,7 @@ var COMPLICATION_ROWS = {
   ],
   da:[
     'Tid','Komplikationer','Komplikationer: venter på Pebble',
-    'Vælg pladserne 1–5 i Pebble-appen under Indstillinger → Komplikationer. Tomme pladser beholder deres position.',
+    "Vælg pladserne 1 og 2 i Pebble-appen under Indstillinger → Komplikationer. Halftone bruger ikke de andre pladser.",
     'Enhederne kommer fra Pebble og det valgte plugin.',
     'Klassisk: 1 i midten; 2/3 over 4/5 i det nederste gitter.',
     'Tegneserieforside: 1 stor nederst til venstre, 5 ovenover; 2, 3 og 4 ned langs højre side.',
@@ -448,7 +448,7 @@ var COMPLICATION_ROWS = {
   ],
   sv:[
     'Tid','Komplikationer','Komplikationer: väntar på Pebble',
-    'Välj platserna 1–5 i Pebble-appen under Inställningar → Komplikationer. Tomma platser behåller sin position.',
+    "Välj platserna 1 och 2 i Pebble-appen under Inställningar → Komplikationer. Halftone använder inte de andra platserna.",
     'Enheterna kommer från Pebble och det valda insticksprogrammet.',
     'Klassisk: 1 i mitten; 2/3 ovanför 4/5 i det nedre rutnätet.',
     'Serietidningsomslag: 1 stor nere till vänster, 5 ovanför; 2, 3 och 4 nedåt till höger.',
@@ -460,7 +460,7 @@ var COMPLICATION_ROWS = {
   ],
   no:[
     'Tid','Komplikasjoner','Komplikasjoner: venter på Pebble',
-    'Velg plassene 1–5 i Pebble-appen under Innstillinger → Komplikasjoner. Tomme plasser beholder posisjonen sin.',
+    "Velg plassene 1 og 2 i Pebble-appen under Innstillinger → Komplikasjoner. Halftone bruker ikke de andre plassene.",
     'Enhetene kommer fra Pebble og det valgte programtillegget.',
     'Klassisk: 1 i midten; 2/3 over 4/5 i det nederste rutenettet.',
     'Tegneserieomslag: 1 stor nede til venstre, 5 over; 2, 3 og 4 nedover til høyre.',
@@ -472,7 +472,7 @@ var COMPLICATION_ROWS = {
   ],
   fi:[
     'Aika','Kellon lisätiedot','Lisätiedot: odotetaan Pebbleä',
-    'Valitse paikat 1–5 Pebble-sovelluksen kohdasta Asetukset → Kellon lisätiedot. Tyhjät paikat säilyttävät sijaintinsa.',
+    "Valitse paikat 1 ja 2 Pebble-sovelluksen kohdassa Asetukset → Lisätiedot. Halftone ei käytä muita paikkoja.",
     'Yksiköt tulevat Pebblestä ja valitusta lisäosasta.',
     'Perinteinen: 1 keskellä; 2/3 paikkojen 4/5 yläpuolella alaruudukossa.',
     'Sarjakuvakansi: 1 suurena alhaalla vasemmalla, 5 sen yläpuolella; 2, 3 ja 4 oikealla allekkain.',
@@ -484,7 +484,7 @@ var COMPLICATION_ROWS = {
   ],
   hu:[
     'Idő','Komplikációk','Komplikációk: várakozás a Pebble-re',
-    'Válaszd ki az 1–5. helyet a Pebble alkalmazás Beállítások → Komplikációk menüjében. Az üres helyek nem változtatják meg a pozíciójukat.',
+    "Válaszd az 1. és 2. helyet a Pebble alkalmazás Beállítások → Komplikációk pontjában. A Halftone nem használja a többi helyet.",
     'A mértékegységeket a Pebble és a kiválasztott bővítmény adja meg.',
     'Klasszikus: 1 középen; 2/3 a 4/5 fölött az alsó rácsban.',
     'Képregényborító: 1 nagy méretben bal alul, 5 fölötte; 2, 3 és 4 jobbra egymás alatt.',
@@ -496,7 +496,7 @@ var COMPLICATION_ROWS = {
   ],
   ro:[
     'Oră','Complicații','Complicații: se așteaptă Pebble',
-    'Alege pozițiile 1–5 în aplicația Pebble, la Setări → Complicații. Pozițiile goale își păstrează locul.',
+    "Alege pozițiile 1 și 2 în aplicația Pebble la Setări → Complicații. Halftone nu folosește celelalte poziții.",
     'Unitățile provin de la Pebble și de la extensia selectată.',
     'Clasic: 1 în centru; 2/3 deasupra lui 4/5 în grila de jos.',
     'Copertă de benzi desenate: 1 mare în stânga jos, 5 deasupra; 2, 3 și 4 în dreapta, de sus în jos.',
@@ -508,7 +508,7 @@ var COMPLICATION_ROWS = {
   ],
   tr:[
     'Saat','Komplikasyonlar','Komplikasyonlar: Pebble bekleniyor',
-    'Pebble uygulamasında Ayarlar → Komplikasyonlar altında 1–5 yuvalarını seçin. Boş yuvalar yerlerini korur.',
+    "Pebble uygulamasında Ayarlar → Komplikasyonlar bölümünden 1 ve 2 yuvalarını seçin. Halftone diğer yuvaları kullanmaz.",
     'Birimler Pebble ve seçilen eklentiden alınır.',
     'Klasik: 1 ortada; alt ızgarada 2/3, 4/5 üzerinde.',
     'Çizgi roman kapağı: 1 sol altta büyük, 5 üstünde; 2, 3 ve 4 sağda alt alta.',
@@ -531,8 +531,8 @@ KEYS = KEYS.concat(['adaptiveLayout','adaptiveHelp','adaptivePeek','dynamicConte
 var CONTEXT_ROWS = {
   en:[
     'Adaptive layout',
-    'The clock stays in place. Complication 1 stays visible; music and new notifications replace slots 2–5.',
-    'Timeline Peek keeps the clock and complication 1; secondary readings, music and notification summaries hide.',
+    "The clock stays in place. Complication 1 is larger and stays visible; music and new notifications replace complication 2.",
+    "Timeline Peek keeps the clock and complication 1; complication 2, music and notification summaries hide.",
     'Dynamic content','Show music while playing','Show new notification summaries','Include message text','Apps to show',
     'App names separated by commas, for example Signal, WhatsApp. Leave empty for all allowed apps.',
     'Uses notifications currently on the phone. Existing notifications are not replayed. Allow access in Pebble.',
@@ -540,8 +540,8 @@ var CONTEXT_ROWS = {
   ],
   cs:[
     'Přizpůsobivé rozložení',
-    'Čas zůstává na svém místě. Komplikace 1 zůstává viditelná; hudba a nová oznámení nahradí pozice 2–5.',
-    'Timeline Peek zachová čas a komplikaci 1; ostatní údaje, hudba a souhrny oznámení se skryjí.',
+    "Čas zůstává na svém místě. Komplikace 1 je větší a zůstává viditelná; hudba a nová oznámení nahradí komplikaci 2.",
+    "Timeline Peek zachová čas a komplikaci 1; komplikace 2, hudba a souhrny oznámení se skryjí.",
     'Dynamický obsah','Zobrazit hudbu při přehrávání','Zobrazit souhrny nových oznámení','Zahrnout text zprávy','Zobrazené aplikace',
     'Názvy aplikací oddělte čárkami, například Signal, WhatsApp. Prázdné pole povolí všechny aplikace s uděleným přístupem.',
     'Používá oznámení, která jsou právě v telefonu. Starší oznámení se znovu nezobrazují. Přístup povolte v Pebble.',
@@ -549,8 +549,8 @@ var CONTEXT_ROWS = {
   ],
   sk:[
     'Prispôsobivé rozloženie',
-    'Čas zostáva na svojom mieste. Komplikácia 1 zostáva viditeľná; hudba a nové oznámenia nahradia pozície 2–5.',
-    'Timeline Peek zachová čas a komplikáciu 1; ostatné údaje, hudba a súhrny oznámení sa skryjú.',
+    "Čas zostáva na svojom mieste. Komplikácia 1 je väčšia a zostáva viditeľná; hudba a nové oznámenia nahradia komplikáciu 2.",
+    "Timeline Peek zachová čas a komplikáciu 1; komplikácia 2, hudba a súhrny oznámení sa skryjú.",
     'Dynamický obsah','Zobraziť hudbu počas prehrávania','Zobraziť súhrny nových oznámení','Zahrnúť text správy','Zobrazené aplikácie',
     'Názvy aplikácií oddeľte čiarkami, napríklad Signal, WhatsApp. Prázdne pole povolí všetky aplikácie s udeleným prístupom.',
     'Používa oznámenia, ktoré sú práve v telefóne. Staršie oznámenia sa znova nezobrazujú. Prístup povoľte v Pebble.',
@@ -558,8 +558,8 @@ var CONTEXT_ROWS = {
   ],
   de:[
     'Adaptive Anordnung',
-    'Die Uhr bleibt an ihrem Platz. Komplikation 1 bleibt sichtbar; Musik und neue Mitteilungen ersetzen die Plätze 2–5.',
-    'Timeline Peek behält Uhr und Komplikation 1 bei; weitere Werte, Musik und Mitteilungsübersichten werden ausgeblendet.',
+    "Die Uhr bleibt an ihrem Platz. Komplikation 1 ist größer und bleibt sichtbar; Musik und neue Mitteilungen ersetzen Komplikation 2.",
+    "Timeline Peek behält Uhr und Komplikation 1 bei; Komplikation 2, Musik und Mitteilungsübersichten werden ausgeblendet.",
     'Dynamische Inhalte','Musik während der Wiedergabe anzeigen','Übersichten neuer Mitteilungen anzeigen','Nachrichtentext einbeziehen','Anzuzeigende Apps',
     'App-Namen durch Kommas trennen, zum Beispiel Signal, WhatsApp. Leer lassen, um alle zugelassenen Apps anzuzeigen.',
     'Verwendet die aktuellen Mitteilungen auf dem Telefon. Vorhandene Mitteilungen werden nicht erneut angezeigt. Erlaube den Zugriff in Pebble.',
@@ -567,8 +567,8 @@ var CONTEXT_ROWS = {
   ],
   fr:[
     'Disposition adaptative',
-    'L’heure reste à sa place. La complication 1 reste visible ; la musique et les nouvelles notifications remplacent les emplacements 2–5.',
-    'Timeline Peek conserve l’heure et la complication 1 ; les autres données, la musique et les résumés de notifications sont masqués.',
+    "L’heure reste à sa place. La complication 1 est plus grande et reste visible ; la musique et les nouvelles notifications remplacent la complication 2.",
+    "Timeline Peek conserve l’heure et la complication 1 ; la complication 2, la musique et les résumés de notifications sont masqués.",
     'Contenu dynamique','Afficher la musique pendant la lecture','Afficher les résumés des nouvelles notifications','Inclure le texte du message','Applications à afficher',
     'Séparez les noms des applications par des virgules, par exemple Signal, WhatsApp. Laissez vide pour toutes les applications autorisées.',
     'Utilise les notifications actuellement sur le téléphone. Les notifications existantes ne sont pas réaffichées. Autorisez l’accès dans Pebble.',
@@ -576,8 +576,8 @@ var CONTEXT_ROWS = {
   ],
   es:[
     'Distribución adaptable',
-    'El reloj permanece en su sitio. La complicación 1 sigue visible; la música y las nuevas notificaciones sustituyen las posiciones 2–5.',
-    'Timeline Peek mantiene el reloj y la complicación 1; oculta los demás datos, la música y los resúmenes de notificaciones.',
+    "El reloj permanece en su sitio. La complicación 1 es más grande y sigue visible; la música y las nuevas notificaciones sustituyen la complicación 2.",
+    "Timeline Peek mantiene el reloj y la complicación 1; oculta la complicación 2, la música y los resúmenes de notificaciones.",
     'Contenido dinámico','Mostrar música durante la reproducción','Mostrar resúmenes de nuevas notificaciones','Incluir el texto del mensaje','Aplicaciones que mostrar',
     'Separa los nombres de aplicaciones con comas, por ejemplo Signal, WhatsApp. Déjalo vacío para todas las aplicaciones permitidas.',
     'Usa las notificaciones que están actualmente en el teléfono. Las existentes no se vuelven a mostrar. Permite el acceso en Pebble.',
@@ -585,8 +585,8 @@ var CONTEXT_ROWS = {
   ],
   it:[
     'Disposizione adattiva',
-    'L’orologio resta al suo posto. La complicazione 1 resta visibile; musica e nuove notifiche sostituiscono le posizioni 2–5.',
-    'Timeline Peek mantiene l’orologio e la complicazione 1; nasconde gli altri dati, la musica e i riepiloghi delle notifiche.',
+    "L’orologio resta al suo posto. La complicazione 1 è più grande e resta visibile; musica e nuove notifiche sostituiscono la complicazione 2.",
+    "Timeline Peek mantiene l’orologio e la complicazione 1; nasconde la complicazione 2, la musica e i riepiloghi delle notifiche.",
     'Contenuti dinamici','Mostra la musica durante la riproduzione','Mostra i riepiloghi delle nuove notifiche','Includi il testo del messaggio','App da mostrare',
     'Separa i nomi delle app con virgole, per esempio Signal, WhatsApp. Lascia vuoto per tutte le app autorizzate.',
     'Usa le notifiche attualmente sul telefono. Le notifiche già presenti non vengono riproposte. Autorizza l’accesso in Pebble.',
@@ -594,8 +594,8 @@ var CONTEXT_ROWS = {
   ],
   pt:[
     'Disposição adaptável',
-    'O relógio mantém a posição. A complicação 1 continua visível; a música e as novas notificações substituem as posições 2–5.',
-    'O Timeline Peek mantém o relógio e a complicação 1; os demais dados, a música e os resumos de notificações ficam ocultos.',
+    "O relógio mantém a posição. A complicação 1 é maior e continua visível; a música e as novas notificações substituem a complicação 2.",
+    "O Timeline Peek mantém o relógio e a complicação 1; a complicação 2, a música e os resumos de notificações ficam ocultos.",
     'Conteúdo dinâmico','Mostrar música durante a reprodução','Mostrar resumos de novas notificações','Incluir o texto da mensagem','Aplicativos a mostrar',
     'Separe os nomes dos aplicativos com vírgulas, por exemplo Signal, WhatsApp. Deixe vazio para todos os aplicativos permitidos.',
     'Usa as notificações que estão atualmente no telefone. As existentes não são mostradas novamente. Permita o acesso no Pebble.',
@@ -603,8 +603,8 @@ var CONTEXT_ROWS = {
   ],
   nl:[
     'Adaptieve indeling',
-    'De klok blijft op zijn plaats. Complicatie 1 blijft zichtbaar; muziek en nieuwe meldingen vervangen posities 2–5.',
-    'Timeline Peek behoudt de klok en complicatie 1; overige gegevens, muziek en meldingsoverzichten worden verborgen.',
+    "De klok blijft op zijn plaats. Complicatie 1 is groter en blijft zichtbaar; muziek en nieuwe meldingen vervangen complicatie 2.",
+    "Timeline Peek behoudt de klok en complicatie 1; complicatie 2, muziek en meldingsoverzichten worden verborgen.",
     'Dynamische inhoud','Muziek tonen tijdens het afspelen','Overzichten van nieuwe meldingen tonen','Berichttekst opnemen','Te tonen apps',
     'Scheid appnamen met komma’s, bijvoorbeeld Signal, WhatsApp. Laat leeg voor alle toegestane apps.',
     'Gebruikt de huidige meldingen op de telefoon. Bestaande meldingen worden niet opnieuw getoond. Geef toegang in Pebble.',
@@ -612,8 +612,8 @@ var CONTEXT_ROWS = {
   ],
   pl:[
     'Dostosowujący się układ',
-    'Zegar pozostaje na swoim miejscu. Komplikacja 1 jest stale widoczna; muzyka i nowe powiadomienia zastępują pozycje 2–5.',
-    'Timeline Peek zachowuje zegar i komplikację 1; pozostałe dane, muzyka i podsumowania powiadomień są ukrywane.',
+    "Zegar pozostaje na swoim miejscu. Komplikacja 1 jest większa i stale widoczna; muzyka i nowe powiadomienia zastępują komplikację 2.",
+    "Timeline Peek zachowuje zegar i komplikację 1; komplikacja 2, muzyka i podsumowania powiadomień są ukrywane.",
     'Treść dynamiczna','Pokazuj muzykę podczas odtwarzania','Pokazuj podsumowania nowych powiadomień','Dołącz tekst wiadomości','Wyświetlane aplikacje',
     'Oddziel nazwy aplikacji przecinkami, na przykład Signal, WhatsApp. Pozostaw puste, aby wyświetlać wszystkie dozwolone aplikacje.',
     'Korzysta z powiadomień obecnych na telefonie. Istniejące powiadomienia nie są pokazywane ponownie. Zezwól na dostęp w Pebble.',
@@ -621,8 +621,8 @@ var CONTEXT_ROWS = {
   ],
   da:[
     'Dynamisk layout',
-    'Uret bliver på sin plads. Komplikation 1 forbliver synlig; musik og nye notifikationer erstatter pladserne 2–5.',
-    'Timeline Peek beholder uret og komplikation 1; øvrige data, musik og notifikationsoversigter skjules.',
+    "Uret bliver på sin plads. Komplikation 1 er større og forbliver synlig; musik og nye notifikationer erstatter komplikation 2.",
+    "Timeline Peek beholder uret og komplikation 1; komplikation 2, musik og notifikationsoversigter skjules.",
     'Dynamisk indhold','Vis musik under afspilning','Vis oversigter over nye notifikationer','Medtag beskedtekst','Apps, der skal vises',
     'Adskil appnavne med kommaer, for eksempel Signal, WhatsApp. Lad feltet være tomt for alle tilladte apps.',
     'Bruger de aktuelle notifikationer på telefonen. Eksisterende notifikationer vises ikke igen. Tillad adgang i Pebble.',
@@ -630,8 +630,8 @@ var CONTEXT_ROWS = {
   ],
   sv:[
     'Adaptiv layout',
-    'Klockan stannar på sin plats. Komplikation 1 förblir synlig; musik och nya aviseringar ersätter platserna 2–5.',
-    'Timeline Peek behåller klockan och komplikation 1; övriga uppgifter, musik och aviseringssammanfattningar döljs.',
+    "Klockan stannar på sin plats. Komplikation 1 är större och förblir synlig; musik och nya aviseringar ersätter komplikation 2.",
+    "Timeline Peek behåller klockan och komplikation 1; komplikation 2, musik och aviseringssammanfattningar döljs.",
     'Dynamiskt innehåll','Visa musik under uppspelning','Visa sammanfattningar av nya aviseringar','Ta med meddelandetext','Appar att visa',
     'Separera appnamn med kommatecken, till exempel Signal, WhatsApp. Lämna tomt för alla tillåtna appar.',
     'Använder de aviseringar som finns på telefonen. Befintliga aviseringar visas inte igen. Tillåt åtkomst i Pebble.',
@@ -639,8 +639,8 @@ var CONTEXT_ROWS = {
   ],
   no:[
     'Dynamisk oppsett',
-    'Klokken beholder plassen sin. Komplikasjon 1 forblir synlig; musikk og nye varsler erstatter plassene 2–5.',
-    'Timeline Peek beholder klokken og komplikasjon 1; øvrige opplysninger, musikk og varseloversikter skjules.',
+    "Klokken beholder plassen sin. Komplikasjon 1 er større og forblir synlig; musikk og nye varsler erstatter komplikasjon 2.",
+    "Timeline Peek beholder klokken og komplikasjon 1; komplikasjon 2, musikk og varseloversikter skjules.",
     'Dynamisk innhold','Vis musikk under avspilling','Vis oversikter over nye varsler','Ta med meldingstekst','Apper som skal vises',
     'Skill appnavn med komma, for eksempel Signal, WhatsApp. La feltet stå tomt for alle tillatte apper.',
     'Bruker varslene som finnes på telefonen. Eksisterende varsler vises ikke på nytt. Tillat tilgang i Pebble.',
@@ -648,8 +648,8 @@ var CONTEXT_ROWS = {
   ],
   fi:[
     'Mukautuva asettelu',
-    'Kello pysyy paikallaan. Lisätieto 1 pysyy näkyvissä; musiikki ja uudet ilmoitukset korvaavat paikat 2–5.',
-    'Timeline Peek säilyttää kellon ja lisätiedon 1; muut tiedot, musiikki ja ilmoitusyhteenvedot piilotetaan.',
+    "Kello pysyy paikallaan. Lisätieto 1 on suurempi ja pysyy näkyvissä; musiikki ja uudet ilmoitukset korvaavat lisätiedon 2.",
+    "Timeline Peek säilyttää kellon ja lisätiedon 1; lisätieto 2, musiikki ja ilmoitusyhteenvedot piilotetaan.",
     'Muuttuva sisältö','Näytä musiikki toiston aikana','Näytä uusien ilmoitusten yhteenvedot','Sisällytä viestin teksti','Näytettävät sovellukset',
     'Erota sovellusten nimet pilkuilla, esimerkiksi Signal, WhatsApp. Jätä tyhjäksi, jos haluat näyttää kaikki sallitut sovellukset.',
     'Käyttää puhelimessa olevia ilmoituksia. Aiemmat ilmoitukset eivät näy uudelleen. Salli käyttö Pebblessä.',
@@ -657,8 +657,8 @@ var CONTEXT_ROWS = {
   ],
   hu:[
     'Alkalmazkodó elrendezés',
-    'Az óra a helyén marad. Az 1. komplikáció látható marad; a zene és az új értesítések a 2–5. helyet váltják fel.',
-    'A Timeline Peek megtartja az órát és az 1. komplikációt; a többi adat, a zene és az értesítés-összefoglalók rejtve maradnak.',
+    "Az óra a helyén marad. Az 1. komplikáció nagyobb és látható marad; a zene és az új értesítések a 2. komplikációt váltják fel.",
+    "A Timeline Peek megtartja az órát és az 1. komplikációt; a 2. komplikáció, a zene és az értesítés-összefoglalók rejtve maradnak.",
     'Változó tartalom','Zene megjelenítése lejátszás közben','Új értesítések összefoglalóinak megjelenítése','Üzenetszöveg megjelenítése','Megjelenített alkalmazások',
     'Az alkalmazásneveket vesszővel válaszd el, például Signal, WhatsApp. Hagyd üresen az összes engedélyezett alkalmazáshoz.',
     'A telefonon jelenleg látható értesítéseket használja. A korábbi értesítéseket nem jeleníti meg újra. Engedélyezd a hozzáférést a Pebble-ben.',
@@ -666,8 +666,8 @@ var CONTEXT_ROWS = {
   ],
   ro:[
     'Aspect adaptiv',
-    'Ceasul rămâne pe loc. Complicația 1 rămâne vizibilă; muzica și notificările noi înlocuiesc pozițiile 2–5.',
-    'Timeline Peek păstrează ceasul și complicația 1; celelalte date, muzica și rezumatele notificărilor sunt ascunse.',
+    "Ceasul rămâne pe loc. Complicația 1 este mai mare și rămâne vizibilă; muzica și notificările noi înlocuiesc complicația 2.",
+    "Timeline Peek păstrează ceasul și complicația 1; complicația 2, muzica și rezumatele notificărilor sunt ascunse.",
     'Conținut dinamic','Arată muzica în timpul redării','Arată rezumatele notificărilor noi','Include textul mesajului','Aplicații de afișat',
     'Separă numele aplicațiilor prin virgule, de exemplu Signal, WhatsApp. Lasă gol pentru toate aplicațiile permise.',
     'Folosește notificările prezente pe telefon. Notificările existente nu sunt afișate din nou. Permite accesul în Pebble.',
@@ -675,8 +675,8 @@ var CONTEXT_ROWS = {
   ],
   tr:[
     'Uyarlanabilir düzen',
-    'Saat yerinde kalır. 1. komplikasyon görünür kalır; müzik ve yeni bildirimler 2–5 yuvalarının yerini alır.',
-    'Timeline Peek saati ve 1. komplikasyonu korur; diğer bilgiler, müzik ve bildirim özetleri gizlenir.',
+    "Saat yerinde kalır. 1. komplikasyon daha büyüktür ve görünür kalır; müzik ve yeni bildirimler 2. komplikasyonun yerini alır.",
+    "Timeline Peek saati ve 1. komplikasyonu korur; 2. komplikasyon, müzik ve bildirim özetleri gizlenir.",
     'Dinamik içerik','Çalma sırasında müziği göster','Yeni bildirim özetlerini göster','Mesaj metnini dahil et','Gösterilecek uygulamalar',
     'Uygulama adlarını virgülle ayırın, örneğin Signal, WhatsApp. İzin verilen tüm uygulamalar için boş bırakın.',
     'Telefonda bulunan bildirimleri kullanır. Mevcut bildirimler yeniden gösterilmez. Pebble’da erişime izin verin.',
@@ -685,6 +685,31 @@ var CONTEXT_ROWS = {
 };
 Object.keys(CONTEXT_ROWS).forEach(function(language) {
   ROWS[language] = ROWS[language].concat(CONTEXT_ROWS[language]);
+});
+
+// A brief panel transition is independent of the static bezel dot effect.
+KEYS = KEYS.concat(['panelTransitions','panelTransitionsHelp']);
+var PANEL_TRANSITION_ROWS = {
+  en:["Brief halftone transitions", "Animate panel changes briefly. The clock and border stay still."],
+  cs:["Krátké tečkované přechody", "Krátce animovat změny panelu. Čas a rámeček zůstanou nehybné."],
+  sk:["Krátke bodkované prechody", "Krátko animovať zmeny panela. Čas a rámček zostanú nehybné."],
+  de:["Kurze Rasterübergänge", "Panelwechsel kurz animieren. Uhr und Rand bleiben unbewegt."],
+  fr:["Brèves transitions en points", "Anime brièvement les changements du panneau. L’heure et la bordure restent fixes."],
+  es:["Transiciones breves con puntos", "Anima brevemente los cambios del panel. El reloj y el borde permanecen inmóviles."],
+  it:["Brevi transizioni a mezzatinta", "Anima brevemente i cambiamenti del pannello. L’orologio e il bordo restano fermi."],
+  pt:["Transições breves em pontos", "Anime brevemente as mudanças do painel. O relógio e a borda ficam parados."],
+  nl:["Korte rasterovergangen", "Animeer paneelwisselingen kort. De klok en de rand blijven stilstaan."],
+  pl:["Krótkie przejścia rastrowe", "Krótko animuj zmiany panelu. Zegar i obramowanie pozostają nieruchome."],
+  da:["Korte rasterovergange", "Animér panelskift kortvarigt. Uret og kanten står stille."],
+  sv:["Korta rasterövergångar", "Animera panelbyten kort. Klockan och kanten förblir stilla."],
+  no:["Korte rasteroverganger", "Animer panelskift kort. Klokken og kanten står stille."],
+  fi:["Lyhyet rasterisiirtymät", "Animoi paneelin vaihdot lyhyesti. Kello ja reunus pysyvät paikallaan."],
+  hu:["Rövid raszteres átmenetek", "A panelváltások rövid animációt kapnak. Az óra és a keret mozdulatlan marad."],
+  ro:["Tranziții scurte cu puncte", "Animează pe scurt schimbările panoului. Ceasul și marginea rămân nemișcate."],
+  tr:["Kısa noktalı geçişler", "Panel değişikliklerini kısa bir animasyonla göster. Saat ve kenarlık sabit kalır."]
+};
+Object.keys(PANEL_TRANSITION_ROWS).forEach(function(language) {
+  ROWS[language] = ROWS[language].concat(PANEL_TRANSITION_ROWS[language]);
 });
 
 var LANGUAGES = ['en','cs','sk','de','fr','es','it','pt','nl','pl','da','sv','no','fi','hu','ro','tr'];

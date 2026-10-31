@@ -1,8 +1,8 @@
 # Dynamic content
 
-Halftone 1.7.0 beta 9 uses one adaptive layout. The clock, plain date and primary
-complication stay in their established areas. The lower area shows the normal
-four secondary complications, music, or a brief new-notification summary.
+Halftone 1.8.0 beta 10 uses one adaptive layout. The clock, plain date and primary
+complication stay in their established areas. The lower area shows complication
+2, music, or a brief new-notification summary. Complication 1 is larger and stays in its own full-width area.
 
 ## Panel priority
 
@@ -10,7 +10,7 @@ four secondary complications, music, or a brief new-notification summary.
 | --- | --- |
 | A fresh new-notification summary | App/title and optional message text |
 | Music playing, or its short paused grace period | Song title, artist and artwork when supplied |
-| Neither | Global complications 2–5 in their fixed two-row grid |
+| Neither | Global complication 2, centered and slightly smaller than the primary |
 
 Complication 1 is not replaced by these panels. During Timeline Peek / Quick
 View, all secondary content hides and the clock, date and complication 1 adapt
@@ -28,7 +28,10 @@ Halftone does not add motion-based playback controls.
 **Show music while playing** defaults to on. Halftone subscribes to the phone's
 `music/track` source and reads title, artist, playing state and artwork. The
 built-in source is currently an Android feature. Artwork is optional, static
-and at most 24 pixels; long titles and artist names fit or end in an ellipsis.
+and at most 24 pixels. Title and artist use two wide, left-aligned lines. When
+removing artwork allows the full title to fit, the artwork is omitted. If the
+title still cannot fit, it uses a clean ellipsis; it does not continuously scroll
+or force smaller and smaller text.
 There is no playback-position or duration reading in that source, so Halftone
 does not invent a progress bar.
 
@@ -37,6 +40,23 @@ losing usable source data, disabling music or losing the phone connection also
 releases it. Music data has a maximum 120-second confirmation lease, capped by
 an earlier source expiry. A one-minute source refresh obtains current state;
 it does not renew notification lifetimes or change the weather refresh cadence.
+
+## Panel presentation and transitions
+
+The normal second reading is centered. Music and notification text use wide,
+left-aligned lines so titles have room. Short number/unit readings use larger
+digits and smaller recognized units without converting source values. The
+primary reading is not replaced or moved by contextual content.
+
+**Brief halftone transitions** defaults to on. A real incoming panel-content
+change can reveal the new content with a 180 ms halftone dissolve, using three
+short timer callbacks. The effect is clipped to the lower interior: clock,
+primary reading and bezel remain still. Repeated snapshots with identical
+visible content do not restart it merely because receipt or expiry times change.
+
+Expiry, privacy clearing, disconnection and Timeline Peek hide content
+immediately instead of waiting for an effect. Peek restoration is not animated.
+The switch disables the effect while keeping the same layout and data behavior.
 
 ## Notification summaries
 
@@ -102,9 +122,12 @@ summary, and invalid packets do not become displayable context.
 
 ## Context packet contract
 
-`CONTEXT_DATA` uses the existing version-1 five-record complication packet and
-CRC. It is a complete snapshot on a separate message key, not an update to the
-five global choices.
+`CONTEXT_DATA` uses the shared five-record complication codec and CRC. New
+packets use version 2; native decoding also accepts legacy version 1. The
+20-byte record header is unchanged, and contextual records require the generic
+`displayKind` value 0 at byte 5. Weather hints cannot be carried as media or
+notification content. It is a complete snapshot on a separate message key, not
+an update to the two displayed global choices.
 
 | Record index | Meaning | Maximum lease |
 | --- | --- | --- |

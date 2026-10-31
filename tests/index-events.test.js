@@ -133,12 +133,12 @@ test('cancelled or invalid settings do nothing, empty valid settings reconfigure
 });
 
 test('settings show complication counts/errors and no hard-coded weather picker',()=>{
-  const f=fixture();Object.assign(f.status,{configured:5,ready:4,error:'PERMISSION_DENIED'});
-  f.status.slots=[{slot:4,category:'weather',item:'location',error:'PERMISSION_DENIED',message:'Location permission required'}];
+  const f=fixture();Object.assign(f.status,{configured:2,ready:1,error:'PERMISSION_DENIED'});
+  f.status.slots=[{slot:2,category:'weather',item:'location',error:'PERMISSION_DENIED',message:'Location permission required'}];
   f.handlers.showConfiguration();
-  assert.match(item(f,'complications-status').defaultValue,/Halftone 1\.7\.0 beta 9/);
-  assert.match(item(f,'complications-status').defaultValue,/4\/5 ready/);
-  assert.match(item(f,'complications-status').defaultValue,/Complication error: #4 · weather\/location · PERMISSION_DENIED · Location permission required/);
+  assert.match(item(f,'complications-status').defaultValue,/Halftone 1\.8\.0 beta 10/);
+  assert.match(item(f,'complications-status').defaultValue,/1\/2 ready/);
+  assert.match(item(f,'complications-status').defaultValue,/Complication error: #2 · weather\/location · PERMISSION_DENIED · Location permission required/);
   assert.equal(named(f,'WEATHER_LOCATION'),undefined);
   assert.equal(named(f,'SHOW_DAILY_RANGE'),undefined);
   assert.deepEqual(f.urls,['data:text/html,settings']);
@@ -154,13 +154,13 @@ test('provider error messages are displayed as literal text in Clay settings',()
 });
 
 test('complication controls/status follow the active watch language and rebuild after a language change',()=>{
-  const f=fixture({}, {watch:'cs_CZ',phone:'de-DE'});Object.assign(f.status,{configured:3,ready:2});
+  const f=fixture({}, {watch:'cs_CZ',phone:'de-DE'});Object.assign(f.status,{configured:2,ready:1});
   f.handlers.showConfiguration();const czech=item(f,'complications-status').defaultValue;
-  assert.match(czech,/2\/3/);assert.doesNotMatch(czech,/Complications:| ready/);
+  assert.match(czech,/1\/2/);assert.doesNotMatch(czech,/Complications:| ready/);
   assert.equal(named(f,'LAYOUT_STYLE'),undefined);
   assert.equal(named(f,'SHOW_MUSIC').messageKey,'SHOW_MUSIC');
   f.watchLanguage('de-DE');f.handlers.showConfiguration();assert.notEqual(item(f,'complications-status').defaultValue,czech);
-  f.watchLanguage('en-US');f.handlers.showConfiguration();assert.match(item(f,'complications-status').defaultValue,/Complications: 2\/3 ready/);
+  f.watchLanguage('en-US');f.handlers.showConfiguration();assert.match(item(f,'complications-status').defaultValue,/Complications: 1\/2 ready/);
 });
 
 test('disabled plugin status is explicit and locale lookup falls back to the phone',()=>{
@@ -223,4 +223,15 @@ test('dynamic source errors use translated framing and literal HTML-escaped diag
   assert.match(item(f,'context-status').defaultValue,/PERMISSION_DENIED &lt;test&gt;/);
   f.contextStatus.error='';f.contextStatus.ready=true;f.handlers.showConfiguration();
   assert.match(item(f,'context-status').defaultValue,/Dynamic content: ready/);
+});
+
+test('brief panel transitions are a validated native setting, with explicit off preserved',()=>{
+  const f=fixture();
+  f.handlers.webviewclosed({response:JSON.stringify({PANEL_TRANSITIONS:false})});
+  assert.equal(f.deliveries.at(-1)[keys.PANEL_TRANSITIONS],0);
+  f.handlers.webviewclosed({response:JSON.stringify({PANEL_TRANSITIONS:true})});
+  assert.equal(f.deliveries.at(-1)[keys.PANEL_TRANSITIONS],1);
+  const before=f.deliveries.length;
+  f.handlers.webviewclosed({response:JSON.stringify({PANEL_TRANSITIONS:'false'})});
+  assert.equal(f.deliveries.length,before);
 });

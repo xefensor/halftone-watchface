@@ -1,6 +1,95 @@
 # Halftone beta validation
 
-## 1.7.0 beta 9 — adaptive layout and ephemeral context
+## 1.8.0 beta 10 — two large readings and panel presentation
+
+The checks below use deterministic source fixtures and the released native
+watch binary/resources. They do not claim physical phone/watch confirmation.
+
+- Only global complication choices 1 and 2 are used. The first is the larger,
+  pinned full-width reading; the second is slightly smaller and yields to music
+  or new-notification context. Choices 3–5 are not subscribed to or cached.
+  The new phone-cache signature rejects older five-reading cache records.
+- Recognized numeric text separates large digits from smaller units while
+  preserving source formatting, sign and locale punctuation. Unknown text,
+  ranges and timestamps remain whole-text readings. A droplet requires an
+  explicit weather-precipitation hint and valid 0–100% syntax; arbitrary battery
+  or humidity percentages do not acquire weather artwork.
+- Version-2 packets keep the five-record transport and 20-byte record header,
+  using byte 5 for the generic/precipitation hint. Native decoding retains
+  version-1 compatibility; contextual packets reject non-generic hints.
+- Music and notification lines are wide and left-aligned. Artwork is omitted
+  when its removal permits the full title to fit; other long text ends in a
+  clean ellipsis. The primary reading remains in place across context changes.
+- The optional incoming halftone dissolve lasts 180 ms with three callbacks,
+  affects only the lower interior, and does not restart for identical content
+  or lease refreshes. It does not delay expiry, privacy clearing, disconnection
+  or Timeline Peek, and does not animate Peek restoration. The new control and
+  two-reading help are translated in all 17 languages.
+- Existing source ownership, units, permissions, short context leases,
+  notification baselines/session tokens, app filtering, private-context
+  non-persistence and native Timeline Peek behavior remain in scope. No timer,
+  separate calendar, rain-warning or playback-control integration is added.
+
+- **223 JavaScript tests** pass. These include two-choice source subscriptions,
+  cache migration, sparse preference IDs, semantic precipitation hints and the
+  retained context/transport/privacy behavior. All 17 languages cover the new
+  two-reading help and transition control.
+- **Nine native C suites** pass with C99 and `-Wall -Wextra -Werror`.
+  Complication-data, context-data and reading-presentation helpers also pass
+  AddressSanitizer/UndefinedBehaviorSanitizer checks. Leak scanning is disabled
+  because the execution environment does not expose the required `/proc`
+  process data; no leak check is claimed.
+- An SDK **4.33.1** Emery build succeeds: resources **130,180 bytes**, RAM
+  footprint **23,906 bytes**, free heap **107,166 bytes**. All **31** generated
+  C/JavaScript message keys and seven bundled source-map modules match the
+  current manifest and source. UUID, Emery target and `ReadMusic` are preserved.
+- Visual review caught an old cached font that omitted the Unicode minus.
+  The build now includes complete font definitions in each font task's cache
+  signature. A clean default-cache build produces identical font/resource
+  bytes; native code differs only in the SDK's resource-timestamp header.
+  Independent decoding of the final PBW confirms a distinct, nonzero U+2212
+  glyph in all six complication fonts. Source signs and punctuation are retained.
+- Permission packaging adds manifest version 2 while preserving all original
+  SDK payloads. ZIP integrity and repeat-packaging byte equality pass. The active
+  bundle has no legacy weather client or endpoints; the bundled Clay utility's
+  generic XMLHttpRequest helper does not add a weather fallback.
+- **51 final native emulator screenshots** cover the two readings, holes,
+  ignored hidden records, version-1 compatibility, numeric units, signed values,
+  Unicode minus, decimal comma, Fahrenheit, zeroes, ranges and unknown text.
+  Source artwork is retained for short titles, hidden when that lets the whole
+  title fit, and retained with an ellipsis for overlong titles.
+  Notification title/body privacy, low battery indicators, themes and clock
+  widths/formats also pass. Four outer 18-pixel bezel bands are byte-identical
+  in RGB to beta 9. See the [normal/context previews](images/two-reading-states.png)
+  and [native Peek capture](images/two-readings-peek.png).
+- Independent animation samples requested at **40.9/70.1/140.1/240.1 ms** show
+  the shrinking mask only within the lower content area; the final frame is
+  pixel-identical to the still state. Clock, date, primary reading and bezel
+  remain fixed. Identical lease-only heartbeats and transition-off snapshots
+  remain pixel-identical. Expiry, explicit clear during a dissolve, malformed
+  private packets and clearing during Peek act immediately. Peek restores
+  current music, but never restores a notification that expired while hidden.
+- Native session tokens advance across installs. Wrong-token boundaries cannot
+  release unmarked notifications; a matching empty boundary permits a later
+  fresh notice. The emulator's Bluetooth flag does not sever its phone session,
+  so synthetic toggles do not prove physical disconnection. Actual media apps,
+  plugin delivery, permission prompts and Bluetooth loss/recovery still need
+  phone/watch confirmation.
+- Native captures use an idle-JavaScript derivative with the final release
+  native binary/resources; production-encoded fixtures are injected over
+  AppMessage. Source coordination and permissions are checked separately by
+  the JavaScript suites. The source archive is reproducible and byte-checked
+  against current repository files, excluding dependencies, credentials,
+  build outputs and nested release archives.
+
+Permission-packaged PBW SHA-256:
+
+`f383d0b9dbf257250fde41c29ea9d3dbb3f9ff77b438caa6c15156f9ada13e4b`
+
+No physical-phone/watch success is claimed for beta 10. Historical results below
+apply to their named versions.
+
+## 1.7.0 beta 9 — historical adaptive layout and ephemeral context
 
 The checks below use deterministic source fixtures and the released native
 watch binary/resources. They do not claim physical phone/watch confirmation.

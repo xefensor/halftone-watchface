@@ -10,7 +10,7 @@ function decode(packet) {
   assert.ok(Array.isArray(packet));
   assert.ok(packet.every(byte=>Number.isInteger(byte)&&byte>=0&&byte<=255));
   const b=Buffer.from(packet);
-  assert.equal(b[0],1);
+  assert.equal(b[0],2);
   assert.equal(b[1],0);
   assert.equal(b.readUInt16LE(2),b.length);
   const check=[...packet]; check[4]=check[5]=0;
@@ -19,9 +19,9 @@ function decode(packet) {
   let at=6;
   for(let i=0;i<5;i++) {
     const flags=b[at],status=b[at+1],textLength=b[at+2],width=b[at+3],height=b[at+4];
-    assert.equal(b[at+5],0);
+    assert.ok(b[at+5]===0 || b[at+5]===1);
     const pixelBytes=b.readUInt16LE(at+14);
-    const slot={flags,status,textLength,width,height,confirmedAt:b.readUInt32LE(at+6),
+    const slot={flags,status,textLength,width,height,displayKind:b[at+5],confirmedAt:b.readUInt32LE(at+6),
       validUntil:b.readUInt32LE(at+10),pixelBytes,timestamp:b.readUInt32LE(at+16)};
     at+=20;
     slot.text=b.subarray(at,at+textLength).toString('utf8'); at+=textLength;
@@ -195,4 +195,12 @@ test('Invalid statuses clear all fields and do not borrow neighboring content',(
     ready({status:4,text:'denied'}),[],ready({text:'five'})],NOW));
   assert.deepEqual(slots.map(slot=>slot.status),[5,5,4,5,2]);
   assert.deepEqual(slots.map(slot=>slot.text),['','','','','five']);
+});
+
+test('V2 semantic hint is explicit and never appears on generic percentages or non-text records',()=>{
+  const slots=decode(packComplications([ready({text:'40%',displayKind:1}),ready({text:'78%'}),
+    ready({text:'0%',displayKind:999}),ready({timestamp:NOW+600,displayKind:1}),
+    {status:4,text:'private',displayKind:1}],NOW));
+  assert.deepEqual(slots.map(slot=>slot.displayKind),[1,0,0,0,0]);
+  assert.deepEqual(slots.map(slot=>slot.text),['40%','78%','0%','','']);
 });
