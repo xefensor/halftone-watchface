@@ -3,7 +3,7 @@
 Halftone does not require an account and contains no advertising, analytics or
 developer-operated tracking service.
 
-## Shared weather (1.4.2 beta 3)
+## Shared weather (beta)
 
 When the Pebble mobile app's plugin preview is enabled and its built-in Weather
 source is available, Halftone subscribes to that source. It receives weather
@@ -30,6 +30,10 @@ after confirmation, whichever comes first. This confirmation time is not the
 provider's observation or model-generation time.
 The settings diagnostic shows the source, location and native temperature received
 locally; these diagnostic details are not uploaded to the developer.
+
+Settings and watch labels use the watch language, with the phone language as a
+fallback for settings. Language selection is handled locally and adds no
+network request or permission.
 
 ## Compatibility weather client
 

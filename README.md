@@ -1,22 +1,29 @@
 # Halftone
 
-## Shared weather beta — 1.4.2 beta 3
+## Shared weather beta — 1.4.3 beta 4
 
 The beta reads the same weather database as Pebble's Weather app, keeps a
 six-hour offline forecast cache, and supports saved-location selection and
 **Follow Pebble** temperature units. Existing explicit unit choices are retained.
 Older apps and disabled plugin preview retain the compatibility weather client.
 
-Install [Halftone-1.4.2-beta.3.pbw](dist/Halftone-1.4.2-beta.3.pbw).
-Source: [Halftone-1.4.2-beta.3-source.zip](dist/Halftone-1.4.2-beta.3-source.zip).
-Beta 3 adds optional **Show today's low and high** and **Show today's rain / snow
-chance** settings. Both default to off. When enabled and supplied by shared
+Install [Halftone-1.4.3-beta.4.pbw](dist/Halftone-1.4.3-beta.4.pbw).
+Source: [Halftone-1.4.3-beta.4-source.zip](dist/Halftone-1.4.3-beta.4-source.zip).
+Beta 4 translates Halftone's phone settings and weather status messages into
+the same 17 languages as the watchface. Settings follow the active watch's
+language when available, then the phone's language, with English as the fallback.
+The watch's weather-detail labels follow its system language. Existing settings
+and their saved values are preserved.
+
+The optional **Show today's low and high** and **Show today's rain / snow
+chance** settings both default to off. When enabled and supplied by shared
 Pebble weather, they appear in a small line below the temperature, such as
-`L5° H9° · P40%`. The line hides while Timeline Peek is visible. Missing values
+`L5° H9° · P40%` in English. The prefixes are localized. The line hides while
+Timeline Peek is visible. Missing values
 stay hidden; a supplied zero probability is valid and displays as `P0%`.
 These details make no extra weather HTTP requests.
 
-Beta 3 also corrects unit preference handling and tracks forecast age by its
+The beta also corrects unit preference handling and tracks forecast age by its
 absolute UTC hour, so a moving forecast window cannot renew old cached hours.
 Settings show the active source, selected location and received temperature.
 See [setup, build instructions and limitations](docs/PLUGIN-WEATHER.md).
@@ -54,7 +61,7 @@ You can also build the source yourself as described below.
 
 ## How it works
 
-The following describes the compatibility weather client. The 1.4.2 beta uses
+The following describes the compatibility weather client. The 1.4.3 beta uses
 shared Pebble weather when available; see the beta setup guide above.
 
 The watch-side C app draws the interface and updates the clock once per minute.
@@ -111,11 +118,16 @@ change also requests the provider's native value for that unit, avoiding a
 second rounding step. The fallback converts its unrounded Celsius reading to
 Fahrenheit before rounding.
 
-The weekday automatically follows the PebbleOS language. Halftone includes
+The weekday and watch weather labels automatically follow the PebbleOS language.
+Halftone includes
 English, Czech, Slovak, German, French, Spanish, Italian, Portuguese, Dutch,
 Polish, Danish, Swedish, Norwegian, Finnish, Hungarian, Romanian and Turkish;
-other locales fall back to English. Long translated names automatically use a
-slightly smaller date font while the time remains unchanged.
+Norwegian includes the `no`, `nb` and `nn` locale codes. Other locales fall back
+to English. Long translated names automatically use a slightly smaller date
+font while the time remains unchanged. In beta 4, the phone settings also
+translate the display and color controls, weather options, location controls
+and dynamic status messages. They prefer the active watch language, then the
+phone language, and finally English.
 
 When Pebble Timeline Quick View appears at the bottom of the screen, Halftone
 uses the watchface unobstructed-area API to move the lower dotted edge above

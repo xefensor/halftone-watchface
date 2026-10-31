@@ -453,10 +453,21 @@ static void prv_refresh_weather_details(void) {
       s_window_layer == NULL) {
     return;
   }
-  const bool available = weather_details_format(
+  const bool available = weather_details_format_localized(
       s_weather_details, s_weather_details_length, time(NULL),
       s_show_daily_range, s_show_rain_chance, s_use_fahrenheit,
-      s_weather_details_buffer, sizeof(s_weather_details_buffer));
+      s_weather_details_buffer, sizeof(s_weather_details_buffer),
+      i18n_get_system_locale());
+  const GRect frame = layer_get_frame(text_layer_get_layer(s_weather_details_layer));
+  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
+  const GSize size = graphics_text_layout_get_content_size(
+      s_weather_details_buffer, font, GRect(0, 0, 320, 24),
+      GTextOverflowModeFill, GTextAlignmentCenter);
+  if (size.w > frame.size.w - (s_text_shadow_enabled ? 1 : 0)) {
+    font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+  }
+  text_layer_set_font(s_weather_details_layer, font);
+  text_layer_set_font(s_weather_details_shadow_layer, font);
   const bool visible = available &&
       layer_get_unobstructed_bounds(s_window_layer).size.h >= 215;
   text_layer_set_text(s_weather_details_layer, s_weather_details_buffer);

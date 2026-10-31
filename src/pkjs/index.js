@@ -3,7 +3,19 @@ var Clay = require('@rebble/clay');
 var clayConfig = require('./config');
 var createWeatherClient = require('./weather');
 var createSharedWeather = require('./shared-weather');
+var localization = require('./localization');
 var clay = new Clay(clayConfig, null, {autoHandleEvents: false});
+
+function settingsLanguage() {
+  var watchLanguage;
+  try {
+    var watch = typeof Pebble.getActiveWatchInfo === 'function' && Pebble.getActiveWatchInfo();
+    watchLanguage = watch && watch.language;
+  } catch (ignored) {}
+  var phoneLanguage = typeof navigator !== 'undefined' &&
+    (navigator.language || navigator.userLanguage || (navigator.languages && navigator.languages[0]));
+  return localization.resolveLanguage(watchLanguage, phoneLanguage);
+}
 
 function messageValue(payload, name) {
   return payload[name] !== undefined ? payload[name] : payload[MessageKeys[name]];
@@ -68,25 +80,38 @@ Pebble.addEventListener('appmessage', function(event) {
 
 Pebble.addEventListener('showConfiguration', function() {
   migrateSettings();
+  var language = settingsLanguage();
+  // Translate a fresh config on each open, so a language change never reuses
+  // old translated labels or alters the saved option IDs and values.
+  clay.config = localization.translateConfig(clayConfig, language);
+  function t(key, params) { return localization.t(key, language, params); }
   var places = weather.locations();
   var chosen = weatherSettings().locationId;
   if (chosen && !places.some(function(p) { return p.id === chosen; })) {
-    places.push({id: chosen, name: 'Saved location (currently unavailable)'});
+    places.push({id: chosen, name: t('savedUnavailable')});
   }
   clay.config.forEach(function(section) {
     (section.items || []).forEach(function(item) {
       if (item.id === 'weather-status') {
         var status = weather.status();
-        item.defaultValue = 'Halftone 1.4.2 beta 3. ' +
-          (status.source === 'shared' ? 'Pebble shared current conditions' : 'Compatibility weather') +
+        var errors = {PERMISSION_DENIED: 'permissionDenied', PLUGIN_UNAVAILABLE: 'sourceUnavailable',
+          TIMEOUT: 'sourceTimeout', NETWORK_ERROR: 'networkError', NETWORK: 'networkError'};
+        var errorText = '';
+        if (status.error) {
+          errorText = errors[status.error]
+            ? t(errors[status.error]) + ' (' + status.error + ')'
+            : t('sourceError', {error: status.error});
+        }
+        item.defaultValue = 'Halftone 1.4.3 beta 4. ' +
+          t(status.source === 'shared' ? 'sharedSource' : 'legacySource') +
           (status.location ? ' · ' + status.location : '') +
-          (status.temperature ? ' · Received ' + status.temperature : '') +
-          (status.receivedAt ? ' · Last source read ' +
-            Math.max(0, Math.floor((Date.now() / 1000 - status.receivedAt) / 60)) + ' min ago' : '') +
-          (status.error ? ' · ' + status.error : '');
+          (status.temperature ? ' · ' + t('received', {temperature: status.temperature}) : '') +
+          (status.receivedAt ? ' · ' + t('lastRead', {
+            minutes: Math.max(0, Math.floor((Date.now() / 1000 - status.receivedAt) / 60))}) : '') +
+          (errorText ? ' · ' + errorText : '');
       }
       if (item.messageKey === 'WEATHER_LOCATION') {
-        item.options = [{label: 'First Pebble weather location', value: ''}].concat(
+        item.options = [{label: t('First Pebble weather location'), value: ''}].concat(
           places.map(function(p) { return {label: p.name, value: p.id}; }));
       }
     });

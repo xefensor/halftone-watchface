@@ -4,7 +4,8 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const source = fs.readFileSync(require.resolve('../src/pkjs/index.js'), 'utf8');
 
-function fixture(settings = {}) {
+function fixture(settings = {}, locales = {}) {
+  let watchLanguage = locales.watch;
   const handlers = {};
   const refreshes = [];
   const deliveries = [];
@@ -29,6 +30,7 @@ function fixture(settings = {}) {
   vm.runInNewContext(source, {
     require: name => {
       if (name === 'message_keys') return keys;
+      if (name === './localization') return require('../src/pkjs/localization');
       if (name === '@rebble/clay') return function(config, _custom, options) {
         assert.equal(options.autoHandleEvents, false);
         this.config = JSON.parse(JSON.stringify(config));
@@ -44,8 +46,11 @@ function fixture(settings = {}) {
         clay = this;
       };
       if (name === './config') return [{type: 'section', items: [
-        {messageKey: 'WEATHER_LOCATION', options: []},
-        {id: 'weather-status', type: 'text', defaultValue: 'Weather source: waiting for data'}
+        {type: 'select', messageKey: 'WEATHER_LOCATION', label: 'Weather location', options: []},
+        {id: 'weather-status', type: 'text', defaultValue: 'Weather source: waiting for data'},
+        {type: 'heading', defaultValue: 'Weather details'},
+        {type: 'toggle', messageKey: 'SHOW_DAILY_RANGE', label: "Show today's low and high", defaultValue: false},
+        {type: 'toggle', messageKey: 'SHOW_RAIN_CHANCE', label: "Show today's rain / snow chance", defaultValue: false}
       ]}];
       if (name === './weather') return options => {
         legacyOptions = options;
@@ -66,11 +71,15 @@ function fixture(settings = {}) {
       throw Error('Unexpected module ' + name);
     },
     Pebble: {
+      getActiveWatchInfo: () => {
+        if (locales.throwWatchInfo) throw Error('Watch disconnected');
+        return {language: watchLanguage};
+      },
       addEventListener: (event, handler) => {handlers[event] = handler;},
       sendAppMessage: (payload, success) => {deliveries.push(payload); if (success) success();},
       openURL: url => urls.push(url)
     },
-    navigator: {geolocation: {}},
+    navigator: {geolocation: {}, language: locales.phone || 'en-US'},
     XMLHttpRequest: function() {}, localStorage: storage,
     setTimeout: () => 1, clearTimeout: () => {},
     console: {log: () => {}}
@@ -78,7 +87,8 @@ function fixture(settings = {}) {
   return {
     handlers, refreshes, deliveries, urls, places, status, clay, keys,
     coordinatorOptions, settings: () => JSON.parse(saved), configured: () => configured,
-    legacyMode: value => {legacyMode = value;}, legacyOptions: () => legacyOptions
+    legacyMode: value => {legacyMode = value;}, legacyOptions: () => legacyOptions,
+    watchLanguage: value => {watchLanguage = value;}
   };
 }
 
@@ -156,6 +166,48 @@ test('Settings identify the weather source, location and received native current
   f.status.error = 'PERMISSION_DENIED';
   f.handlers.showConfiguration();
   assert.match(f.clay.config[0].items.find(item => item.id === 'weather-status').defaultValue, /PERMISSION_DENIED/);
+});
+
+test('Weather settings follow the active watch language and keep saved IDs and user location names', () => {
+  const f = fixture({WEATHER_LOCATION: 'home', SHOW_RAIN_CHANCE: true}, {watch: 'cs-CZ', phone: 'de-DE'});
+  f.places.push({id: 'home', name: 'Weather details'});
+  Object.assign(f.status, {source: 'shared', location: 'České Budějovice', temperature: '8°C', error: 'PERMISSION_DENIED'});
+  f.handlers.showConfiguration();
+  const items = f.clay.config[0].items;
+  const rain = items.find(item => item.messageKey === 'SHOW_RAIN_CHANCE');
+  assert.match(rain.label, /sráž|déšť|sně/i);
+  assert.equal(rain.messageKey, 'SHOW_RAIN_CHANCE');
+  assert.equal(f.settings().SHOW_RAIN_CHANCE, true);
+  const locations = items.find(item => item.messageKey === 'WEATHER_LOCATION');
+  assert.equal(locations.options.find(item => item.value === 'home').label, 'Weather details');
+  const status = items.find(item => item.id === 'weather-status').defaultValue;
+  assert.match(status, /České Budějovice/);
+  assert.match(status, /8°C/);
+  assert.match(status, /PERMISSION_DENIED/);
+  assert.doesNotMatch(status, /Pebble shared current conditions|Received/);
+});
+
+test('Reopening settings after a language change rebuilds labels without retaining the previous translation', () => {
+  const f = fixture({}, {watch: 'cs_CZ'});
+  f.handlers.showConfiguration();
+  const label = () => f.clay.config[0].items.find(item => item.messageKey === 'SHOW_RAIN_CHANCE').label;
+  const czech = label();
+  f.watchLanguage('de-DE');
+  f.handlers.showConfiguration();
+  assert.notEqual(label(), czech);
+  assert.match(label(), /Regen|Schnee/i);
+  f.watchLanguage('en-US');
+  f.handlers.showConfiguration();
+  assert.equal(label(), "Show today's rain / snow chance");
+});
+
+test('A failed watch language read uses the phone language and a missing saved location is localized', () => {
+  const f = fixture({WEATHER_LOCATION: 'missing'}, {throwWatchInfo: true, phone: 'cs-CZ'});
+  assert.doesNotThrow(() => f.handlers.showConfiguration());
+  const options = f.clay.config[0].items[0].options;
+  assert.equal(options.find(item => item.value === 'missing').value, 'missing');
+  assert.doesNotMatch(options.find(item => item.value === 'missing').label, /Saved location|unavailable/);
+  assert.match(f.clay.config[0].items.find(item => item.messageKey === 'SHOW_RAIN_CHANCE').label, /sráž|déšť|sně/i);
 });
 
 test('Saving settings keeps JS preferences on the phone and lets Pebble global units win', () => {

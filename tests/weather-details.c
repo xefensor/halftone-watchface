@@ -47,6 +47,53 @@ int main(void) {
   assert(!weather_details_format(bytes, sizeof(bytes), NOW, false, false, false,
                                  text, sizeof(text)) && text[0] == '\0');
 
+  // Every weekday language has natural compact weather labels too. Regional
+  // separators and all three Norwegian language codes select the same labels.
+  const struct {
+    const char *locale;
+    const char *expected;
+  } translations[] = {
+    {"en_GB", "L5° H9° · P40%"},
+    {"cs_CZ", "min5° max9° · S40%"},
+    {"sk-SK", "min5° max9° · Z40%"},
+    {"de_DE", "min5° max9° · N40%"},
+    {"fr-FR", "min5° max9° · P40%"},
+    {"es_ES", "min5° max9° · P40%"},
+    {"it-IT", "min5° max9° · P40%"},
+    {"pt_BR", "min5° max9° · P40%"},
+    {"nl-NL", "min5° max9° · N40%"},
+    {"pl_PL", "min5° max9° · O40%"},
+    {"da-DK", "min5° maks9° · N40%"},
+    {"sv_SE", "min5° max9° · N40%"},
+    {"no-NO", "min5° maks9° · N40%"},
+    {"nb_NO", "min5° maks9° · N40%"},
+    {"nn-NO", "min5° maks9° · N40%"},
+    {"fi_FI", "alin5° ylin9° · S40%"},
+    {"hu-HU", "min5° max9° · Cs40%"},
+    {"ro_RO", "min5° max9° · P40%"},
+    {"tr-TR", "min5° maks9° · Y40%"},
+    {"CS-cz", "min5° max9° · S40%"},
+  };
+  for (size_t i = 0; i < sizeof(translations) / sizeof(translations[0]); ++i) {
+    assert(weather_details_format_localized(bytes, sizeof(bytes), NOW,
+        true, true, false, text, sizeof(text), translations[i].locale));
+    assert(strcmp(text, translations[i].expected) == 0);
+  }
+  const char *fallback_locales[] = {NULL, "", "c", "cz_CZ", "english", "csbad", "zz"};
+  for (size_t i = 0; i < sizeof(fallback_locales) / sizeof(fallback_locales[0]); ++i) {
+    assert(weather_details_format_localized(bytes, sizeof(bytes), NOW,
+        true, true, false, text, sizeof(text), fallback_locales[i]));
+    assert(strcmp(text, "L5° H9° · P40%") == 0);
+  }
+  assert(weather_details_format_localized(bytes, sizeof(bytes), NOW,
+      true, false, true, text, sizeof(text), "cs"));
+  assert(strcmp(text, "min41° max48°") == 0);
+  assert(weather_details_format_localized(bytes, sizeof(bytes), NOW,
+      false, true, true, text, sizeof(text), "hu"));
+  assert(strcmp(text, "Cs40%") == 0);
+  assert(!weather_details_format_localized(bytes, sizeof(bytes), NOW,
+      false, false, false, text, sizeof(text), "fi") && text[0] == '\0');
+
   // Both units are rounded by the provider, not converted from rounded Celsius.
   put_i16(bytes + 14, 7);
   put_i16(bytes + 16, 44);
@@ -60,6 +107,9 @@ int main(void) {
   assert(weather_details_format(bytes, sizeof(bytes), NOW, true, true, false,
                                 text, sizeof(text)));
   assert(strcmp(text, "L0° H0° · P0%") == 0);
+  assert(weather_details_format_localized(bytes, sizeof(bytes), NOW,
+      true, true, false, text, sizeof(text), "cs"));
+  assert(strcmp(text, "min0° max0° · S0%") == 0);
   bytes[1] = WEATHER_DETAILS_RAIN;
   put_i16(bytes + 14, -32768); // Unused range fields do not become displayed data.
   assert(weather_details_format(bytes, sizeof(bytes), NOW, true, true, false,
@@ -159,6 +209,11 @@ int main(void) {
   put_i16(bytes + 18, 100);
   put_i16(bytes + 20, 212);
   assert(weather_details_read(bytes, sizeof(bytes), NOW, NULL));
+  assert(weather_details_format_localized(bytes, sizeof(bytes), NOW,
+      true, true, true, text, sizeof(text), "fi"));
+  assert(strcmp(text, "alin-148° ylin212° · S40%") == 0);
+  assert(!weather_details_format_localized(bytes, sizeof(bytes), NOW,
+      true, true, true, text, 12, "fi") && text[0] == '\0');
   assert(!weather_details_format(bytes, sizeof(bytes), NOW, true, true, false,
                                  text, 4) && text[0] == '\0');
   assert(!weather_details_format(bytes, sizeof(bytes), NOW, true, true, false,

@@ -74,10 +74,61 @@ static inline bool weather_details_read(const uint8_t *bytes, size_t length,
   return true;
 }
 
-static inline bool weather_details_format(const uint8_t *bytes, size_t length,
-                                          time_t now, bool show_range,
-                                          bool show_rain, bool fahrenheit,
-                                          char *buffer, size_t capacity) {
+typedef struct {
+  const char *language;
+  const char *low;
+  const char *high;
+  const char *precipitation;
+} WeatherDetailsLabels;
+
+static inline char weather_details_lower(char value) {
+  return value >= 'A' && value <= 'Z' ? value + ('a' - 'A') : value;
+}
+
+static inline bool weather_details_locale_is(const char *locale,
+                                             const char *language) {
+  return locale != NULL && weather_details_lower(locale[0]) == language[0] &&
+      weather_details_lower(locale[1]) == language[1] &&
+      (locale[2] == '\0' || locale[2] == '_' || locale[2] == '-');
+}
+
+static inline const WeatherDetailsLabels *weather_details_labels(
+    const char *locale) {
+  // Short weather labels match the explanation in the translated app settings.
+  // ASCII keeps every label available in both built-in Gothic font sizes.
+  static const WeatherDetailsLabels labels[] = {
+    {"en", "L", "H", "P"},
+    {"cs", "min", "max", "S"},
+    {"sk", "min", "max", "Z"},
+    {"de", "min", "max", "N"},
+    {"fr", "min", "max", "P"},
+    {"es", "min", "max", "P"},
+    {"it", "min", "max", "P"},
+    {"pt", "min", "max", "P"},
+    {"nl", "min", "max", "N"},
+    {"pl", "min", "max", "O"},
+    {"da", "min", "maks", "N"},
+    {"sv", "min", "max", "N"},
+    {"no", "min", "maks", "N"},
+    {"nb", "min", "maks", "N"},
+    {"nn", "min", "maks", "N"},
+    {"fi", "alin", "ylin", "S"},
+    {"hu", "min", "max", "Cs"},
+    {"ro", "min", "max", "P"},
+    {"tr", "min", "maks", "Y"},
+  };
+  for (size_t i = 0; i < sizeof(labels) / sizeof(labels[0]); ++i) {
+    if (weather_details_locale_is(locale, labels[i].language)) {
+      return &labels[i];
+    }
+  }
+  return &labels[0];
+}
+
+static inline bool weather_details_format_localized(
+    const uint8_t *bytes, size_t length, time_t now, bool show_range,
+    bool show_rain, bool fahrenheit, char *buffer, size_t capacity,
+    const char *locale) {
   if (buffer == NULL || capacity == 0) { return false; }
   buffer[0] = '\0';
   WeatherDetails value;
@@ -86,18 +137,30 @@ static inline bool weather_details_format(const uint8_t *bytes, size_t length,
   show_rain = show_rain && (value.flags & WEATHER_DETAILS_RAIN);
   const int low = fahrenheit ? value.low_fahrenheit : value.low_celsius;
   const int high = fahrenheit ? value.high_fahrenheit : value.high_celsius;
+  const WeatherDetailsLabels *labels = weather_details_labels(locale);
   int written = 0;
   if (show_range && show_rain) {
-    written = snprintf(buffer, capacity, "L%d° H%d° · P%u%%", low, high,
-                       value.rain_percent);
+    written = snprintf(buffer, capacity, "%s%d° %s%d° · %s%u%%",
+                       labels->low, low, labels->high, high,
+                       labels->precipitation, value.rain_percent);
   } else if (show_range) {
-    written = snprintf(buffer, capacity, "L%d° H%d°", low, high);
+    written = snprintf(buffer, capacity, "%s%d° %s%d°", labels->low, low,
+                       labels->high, high);
   } else if (show_rain) {
-    written = snprintf(buffer, capacity, "P%u%%", value.rain_percent);
+    written = snprintf(buffer, capacity, "%s%u%%", labels->precipitation,
+                       value.rain_percent);
   }
   if (written <= 0 || (size_t)written >= capacity) {
     buffer[0] = '\0';
     return false;
   }
   return true;
+}
+
+static inline bool weather_details_format(const uint8_t *bytes, size_t length,
+                                          time_t now, bool show_range,
+                                          bool show_rain, bool fahrenheit,
+                                          char *buffer, size_t capacity) {
+  return weather_details_format_localized(bytes, length, now, show_range,
+      show_rain, fahrenheit, buffer, capacity, "en");
 }

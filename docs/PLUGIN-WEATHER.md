@@ -1,13 +1,13 @@
 # Shared Pebble weather beta
 
-Halftone 1.4.2 beta 3 reads the weather already stored by the Pebble phone app.
+Halftone 1.4.3 beta 4 reads the weather already stored by the Pebble phone app.
 Its built-in Weather plugin exposes the same database that feeds the watch's
 Weather app, including the weather provider selected in Pebble. Subscribing
 does not make another weather API request. Halftone keeps its current design
 and saves up to six hours of the shared hourly forecast for offline use.
 
-The downloadable beta is `Halftone-1.4.2-beta.3.pbw`. The SDK's internal
-version is `1.4.2`; its UUID is unchanged, so it updates the existing watchface.
+The downloadable beta is `Halftone-1.4.3-beta.4.pbw`. The SDK's internal
+version is `1.4.3`; its UUID is unchanged, so it updates the existing watchface.
 This is a testing build, not a new Store release. The plugin API remains a
 preview and can change.
 
@@ -30,6 +30,9 @@ preview and can change.
 5. Optionally enable **Show today's low and high** or **Show today's rain / snow
    chance** in Halftone's settings. Both are off by default.
 
+These are the English control names; beta 4 translates Halftone's settings
+interface. Existing option identifiers and saved choices are unchanged.
+
 Pebble controls network fetching in shared-weather mode. Halftone receives
 updates from an open subscription. Every 30 minutes, and when the watch requests
 an update, a temporary subscription re-reads the shared database and ends after
@@ -48,13 +51,26 @@ native temperature received, plus any source error. This is a diagnostic snapsho
 when settings open. It identifies whether shared weather or the compatibility
 client is actually active.
 
+## Languages
+
+Halftone supports English, Czech, Slovak, German, French, Spanish, Italian,
+Portuguese, Dutch, Polish, Danish, Swedish, Norwegian, Finnish, Hungarian,
+Romanian and Turkish. Norwegian accepts `no`, `nb` and `nn`. Regional variants
+use the supported base language; unsupported languages fall back to English.
+
+The watch's weekday and low/high/precipitation labels follow the PebbleOS
+language. The phone settings prefer the active watch's language when available,
+then the phone's language, and finally English. This covers the existing color
+and display controls, the weather section and its dynamic status messages.
+No separate language setting is needed.
+
 ## Optional daily details
 
 The two optional settings add a compact line below the temperature. With both
-values available it can read `L5° H9° · P40%`: today's low, high and probability
-of precipitation. The percentage covers rain or snow, as supplied by Pebble;
+values available it can read `L5° H9° · P40%` in English: today's low, high and
+probability of precipitation. The percentage covers rain or snow, as supplied by Pebble;
 it is not an amount in millimetres. A supplied zero is valid (`P0%`), while a
-missing or invalid field is hidden.
+missing or invalid field is hidden. The label prefixes use the watch's language.
 
 These details use only the selected shared Pebble weather location. Halftone
 does not make extra HTTP requests to obtain them, and the compatibility client
@@ -128,13 +144,17 @@ step is required with SDKs that omit the new permission manifest. It copies `use
 `appinfo.json` and sets `manifestVersion` to 2. It verifies the existing UUID,
 version and target platforms, and checks that JavaScript, watch binaries and
 resources remain byte-for-byte unchanged. It writes
-`dist/Halftone-1.4.2-beta.3.pbw`, leaving the ordinary SDK output intact.
+`dist/Halftone-1.4.3-beta.4.pbw`, leaving the ordinary SDK output intact.
 
 Halftone consumes a plugin; it does not contain or install a weather plugin of
 its own. No plugin SDK branch or plugin-only project is required.
 
 ## Checks on a real Pebble Time 2
 
+- Change the watch language and reopen Halftone's phone settings. Check the
+  weekday, weather-detail labels, existing display controls, weather controls
+  and status messages. Also check phone-language fallback when the watch
+  language is unavailable, and English fallback for unsupported languages.
 - Compare the settings diagnostic's received temperature and Halftone display
   with the detailed weather report's current conditions, in matching units and
   location. Change the global weather provider and confirm they update.
