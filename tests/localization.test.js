@@ -40,7 +40,10 @@ test('All seventeen watch languages translate every existing settings field and 
     for(let i=0;i<english.length;i++) {
       assert.equal(typeof translated[i],'string');
       assert.ok(translated[i].length>0,language+' missing '+english[i]);
-      if(language!=='en') assert.notEqual(translated[i],english[i],language+' untranslated '+english[i]);
+      // "Layout" is also the natural Danish/Swedish word, not a missing entry.
+      if(language!=='en'&&!(english[i]==='Layout'&&['da','sv'].includes(language))) {
+        assert.notEqual(translated[i],english[i],language+' untranslated '+english[i]);
+      }
     }
     for(const key of DYNAMIC) {
       const text=localization.t(key,language);
@@ -130,4 +133,37 @@ test('Weather help explains the exact localized low/high and precipitation label
     assert.ok(help.includes(range),language+' wrong range labels');
     assert.ok(new RegExp('(?:^|[^A-Za-z])'+precipitation+'(?:[^A-Za-z]|$)').test(help),language+' wrong precipitation label');
   }
+});
+
+test('All layout controls and guidance translate without changing the stored layout values',()=>{
+  const help='Comic cover keeps a wide clock with a weather column. Stacked time puts hours above minutes. Timeline Peek uses a compact clock.';
+  const section=[{type:'section',items:[
+    {type:'heading',defaultValue:'Layout'},
+    {type:'select',messageKey:'LAYOUT_STYLE',id:'layout-style',label:'Layout style',defaultValue:0,options:[
+      {label:'Classic',value:0},{label:'Comic cover',value:1},{label:'Stacked time',value:2}
+    ]},
+    {type:'text',defaultValue:help}
+  ]}];
+  const keys=['layout','layoutStyle','layoutClassic','layoutComic','layoutStacked','layoutHelp'];
+  const english=['Layout','Layout style','Classic','Comic cover','Stacked time',help];
+  for(const language of localization.languages) {
+    const translated=localization.translateConfig(section,language);
+    const strings=visible(translated);
+    assert.deepEqual(strings,keys.map(key=>localization.t(key,language)));
+    assert.ok(strings.every(text=>typeof text==='string'&&text.length>0));
+    assert.ok(strings[5].includes('Timeline Peek'),'keep the system feature name recognizable');
+    for(let i=1;i<strings.length;i++) {
+      if(language!=='en') assert.notEqual(strings[i],english[i],language+' missing '+keys[i]);
+    }
+    const select=translated[0].items[1];
+    assert.equal(select.messageKey,'LAYOUT_STYLE');
+    assert.equal(select.id,'layout-style');
+    assert.equal(select.defaultValue,0);
+    assert.deepEqual(select.options.map(option=>option.value),[0,1,2]);
+  }
+  const czech=localization.translateConfig(section,'cs-CZ');
+  assert.equal(czech[0].items[1].options[1].label,'Komiksová obálka');
+  assert.equal(czech[0].items[1].options[2].label,'Čas pod sebou');
+  assert.deepEqual(localization.translateConfig(section,'unknown'),section);
+  assert.equal(section[0].items[1].options[1].label,'Comic cover','translation must not mutate the shared Clay schema');
 });

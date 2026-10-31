@@ -102,7 +102,7 @@ Pebble.addEventListener('showConfiguration', function() {
             ? t(errors[status.error]) + ' (' + status.error + ')'
             : t('sourceError', {error: status.error});
         }
-        item.defaultValue = 'Halftone 1.4.3 beta 4. ' +
+        item.defaultValue = 'Halftone 1.5.0 beta 5. ' +
           t(status.source === 'shared' ? 'sharedSource' : 'legacySource') +
           (status.location ? ' · ' + status.location : '') +
           (status.temperature ? ' · ' + t('received', {temperature: status.temperature}) : '') +
@@ -123,6 +123,16 @@ Pebble.addEventListener('webviewclosed', function(event) {
   var payload;
   try { payload = clay.getSettings(event.response); }
   catch (error) { log('Invalid settings response'); return; }
+  var layout = messageValue(payload, 'LAYOUT_STYLE');
+  if (layout !== undefined) {
+    // Clay selects return strings; watch layout settings use an integer tuple.
+    delete payload.LAYOUT_STYLE;
+    delete payload[MessageKeys.LAYOUT_STYLE];
+    if (layout === 0 || layout === 1 || layout === 2 ||
+        (typeof layout === 'string' && /^[012]$/.test(layout))) {
+      payload[MessageKeys.LAYOUT_STYLE] = Number(layout);
+    }
+  }
   delete payload[MessageKeys.FOLLOW_PEBBLE_UNITS];
   delete payload[MessageKeys.WEATHER_LOCATION];
   // The plugin's preference wins when following global units. Keep the saved

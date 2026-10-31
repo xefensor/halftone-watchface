@@ -12,6 +12,30 @@ module.exports = [
     "items": [
       {
         "type": "heading",
+        "defaultValue": "Layout"
+      },
+      {
+        "type": "select",
+        "messageKey": "LAYOUT_STYLE",
+        "defaultValue": "0",
+        "label": "Layout style",
+        "options": [
+          {"label": "Classic", "value": "0"},
+          {"label": "Comic cover", "value": "1"},
+          {"label": "Stacked time", "value": "2"}
+        ]
+      },
+      {
+        "type": "text",
+        "defaultValue": "Comic cover keeps a wide clock with a weather column. Stacked time puts hours above minutes. Timeline Peek uses a compact clock."
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
         "defaultValue": "Colors"
       },
       {

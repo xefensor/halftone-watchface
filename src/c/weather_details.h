@@ -157,6 +157,40 @@ static inline bool weather_details_format_localized(
   return true;
 }
 
+// Cover and Stacked use the same data and translated labels as the inline
+// layout. Only the separators differ; omitted groups leave no blank rows.
+static inline bool weather_details_format_column(
+    const uint8_t *bytes, size_t length, time_t now, bool show_range,
+    bool show_rain, bool fahrenheit, char *buffer, size_t capacity,
+    const char *locale) {
+  if (buffer == NULL || capacity == 0) { return false; }
+  buffer[0] = '\0';
+  WeatherDetails value;
+  if (!weather_details_read(bytes, length, now, &value)) { return false; }
+  show_range = show_range && (value.flags & WEATHER_DETAILS_RANGE);
+  show_rain = show_rain && (value.flags & WEATHER_DETAILS_RAIN);
+  const int low = fahrenheit ? value.low_fahrenheit : value.low_celsius;
+  const int high = fahrenheit ? value.high_fahrenheit : value.high_celsius;
+  const WeatherDetailsLabels *labels = weather_details_labels(locale);
+  int written = 0;
+  if (show_range && show_rain) {
+    written = snprintf(buffer, capacity, "%s%d°\n%s%d°\n%s%u%%",
+                       labels->low, low, labels->high, high,
+                       labels->precipitation, value.rain_percent);
+  } else if (show_range) {
+    written = snprintf(buffer, capacity, "%s%d°\n%s%d°", labels->low, low,
+                       labels->high, high);
+  } else if (show_rain) {
+    written = snprintf(buffer, capacity, "%s%u%%", labels->precipitation,
+                       value.rain_percent);
+  }
+  if (written <= 0 || (size_t)written >= capacity) {
+    buffer[0] = '\0';
+    return false;
+  }
+  return true;
+}
+
 static inline bool weather_details_format(const uint8_t *bytes, size_t length,
                                           time_t now, bool show_range,
                                           bool show_rain, bool fahrenheit,

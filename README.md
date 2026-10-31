@@ -1,15 +1,21 @@
 # Halftone
 
-## Shared weather beta — 1.4.3 beta 4
+## Layouts and shared weather beta — 1.5.0 beta 5
+
+Beta 5 adds **Comic cover** and **Stacked time** layouts alongside the existing
+**Classic** layout. Classic remains the default for both existing users and new
+installs. To try a new layout, open Halftone's settings in the Pebble phone app,
+choose it under **Layout style** and save. The choice survives reopening the
+watchface.
 
 The beta reads the same weather database as Pebble's Weather app, keeps a
 six-hour offline forecast cache, and supports saved-location selection and
 **Follow Pebble** temperature units. Existing explicit unit choices are retained.
 Older apps and disabled plugin preview retain the compatibility weather client.
 
-Install [Halftone-1.4.3-beta.4.pbw](dist/Halftone-1.4.3-beta.4.pbw).
-Source: [Halftone-1.4.3-beta.4-source.zip](dist/Halftone-1.4.3-beta.4-source.zip).
-Beta 4 translates Halftone's phone settings and weather status messages into
+Install [Halftone-1.5.0-beta.5.pbw](dist/Halftone-1.5.0-beta.5.pbw).
+Source: [Halftone-1.5.0-beta.5-source.zip](dist/Halftone-1.5.0-beta.5-source.zip).
+Halftone's phone settings and weather status messages support
 the same 17 languages as the watchface. Settings follow the active watch's
 language when available, then the phone's language, with English as the fallback.
 The watch's weather-detail labels follow its system language. Existing settings
@@ -17,10 +23,11 @@ and their saved values are preserved.
 
 The optional **Show today's low and high** and **Show today's rain / snow
 chance** settings both default to off. When enabled and supplied by shared
-Pebble weather, they appear in a small line below the temperature, such as
+Pebble weather, Classic shows them in a small line below the temperature, such as
 `L5° H9° · P40%` in English. The prefixes are localized. The line hides while
-Timeline Peek is visible. Missing values
-stay hidden; a supplied zero probability is valid and displays as `P0%`.
+Timeline Peek is visible. The new layouts also respect these independent
+settings and hide missing values; a supplied zero probability is valid and
+displays as `P0%` in English.
 These details make no extra weather HTTP requests.
 
 The beta also corrects unit preference handling and tracks forecast age by its
@@ -43,6 +50,7 @@ bezel using a procedural halftone-dot transition.
 Halftone displays:
 
 - configurable 12-hour or 24-hour time
+- Classic, Comic cover and Stacked time layouts
 - automatically localized day name and numeric date
 - current temperature in Celsius or Fahrenheit
 - optional shared-weather daily high/low and rain/snow probability
@@ -61,7 +69,7 @@ You can also build the source yourself as described below.
 
 ## How it works
 
-The following describes the compatibility weather client. The 1.4.3 beta uses
+The following describes the compatibility weather client. The 1.5.0 beta uses
 shared Pebble weather when available; see the beta setup guide above.
 
 The watch-side C app draws the interface and updates the clock once per minute.
@@ -124,7 +132,7 @@ English, Czech, Slovak, German, French, Spanish, Italian, Portuguese, Dutch,
 Polish, Danish, Swedish, Norwegian, Finnish, Hungarian, Romanian and Turkish;
 Norwegian includes the `no`, `nb` and `nn` locale codes. Other locales fall back
 to English. Long translated names automatically use a slightly smaller date
-font while the time remains unchanged. In beta 4, the phone settings also
+font while the time remains unchanged. The phone settings also
 translate the display and color controls, weather options, location controls
 and dynamic status messages. They prefer the active watch language, then the
 phone language, and finally English.
@@ -134,7 +142,8 @@ uses the watchface unobstructed-area API to move the lower dotted edge above
 the event card. The date, time and temperature are simultaneously rearranged
 and switched to compact font sizes, then restored when the event card leaves.
 The compact layout keeps the date below the complete top dot transition so no
-row is covered by text.
+row is covered by text. All three layout styles use this common compact clock
+layout during Peek and restore the selected style afterward.
 
 ## Build
 
@@ -178,6 +187,26 @@ See `store/PUBLISHING.md` for the upload checklist.
 
 ## Customize the design
 
+The **Layout style** setting offers Classic, Comic cover and Stacked time. Classic
+keeps the existing design and is the default; installing the beta does not
+automatically select a new style.
+
+| Style | Arrangement |
+| --- | --- |
+| Classic | Existing date, wide clock and temperature layout |
+| Comic cover | Wide clock with a weather column |
+| Stacked time | Hours above minutes |
+
+The clock and date remain live in every style, including the 12-hour and
+24-hour options. Changing style preserves
+the saved weather options. Missing or disabled optional weather details remain
+hidden, and column layouts recenter the remaining values.
+Comic cover's black date badge uses white caption text for contrast; other
+text follows the saved text color.
+Long weekday/date combinations shorten the weekday only when needed to fit.
+Stacked time fits both clock rows to the same size and gives weather a wider
+column, with fitted temperature fonts for signs, forecast markers and units.
+
 The main visual parameters are near the top of `src/c/halftone.c`:
 
 ```c
@@ -220,6 +249,8 @@ cc -std=c99 -Wall -Wextra -Werror tests/weather-display.c -o /tmp/halftone-displ
 /tmp/halftone-display-test
 cc -std=c99 -Wall -Wextra -Werror tests/weather-details.c -o /tmp/halftone-details-test
 /tmp/halftone-details-test
+cc -std=c99 -Wall -Wextra -Werror tests/watch-layout.c -o /tmp/halftone-layout-test
+/tmp/halftone-layout-test
 ```
 
 The tests use mocked location, HTTP and AppMessage callbacks; they send no

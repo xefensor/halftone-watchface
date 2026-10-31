@@ -1,8 +1,8 @@
 {
   "name": "halftone",
   "author": "Xef",
-  "version": "1.4.3",
-  "halftoneBeta": 4,
+  "version": "1.5.0",
+  "halftoneBeta": 5,
   "scripts": {
     "test": "node --test tests/*.test.js"
   },
@@ -55,7 +55,8 @@
       "WEATHER_CLEAR",
       "SHOW_DAILY_RANGE",
       "SHOW_RAIN_CHANCE",
-      "WEATHER_DETAILS"
+      "WEATHER_DETAILS",
+      "LAYOUT_STYLE"
     ],
     "resources": {
       "media": [
@@ -224,6 +225,15 @@
         {
           "type": "font",
           "name": "FIRA_SANS_CONDENSED_BOLD_34",
+          "file": "fonts/FiraSansCondensed-Bold.ttf",
+          "characterRegex": "[0-9°CF~-]",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "type": "font",
+          "name": "FIRA_SANS_CONDENSED_BOLD_TEMPERATURE_24",
           "file": "fonts/FiraSansCondensed-Bold.ttf",
           "characterRegex": "[0-9°CF~-]",
           "targetPlatforms": [

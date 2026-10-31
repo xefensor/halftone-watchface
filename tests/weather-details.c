@@ -52,38 +52,45 @@ int main(void) {
   const struct {
     const char *locale;
     const char *expected;
+    const char *column;
   } translations[] = {
-    {"en_GB", "L5° H9° · P40%"},
-    {"cs_CZ", "min5° max9° · S40%"},
-    {"sk-SK", "min5° max9° · Z40%"},
-    {"de_DE", "min5° max9° · N40%"},
-    {"fr-FR", "min5° max9° · P40%"},
-    {"es_ES", "min5° max9° · P40%"},
-    {"it-IT", "min5° max9° · P40%"},
-    {"pt_BR", "min5° max9° · P40%"},
-    {"nl-NL", "min5° max9° · N40%"},
-    {"pl_PL", "min5° max9° · O40%"},
-    {"da-DK", "min5° maks9° · N40%"},
-    {"sv_SE", "min5° max9° · N40%"},
-    {"no-NO", "min5° maks9° · N40%"},
-    {"nb_NO", "min5° maks9° · N40%"},
-    {"nn-NO", "min5° maks9° · N40%"},
-    {"fi_FI", "alin5° ylin9° · S40%"},
-    {"hu-HU", "min5° max9° · Cs40%"},
-    {"ro_RO", "min5° max9° · P40%"},
-    {"tr-TR", "min5° maks9° · Y40%"},
-    {"CS-cz", "min5° max9° · S40%"},
+    {"en_GB", "L5° H9° · P40%", "L5°\nH9°\nP40%"},
+    {"cs_CZ", "min5° max9° · S40%", "min5°\nmax9°\nS40%"},
+    {"sk-SK", "min5° max9° · Z40%", "min5°\nmax9°\nZ40%"},
+    {"de_DE", "min5° max9° · N40%", "min5°\nmax9°\nN40%"},
+    {"fr-FR", "min5° max9° · P40%", "min5°\nmax9°\nP40%"},
+    {"es_ES", "min5° max9° · P40%", "min5°\nmax9°\nP40%"},
+    {"it-IT", "min5° max9° · P40%", "min5°\nmax9°\nP40%"},
+    {"pt_BR", "min5° max9° · P40%", "min5°\nmax9°\nP40%"},
+    {"nl-NL", "min5° max9° · N40%", "min5°\nmax9°\nN40%"},
+    {"pl_PL", "min5° max9° · O40%", "min5°\nmax9°\nO40%"},
+    {"da-DK", "min5° maks9° · N40%", "min5°\nmaks9°\nN40%"},
+    {"sv_SE", "min5° max9° · N40%", "min5°\nmax9°\nN40%"},
+    {"no-NO", "min5° maks9° · N40%", "min5°\nmaks9°\nN40%"},
+    {"nb_NO", "min5° maks9° · N40%", "min5°\nmaks9°\nN40%"},
+    {"nn-NO", "min5° maks9° · N40%", "min5°\nmaks9°\nN40%"},
+    {"fi_FI", "alin5° ylin9° · S40%", "alin5°\nylin9°\nS40%"},
+    {"hu-HU", "min5° max9° · Cs40%", "min5°\nmax9°\nCs40%"},
+    {"ro_RO", "min5° max9° · P40%", "min5°\nmax9°\nP40%"},
+    {"tr-TR", "min5° maks9° · Y40%", "min5°\nmaks9°\nY40%"},
+    {"CS-cz", "min5° max9° · S40%", "min5°\nmax9°\nS40%"},
   };
   for (size_t i = 0; i < sizeof(translations) / sizeof(translations[0]); ++i) {
     assert(weather_details_format_localized(bytes, sizeof(bytes), NOW,
         true, true, false, text, sizeof(text), translations[i].locale));
     assert(strcmp(text, translations[i].expected) == 0);
+    assert(weather_details_format_column(bytes, sizeof(bytes), NOW,
+        true, true, false, text, sizeof(text), translations[i].locale));
+    assert(strcmp(text, translations[i].column) == 0);
   }
   const char *fallback_locales[] = {NULL, "", "c", "cz_CZ", "english", "csbad", "zz"};
   for (size_t i = 0; i < sizeof(fallback_locales) / sizeof(fallback_locales[0]); ++i) {
     assert(weather_details_format_localized(bytes, sizeof(bytes), NOW,
         true, true, false, text, sizeof(text), fallback_locales[i]));
     assert(strcmp(text, "L5° H9° · P40%") == 0);
+    assert(weather_details_format_column(bytes, sizeof(bytes), NOW,
+        true, true, false, text, sizeof(text), fallback_locales[i]));
+    assert(strcmp(text, "L5°\nH9°\nP40%") == 0);
   }
   assert(weather_details_format_localized(bytes, sizeof(bytes), NOW,
       true, false, true, text, sizeof(text), "cs"));
@@ -91,6 +98,14 @@ int main(void) {
   assert(weather_details_format_localized(bytes, sizeof(bytes), NOW,
       false, true, true, text, sizeof(text), "hu"));
   assert(strcmp(text, "Cs40%") == 0);
+  assert(weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, false, true, text, sizeof(text), "cs"));
+  assert(strcmp(text, "min41°\nmax48°") == 0);
+  assert(weather_details_format_column(bytes, sizeof(bytes), NOW,
+      false, true, true, text, sizeof(text), "hu"));
+  assert(strcmp(text, "Cs40%") == 0);
+  assert(!weather_details_format_column(bytes, sizeof(bytes), NOW,
+      false, false, false, text, sizeof(text), "fi") && text[0] == '\0');
   assert(!weather_details_format_localized(bytes, sizeof(bytes), NOW,
       false, false, false, text, sizeof(text), "fi") && text[0] == '\0');
 
@@ -101,6 +116,9 @@ int main(void) {
   assert(weather_details_format(bytes, sizeof(bytes), NOW, true, false, true,
                                 text, sizeof(text)));
   assert(strcmp(text, "L44° H48°") == 0);
+  assert(weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, true, true, text, sizeof(text), "cs"));
+  assert(strcmp(text, "min44°\nmax48°\nS40%") == 0);
 
   // Zero is a real temperature/probability; an absent flag is not a zero value.
   memset(bytes + 14, 0, 9);
@@ -110,11 +128,19 @@ int main(void) {
   assert(weather_details_format_localized(bytes, sizeof(bytes), NOW,
       true, true, false, text, sizeof(text), "cs"));
   assert(strcmp(text, "min0° max0° · S0%") == 0);
+  assert(weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, true, false, text, sizeof(text), "cs"));
+  assert(strcmp(text, "min0°\nmax0°\nS0%") == 0);
   bytes[1] = WEATHER_DETAILS_RAIN;
   put_i16(bytes + 14, -32768); // Unused range fields do not become displayed data.
   assert(weather_details_format(bytes, sizeof(bytes), NOW, true, true, false,
                                 text, sizeof(text)));
   assert(strcmp(text, "P0%") == 0);
+  assert(weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, true, false, text, sizeof(text), "sk"));
+  assert(strcmp(text, "Z0%") == 0); // Missing range leaves no blank rows.
+  assert(!weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, false, false, text, sizeof(text), "sk") && text[0] == '\0');
   assert(!weather_details_format(bytes, sizeof(bytes), NOW, true, false, false,
                                  text, sizeof(text)));
   bytes[1] = WEATHER_DETAILS_RANGE;
@@ -123,6 +149,11 @@ int main(void) {
   assert(weather_details_format(bytes, sizeof(bytes), NOW, true, true, false,
                                 text, sizeof(text)));
   assert(strcmp(text, "L0° H0°") == 0);
+  assert(weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, true, false, text, sizeof(text), "cs"));
+  assert(strcmp(text, "min0°\nmax0°") == 0); // Missing rain leaves no trailing row.
+  assert(!weather_details_format_column(bytes, sizeof(bytes), NOW,
+      false, true, false, text, sizeof(text), "cs") && text[0] == '\0');
 
   // Inclusive start, exclusive expiry, including the provider's local midnight.
   sample(bytes);
@@ -134,6 +165,16 @@ int main(void) {
   assert(!weather_details_read(bytes, sizeof(bytes), NOW + 60, NULL));
   assert(!weather_details_format(bytes, sizeof(bytes), NOW + 60, true, true, false,
                                  text, sizeof(text)) && text[0] == '\0');
+  assert(weather_details_format_column(bytes, sizeof(bytes), NOW, true, true,
+      false, text, sizeof(text), "cs"));
+  assert(!weather_details_format_column(bytes, sizeof(bytes), NOW - 1, true, true,
+      false, text, sizeof(text), "cs") && text[0] == '\0');
+  assert(!weather_details_format_column(bytes, sizeof(bytes), NOW + 60, true, true,
+      false, text, sizeof(text), "cs") && text[0] == '\0');
+  assert(!weather_details_format_column(NULL, sizeof(bytes), NOW, true, true,
+      false, text, sizeof(text), "cs") && text[0] == '\0');
+  assert(!weather_details_format_column(bytes, sizeof(bytes) - 1, NOW, true, true,
+      false, text, sizeof(text), "cs") && text[0] == '\0');
 
   sample(bytes);
   assert(!weather_details_read(NULL, sizeof(bytes), NOW, NULL));
@@ -218,5 +259,24 @@ int main(void) {
                                  text, 4) && text[0] == '\0');
   assert(!weather_details_format(bytes, sizeof(bytes), NOW, true, true, false,
                                  NULL, sizeof(text)));
+  assert(weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, true, true, text, sizeof(text), "fi"));
+  assert(strcmp(text, "alin-148°\nylin212°\nS40%") == 0);
+  const size_t column_length = strlen(text);
+  assert(weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, true, true, text, column_length + 1, "fi"));
+  char guarded[48];
+  memset(guarded, '!', sizeof(guarded));
+  assert(!weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, true, true, guarded + 1, column_length, "fi"));
+  assert(guarded[0] == '!' && guarded[1] == '\0' &&
+         guarded[1 + column_length] == '!');
+  assert(!weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, true, true, guarded + 1, 1, "fi") && guarded[1] == '\0');
+  guarded[1] = '!';
+  assert(!weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, true, true, guarded + 1, 0, "fi") && guarded[1] == '!');
+  assert(!weather_details_format_column(bytes, sizeof(bytes), NOW,
+      true, true, true, NULL, sizeof(text), "fi"));
   return 0;
 }

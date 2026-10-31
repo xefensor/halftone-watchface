@@ -3,6 +3,7 @@
 #include "weather_forecast.h"
 #include "weather_display.h"
 #include "weather_details.h"
+#include "watch_layout.h"
 
 #define PERSIST_KEY_TEMPERATURE 1
 #define PERSIST_KEY_BACKGROUND_COLOR 2
@@ -19,6 +20,7 @@
 #define PERSIST_KEY_SHOW_DAILY_RANGE 13
 #define PERSIST_KEY_SHOW_RAIN_CHANCE 14
 #define PERSIST_KEY_WEATHER_DETAILS 15
+#define PERSIST_KEY_LAYOUT_STYLE 16
 
 #define DOT_OUTER_CORNER_RADIUS 30
 #define DOT_SPACING 10
@@ -45,6 +47,8 @@ static TextLayer *s_date_shadow_layer;
 static TextLayer *s_time_shadow_layer;
 static TextLayer *s_temperature_shadow_layer;
 static TextLayer *s_weather_details_shadow_layer;
+static TextLayer *s_minutes_layer;
+static TextLayer *s_minutes_shadow_layer;
 static GFont s_date_font;
 static GFont s_time_font;
 static GFont s_temperature_font;
@@ -52,6 +56,7 @@ static GFont s_compact_date_font;
 static GFont s_small_date_font;
 static GFont s_compact_time_font;
 static GFont s_compact_temperature_font;
+static GFont s_medium_temperature_font;
 static GFont s_large_date_font;
 static GFont s_large_time_fonts[LARGE_TIME_FONT_COUNT];
 static GFont s_large_temperature_font;
@@ -67,6 +72,7 @@ static bool s_use_12_hour;
 static bool s_use_fahrenheit;
 static bool s_show_daily_range;
 static bool s_show_rain_chance;
+static WatchLayoutStyle s_layout_style;
 static int s_temperature_celsius;
 static int s_temperature_fahrenheit;
 static bool s_has_temperature;
@@ -80,9 +86,20 @@ static uint8_t s_weather_details[WEATHER_DETAILS_BYTES];
 static size_t s_weather_details_length;
 
 static char s_date_buffer[40];
+static char s_short_date_buffer[32];
 static char s_time_buffer[6];
+static char s_hours_buffer[3];
+static char s_minutes_buffer[3];
 static char s_temperature_buffer[12];
 static char s_weather_details_buffer[48];
+
+static int prv_weather_details_rows(void) {
+  WeatherDetails details;
+  if (!weather_details_read(s_weather_details, s_weather_details_length,
+                            time(NULL), &details)) { return 0; }
+  return (s_show_daily_range && (details.flags & WEATHER_DETAILS_RANGE) ? 2 : 0) +
+         (s_show_rain_chance && (details.flags & WEATHER_DETAILS_RAIN) ? 1 : 0);
+}
 
 static const char *const s_english_days[] = {
   "SUNDAY",
@@ -362,6 +379,30 @@ static void prv_draw_background(Layer *layer, GContext *ctx) {
   graphics_context_set_fill_color(ctx, s_background_color);
   graphics_fill_rect(ctx, bounds, DOT_OUTER_CORNER_RADIUS, GCornersAll);
 
+  // Draw interior ink first so the original dot rings remain the final border.
+  const WatchLayoutStyle style = watch_layout_effective(s_layout_style, bounds.size.h);
+  if (style != WATCH_LAYOUT_CLASSIC) {
+    const int rows = prv_weather_details_rows();
+    const WatchLayoutGeometry geometry = watch_layout_geometry(style, rows,
+                                                               s_large_text_enabled);
+    graphics_context_set_fill_color(ctx, GColorBlack);
+    if (style == WATCH_LAYOUT_COMIC_COVER) {
+      graphics_fill_rect(ctx, GRect(geometry.caption.x, geometry.caption.y,
+                                    geometry.caption.width, geometry.caption.height),
+                         0, GCornerNone);
+    }
+    graphics_context_set_stroke_color(ctx, GColorBlack);
+    graphics_context_set_stroke_width(ctx, 2);
+    if (geometry.divider_x) {
+      graphics_draw_line(ctx, GPoint(geometry.divider_x, geometry.divider_top),
+                         GPoint(geometry.divider_x, geometry.divider_bottom));
+    }
+    if (style == WATCH_LAYOUT_STACKED && rows) {
+      graphics_draw_line(ctx, GPoint(geometry.temperature.x + 4, 120),
+                         GPoint(geometry.temperature.x + geometry.temperature.width - 4, 120));
+    }
+  }
+
   graphics_context_set_fill_color(ctx, GColorBlack);
 
   const int *dot_depths = s_depth_effect_enabled
@@ -448,28 +489,94 @@ static GFont prv_get_date_font(GFont preferred, int available_width) {
   return s_small_date_font;
 }
 
+static bool prv_text_fits(const char *text, GFont font, int width, int height) {
+  const GSize size = graphics_text_layout_get_content_size(
+      text, font, GRect(0, 0, 320, 150), GTextOverflowModeFill, GTextAlignmentCenter);
+  return size.w <= width && size.h <= height;
+}
+
+static GFont prv_get_column_temperature_font(int width, bool stacked) {
+  // Date fonts do not contain the forecast '~' marker. Every candidate here
+  // contains the full temperature alphabet, including negative Fahrenheit.
+  const GFont fonts[] = {s_large_temperature_font, s_temperature_font,
+      s_large_compact_temperature_font, s_compact_temperature_font,
+      s_medium_temperature_font,
+      fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD),
+      fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD)};
+  const size_t first = stacked ? 2 : s_large_text_enabled ? 0 : 1;
+  for (size_t i = first; i < sizeof(fonts) / sizeof(fonts[0]); ++i) {
+    if (prv_text_fits(s_temperature_buffer, fonts[i], width, 60)) { return fonts[i]; }
+  }
+  return fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+}
+
+static GFont prv_get_stacked_time_font(int width) {
+  // A shared size keeps the two rows aligned even when the 12-hour hour has a
+  // single digit. Cap at96 so the two cap-height rows fit the vertical budget.
+  for (int i = 4; i >= 0; --i) {
+    if (prv_text_fits(s_hours_buffer, s_large_time_fonts[i], width, 100) &&
+        prv_text_fits(s_minutes_buffer, s_large_time_fonts[i], width, 100)) {
+      return s_large_time_fonts[i];
+    }
+  }
+  const GFont smaller[] = {s_time_font, s_large_compact_time_font, s_compact_time_font};
+  for (size_t i = 0; i < sizeof(smaller) / sizeof(smaller[0]); ++i) {
+    if (prv_text_fits(s_hours_buffer, smaller[i], width, 100) &&
+        prv_text_fits(s_minutes_buffer, smaller[i], width, 100)) { return smaller[i]; }
+  }
+  return s_compact_time_font;
+}
+
+static GFont prv_get_caption_date_font(int width, bool large, const char **text) {
+  const GFont fonts[] = {s_date_font, s_compact_date_font, s_small_date_font};
+  *text = s_date_buffer;
+  for (size_t i = large ? 0 : 1; i < sizeof(fonts) / sizeof(fonts[0]); ++i) {
+    if (prv_text_fits(*text, fonts[i], width, 40)) { return fonts[i]; }
+  }
+  // Preserve localized glyphs in the custom font. Only an unusually long
+  // weekday/date combination needs its UTF-8-safe three-letter abbreviation.
+  *text = s_short_date_buffer;
+  for (size_t i = large ? 0 : 1; i < sizeof(fonts) / sizeof(fonts[0]); ++i) {
+    if (prv_text_fits(*text, fonts[i], width, 40)) { return fonts[i]; }
+  }
+  return s_small_date_font;
+}
+
+static GRect prv_layout_rect(WatchLayoutRect rect) {
+  return GRect(rect.x, rect.y, rect.width, rect.height);
+}
+
 static void prv_refresh_weather_details(void) {
   if (s_weather_details_layer == NULL || s_weather_details_shadow_layer == NULL ||
       s_window_layer == NULL) {
     return;
   }
-  const bool available = weather_details_format_localized(
-      s_weather_details, s_weather_details_length, time(NULL),
-      s_show_daily_range, s_show_rain_chance, s_use_fahrenheit,
-      s_weather_details_buffer, sizeof(s_weather_details_buffer),
-      i18n_get_system_locale());
+  const int visible_height = layer_get_unobstructed_bounds(s_window_layer).size.h;
+  const bool column = watch_layout_effective(s_layout_style, visible_height) != WATCH_LAYOUT_CLASSIC;
+  // Fill deliberately treats interior newlines as spaces; columns need real
+  // row breaks. Restore Fill when returning to Classic's single-line details.
+  const GTextOverflowMode overflow = column ? GTextOverflowModeWordWrap : GTextOverflowModeFill;
+  text_layer_set_overflow_mode(s_weather_details_layer, overflow);
+  text_layer_set_overflow_mode(s_weather_details_shadow_layer, overflow);
+  const bool available = column
+      ? weather_details_format_column(s_weather_details, s_weather_details_length, time(NULL),
+          s_show_daily_range, s_show_rain_chance, s_use_fahrenheit,
+          s_weather_details_buffer, sizeof(s_weather_details_buffer), i18n_get_system_locale())
+      : weather_details_format_localized(s_weather_details, s_weather_details_length, time(NULL),
+          s_show_daily_range, s_show_rain_chance, s_use_fahrenheit,
+          s_weather_details_buffer, sizeof(s_weather_details_buffer), i18n_get_system_locale());
   const GRect frame = layer_get_frame(text_layer_get_layer(s_weather_details_layer));
   GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
   const GSize size = graphics_text_layout_get_content_size(
-      s_weather_details_buffer, font, GRect(0, 0, 320, 24),
-      GTextOverflowModeFill, GTextAlignmentCenter);
+      s_weather_details_buffer, font, GRect(0, 0, 320, column ? 100 : 24),
+      overflow, GTextAlignmentCenter);
   if (size.w > frame.size.w - (s_text_shadow_enabled ? 1 : 0)) {
     font = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
   }
   text_layer_set_font(s_weather_details_layer, font);
   text_layer_set_font(s_weather_details_shadow_layer, font);
   const bool visible = available &&
-      layer_get_unobstructed_bounds(s_window_layer).size.h >= 215;
+      visible_height >= 215;
   text_layer_set_text(s_weather_details_layer, s_weather_details_buffer);
   text_layer_set_text(s_weather_details_shadow_layer, s_weather_details_buffer);
   layer_set_hidden(text_layer_get_layer(s_weather_details_layer), !visible);
@@ -558,6 +665,62 @@ static void prv_apply_unobstructed_layout(void) {
       s_weather_details_shadow_layer, s_weather_details_layer,
       GRect(16, 193, root_bounds.size.w - 32, 24),
       fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), 1);
+
+  const WatchLayoutStyle style = watch_layout_effective(s_layout_style, visible_height);
+  text_layer_set_text(s_time_layer, s_time_buffer);
+  text_layer_set_text(s_time_shadow_layer, s_time_buffer);
+  text_layer_set_text(s_date_layer, s_date_buffer);
+  text_layer_set_text(s_date_shadow_layer, s_date_buffer);
+  text_layer_set_text_color(s_date_layer, s_text_color);
+  layer_set_hidden(text_layer_get_layer(s_date_shadow_layer), !s_text_shadow_enabled);
+  layer_set_hidden(text_layer_get_layer(s_minutes_layer), true);
+  layer_set_hidden(text_layer_get_layer(s_minutes_shadow_layer), true);
+  text_layer_set_text_alignment(s_weather_details_layer, GTextAlignmentCenter);
+  text_layer_set_text_alignment(s_weather_details_shadow_layer, GTextAlignmentCenter);
+  if (style != WATCH_LAYOUT_CLASSIC) {
+    const WatchLayoutGeometry geometry = watch_layout_geometry(style,
+        prv_weather_details_rows(), s_large_text_enabled);
+    const int shadow_margin = s_text_shadow_enabled ? 2 : 0;
+    const char *date_text;
+    const GFont caption_font = prv_get_caption_date_font(
+        geometry.date.width - shadow_margin, s_large_text_enabled, &date_text);
+    prv_set_text_pair_layout(s_date_shadow_layer, s_date_layer,
+                            prv_layout_rect(geometry.date), caption_font, 1);
+    text_layer_set_text(s_date_layer, date_text);
+    text_layer_set_text(s_date_shadow_layer, date_text);
+    if (style == WATCH_LAYOUT_COMIC_COVER) {
+      // The black comic badge has its own high-contrast white lettering.
+      text_layer_set_text_color(s_date_layer, GColorWhite);
+      layer_set_hidden(text_layer_get_layer(s_date_shadow_layer), true);
+      const GFont cover_time_font = s_large_text_enabled
+          ? prv_get_large_time_font(root_bounds.size.w - (s_text_shadow_enabled ? 4 : 2))
+          : s_time_font;
+      prv_set_text_pair_layout(s_time_shadow_layer, s_time_layer,
+                              prv_layout_rect(geometry.time), cover_time_font, 2);
+    } else {
+      const GFont stacked_time_font = prv_get_stacked_time_font(
+          geometry.time.width - shadow_margin);
+      text_layer_set_text(s_time_layer, s_hours_buffer);
+      text_layer_set_text(s_time_shadow_layer, s_hours_buffer);
+      text_layer_set_text(s_minutes_layer, s_minutes_buffer);
+      text_layer_set_text(s_minutes_shadow_layer, s_minutes_buffer);
+      prv_set_text_pair_layout(s_time_shadow_layer, s_time_layer,
+                              prv_layout_rect(geometry.time), stacked_time_font, 2);
+      prv_set_text_pair_layout(s_minutes_shadow_layer, s_minutes_layer,
+                              prv_layout_rect(geometry.minutes), stacked_time_font, 2);
+      layer_set_hidden(text_layer_get_layer(s_minutes_layer), false);
+      layer_set_hidden(text_layer_get_layer(s_minutes_shadow_layer), !s_text_shadow_enabled);
+    }
+    const GFont column_temperature_font = prv_get_column_temperature_font(
+        geometry.temperature.width - (s_text_shadow_enabled ? 1 : 0),
+        style == WATCH_LAYOUT_STACKED);
+    prv_set_text_pair_layout(s_temperature_shadow_layer, s_temperature_layer,
+        prv_layout_rect(geometry.temperature), column_temperature_font, 1);
+    prv_set_text_pair_layout(s_weather_details_shadow_layer, s_weather_details_layer,
+        prv_layout_rect(geometry.details), fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), 1);
+    text_layer_set_text_alignment(s_weather_details_layer, GTextAlignmentLeft);
+    text_layer_set_text_alignment(s_weather_details_shadow_layer, GTextAlignmentLeft);
+  }
   prv_refresh_weather_details();
 
   layer_mark_dirty(s_background_layer);
@@ -589,9 +752,25 @@ static void prv_update_clock(void) {
   if (s_use_12_hour && s_time_buffer[0] == '0') {
     memmove(s_time_buffer, s_time_buffer + 1, strlen(s_time_buffer));
   }
+  watch_layout_split_time(s_time_buffer, s_hours_buffer, s_minutes_buffer);
   snprintf(s_date_buffer, sizeof(s_date_buffer), "%s · %d. %d.",
            localized_days[current_time->tm_wday], current_time->tm_mday,
            current_time->tm_mon + 1);
+  const char *weekday = localized_days[current_time->tm_wday];
+  char abbreviation[13];
+  size_t letters = 0, bytes = 0;
+  while (weekday[bytes] && letters < 3) {
+    abbreviation[bytes] = weekday[bytes];
+    ++bytes;
+    while (weekday[bytes] && ((unsigned char)weekday[bytes] & 0xc0) == 0x80) {
+      abbreviation[bytes] = weekday[bytes];
+      ++bytes;
+    }
+    ++letters;
+  }
+  abbreviation[bytes] = '\0';
+  snprintf(s_short_date_buffer, sizeof(s_short_date_buffer), "%s. · %d. %d.",
+           abbreviation, current_time->tm_mday, current_time->tm_mon + 1);
 
   text_layer_set_text(s_time_layer, s_time_buffer);
   text_layer_set_text(s_date_layer, s_date_buffer);
@@ -633,7 +812,9 @@ static void prv_refresh_temperature(void) {
   } else {
     prv_show_temperature_placeholder();
   }
-  prv_refresh_weather_details();
+  // The active current/forecast value and expired details may change width or
+  // restore the centered weather position without changing the clock.
+  prv_apply_unobstructed_layout();
 }
 
 static void prv_request_weather(void) {
@@ -691,6 +872,9 @@ static void prv_apply_colors(void) {
   if (s_time_layer != NULL) {
     text_layer_set_text_color(s_time_layer, s_text_color);
   }
+  if (s_minutes_layer != NULL) {
+    text_layer_set_text_color(s_minutes_layer, s_text_color);
+  }
   if (s_temperature_layer != NULL) {
     text_layer_set_text_color(s_temperature_layer, s_text_color);
   }
@@ -743,11 +927,18 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
       dict_find(iterator, MESSAGE_KEY_SHOW_DAILY_RANGE);
   Tuple *show_rain_chance_tuple =
       dict_find(iterator, MESSAGE_KEY_SHOW_RAIN_CHANCE);
+  Tuple *layout_style_tuple = dict_find(iterator, MESSAGE_KEY_LAYOUT_STYLE);
 
   bool clock_format_changed = false;
   bool temperature_unit_changed = false;
   const bool details_settings_changed = show_daily_range_tuple != NULL ||
       show_rain_chance_tuple != NULL;
+
+  if (layout_style_tuple != NULL &&
+      (layout_style_tuple->type == TUPLE_INT || layout_style_tuple->type == TUPLE_UINT)) {
+    s_layout_style = watch_layout_sanitize(layout_style_tuple->value->int32);
+    persist_write_int(PERSIST_KEY_LAYOUT_STYLE, s_layout_style);
+  }
 
   if (show_daily_range_tuple != NULL) {
     s_show_daily_range = show_daily_range_tuple->value->int32 != 0;
@@ -900,6 +1091,9 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
   if (effects_changed) {
     prv_apply_effects();
   }
+  if (layout_style_tuple != NULL || colors_changed) {
+    prv_apply_unobstructed_layout();
+  }
 }
 
 static void prv_inbox_dropped(AppMessageResult reason, void *context) {
@@ -950,6 +1144,8 @@ static void prv_window_load(Window *window) {
       resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_64));
   s_compact_temperature_font = fonts_load_custom_font(
       resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_30));
+  s_medium_temperature_font = fonts_load_custom_font(
+      resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_TEMPERATURE_24));
   s_large_date_font = fonts_load_custom_font(
       resource_get_handle(RESOURCE_ID_FIRA_SANS_CONDENSED_BOLD_28));
   s_large_time_fonts[0] = fonts_load_custom_font(
@@ -1016,6 +1212,13 @@ static void prv_window_load(Window *window) {
                           fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
   layer_add_child(s_window_layer, text_layer_get_layer(s_weather_details_layer));
 
+  s_minutes_shadow_layer = text_layer_create(GRect(9, 113, 96, 98));
+  prv_configure_shadow_layer(s_minutes_shadow_layer, s_large_time_fonts[4]);
+  layer_add_child(s_window_layer, text_layer_get_layer(s_minutes_shadow_layer));
+  s_minutes_layer = text_layer_create(GRect(7, 111, 96, 98));
+  prv_configure_text_layer(s_minutes_layer, s_large_time_fonts[4]);
+  layer_add_child(s_window_layer, text_layer_get_layer(s_minutes_layer));
+
   prv_refresh_temperature();
 
   prv_update_clock();
@@ -1037,6 +1240,8 @@ static void prv_window_load(Window *window) {
 
 static void prv_window_unload(Window *window) {
   unobstructed_area_service_unsubscribe();
+  text_layer_destroy(s_minutes_layer);
+  text_layer_destroy(s_minutes_shadow_layer);
   text_layer_destroy(s_weather_details_layer);
   text_layer_destroy(s_weather_details_shadow_layer);
   text_layer_destroy(s_temperature_layer);
@@ -1049,6 +1254,7 @@ static void prv_window_unload(Window *window) {
   fonts_unload_custom_font(s_time_font);
   fonts_unload_custom_font(s_date_font);
   fonts_unload_custom_font(s_compact_temperature_font);
+  fonts_unload_custom_font(s_medium_temperature_font);
   fonts_unload_custom_font(s_compact_time_font);
   fonts_unload_custom_font(s_compact_date_font);
   fonts_unload_custom_font(s_small_date_font);
@@ -1073,6 +1279,7 @@ static void prv_init(void) {
   s_use_fahrenheit = false;
   s_show_daily_range = false;
   s_show_rain_chance = false;
+  s_layout_style = WATCH_LAYOUT_CLASSIC;
 
   if (persist_exists(PERSIST_KEY_BACKGROUND_COLOR)) {
     s_background_color = GColorFromHEX(
@@ -1101,6 +1308,9 @@ static void prv_init(void) {
   }
   if (persist_exists(PERSIST_KEY_SHOW_RAIN_CHANCE)) {
     s_show_rain_chance = persist_read_bool(PERSIST_KEY_SHOW_RAIN_CHANCE);
+  }
+  if (persist_exists(PERSIST_KEY_LAYOUT_STYLE)) {
+    s_layout_style = watch_layout_sanitize(persist_read_int(PERSIST_KEY_LAYOUT_STYLE));
   }
   s_has_temperature = persist_exists(PERSIST_KEY_TEMPERATURE);
   s_temperature_celsius = persist_read_int(PERSIST_KEY_TEMPERATURE);

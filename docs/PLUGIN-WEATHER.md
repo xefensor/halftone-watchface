@@ -1,13 +1,14 @@
 # Shared Pebble weather beta
 
-Halftone 1.4.3 beta 4 reads the weather already stored by the Pebble phone app.
+Halftone 1.5.0 beta 5 reads the weather already stored by the Pebble phone app.
 Its built-in Weather plugin exposes the same database that feeds the watch's
 Weather app, including the weather provider selected in Pebble. Subscribing
-does not make another weather API request. Halftone keeps its current design
-and saves up to six hours of the shared hourly forecast for offline use.
+does not make another weather API request. Halftone saves up to six hours of
+the shared hourly forecast for offline use. This beta adds Comic cover and
+Stacked time layouts while keeping the existing Classic layout as the default.
 
-The downloadable beta is `Halftone-1.4.3-beta.4.pbw`. The SDK's internal
-version is `1.4.3`; its UUID is unchanged, so it updates the existing watchface.
+The downloadable beta is `Halftone-1.5.0-beta.5.pbw`. The SDK's internal
+version is `1.5.0`; its UUID is unchanged, so it updates the existing watchface.
 This is a testing build, not a new Store release. The plugin API remains a
 preview and can change.
 
@@ -29,9 +30,11 @@ preview and can change.
    overrides remain available and existing users' choices are retained.
 5. Optionally enable **Show today's low and high** or **Show today's rain / snow
    chance** in Halftone's settings. Both are off by default.
+6. Choose **Comic cover** or **Stacked time** under **Layout style** to use a new
+   design. Classic is the default, including on a new installation.
 
-These are the English control names; beta 4 translates Halftone's settings
-interface. Existing option identifiers and saved choices are unchanged.
+These are the English control names; Halftone's settings interface is
+translated. Existing option identifiers and saved choices are unchanged.
 
 Pebble controls network fetching in shared-weather mode. Halftone receives
 updates from an open subscription. Every 30 minutes, and when the watch requests
@@ -51,6 +54,26 @@ native temperature received, plus any source error. This is a diagnostic snapsho
 when settings open. It identifies whether shared weather or the compatibility
 client is actually active.
 
+## Layout style
+
+Classic preserves the existing watchface. Comic cover and Stacked time are
+optional alternatives selected in the phone settings. Comic cover combines a
+wide clock with a weather column; Stacked time places hours above minutes. The
+saved choice survives relaunching the watchface. Each style uses the live clock and date and respects
+the existing 12-hour/24-hour choice.
+Comic cover's black date badge uses white caption text for contrast; all other
+text follows the saved text color.
+Unusually long weekday/date combinations use a short localized weekday when
+needed. Stacked sizes the hour and minute rows together to fit its clock column.
+
+Layout selection is independent of the shared-weather settings. Enabled,
+available low/high and precipitation values appear in the selected design;
+missing or disabled values stay hidden, and column layouts recenter the
+remaining values. All styles switch to the same compact clock layout while
+Timeline Peek / Quick View is visible, then return to the selected design.
+
+This change adds no weather source, permission or weather-data protocol.
+
 ## Languages
 
 Halftone supports English, Czech, Slovak, German, French, Spanish, Italian,
@@ -61,13 +84,15 @@ use the supported base language; unsupported languages fall back to English.
 The watch's weekday and low/high/precipitation labels follow the PebbleOS
 language. The phone settings prefer the active watch's language when available,
 then the phone's language, and finally English. This covers the existing color
-and display controls, the weather section and its dynamic status messages.
+and display controls, the layout selector, the weather section and its dynamic
+status messages.
 No separate language setting is needed.
 
 ## Optional daily details
 
-The two optional settings add a compact line below the temperature. With both
-values available it can read `L5° H9° · P40%` in English: today's low, high and
+The two optional settings add daily weather details to each layout. In Classic,
+they appear in a compact line below the temperature. With both values available
+it can read `L5° H9° · P40%` in English: today's low, high and
 probability of precipitation. The percentage covers rain or snow, as supplied by Pebble;
 it is not an amount in millimetres. A supplied zero is valid (`P0%`), while a
 missing or invalid field is hidden. The label prefixes use the watch's language.
@@ -80,9 +105,9 @@ on the selected Pebble weather provider and what the shared database exposes.
 The details retain their last confirmed shared-read time and are usable for at
 most six hours. They also expire at their applicable day boundary rather than
 being carried into tomorrow. Changing location clears its previous details.
-Turning a display setting off hides that part of the line. The full line hides
-while Timeline Peek / Quick View is visible, then returns if its data remains
-usable. With both settings off, the existing design is preserved.
+Turning a display setting off hides that detail. The daily details hide while
+Timeline Peek / Quick View is visible, then return if their data remains
+usable. With both settings off, the selected layout has no daily-details values.
 
 The shared source supplies a minute offset and fixed-length daily slots, not a
 location timezone with daylight-saving rules. Details require compatible day
@@ -144,16 +169,22 @@ step is required with SDKs that omit the new permission manifest. It copies `use
 `appinfo.json` and sets `manifestVersion` to 2. It verifies the existing UUID,
 version and target platforms, and checks that JavaScript, watch binaries and
 resources remain byte-for-byte unchanged. It writes
-`dist/Halftone-1.4.3-beta.4.pbw`, leaving the ordinary SDK output intact.
+`dist/Halftone-1.5.0-beta.5.pbw`, leaving the ordinary SDK output intact.
 
 Halftone consumes a plugin; it does not contain or install a weather plugin of
 its own. No plugin SDK branch or plugin-only project is required.
 
 ## Checks on a real Pebble Time 2
 
+- Select each layout, save and reopen the watchface. Check that Classic is the
+  default before choosing another style, and that the saved choice survives a
+  relaunch. Check live minute/date changes and both time formats in every style.
+- Test each style with both daily options enabled, each alone and neither,
+  including missing weather fields. Check that hidden values leave no empty
+  columns and that Timeline Peek uses the common compact clock layout.
 - Change the watch language and reopen Halftone's phone settings. Check the
-  weekday, weather-detail labels, existing display controls, weather controls
-  and status messages. Also check phone-language fallback when the watch
+  weekday, weather-detail labels, layout names, existing display controls,
+  weather controls and status messages. Also check phone-language fallback when the watch
   language is unavailable, and English fallback for unsupported languages.
 - Compare the settings diagnostic's received temperature and Halftone display
   with the detailed weather report's current conditions, in matching units and

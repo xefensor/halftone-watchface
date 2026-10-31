@@ -1,6 +1,53 @@
 # Halftone beta validation
 
-## 1.4.3 beta 4 — localization checks
+## 1.5.0 beta 5 — layout checks
+
+This update adds Comic cover and Stacked time beside the existing Classic layout.
+Classic remains the default for upgrades and new installations. The layout
+choice is saved independently of weather settings, and all styles use the
+common compact clock layout during Timeline Peek. Layouts use the existing
+weather sources, permissions and data protocol.
+
+Checked on 31 October 2026:
+
+- All **124 JavaScript tests** and **five standalone C test suites** pass.
+  C checks use C99 with `-Wall -Wextra -Werror`. New coverage includes layout
+  settings/enum conversion, all 17 translations, localized weather columns,
+  clock splitting for 12/24-hour time, geometry and compact Peek selection.
+- An Emery build succeeds with Pebble Tool 5.1.1, SDK 4.33.1 and GCC 14.2.1.
+  The final package has the original UUID, manifest version 2 and the existing
+  permissions. SDK-built watch binaries/resources and JavaScript are retained
+  byte for byte by permission packaging.
+- The final PBW SHA256 is
+  `39b40b67672d4ba4b784d9f6cbe776bfb2a3dd43e56592d1f23c28b03a754a17`.
+  Resources occupy 81,732 bytes; app RAM footprint is 16,000 bytes. A 24px
+  temperature font gives longer readings an intermediate fitting size.
+- QEMU checks use the exact delivered watch binary/resources with an idle
+  phone script and dated weather fixtures. Inspected renders cover all styles,
+  independent weather options, missing details, Celsius/Fahrenheit, negative
+  extremes and forecast markers. Comic cover and Stacked keep signs and units
+  visible and restore their selected layout after Timeline Peek.
+- Actual clock/date changes were checked at 10:15, 15:42, 23:59, midnight and
+  1:05 in 12-hour mode, including a change of day/month. No clock or date is
+  frozen in the release. Stacked's rendering and saved values match before and
+  after reinstalling/relaunching the same build in the emulator.
+- Custom black text, the contrasting Comic caption, shadows and the four-step
+  border were inspected. A matching Classic clock/weather sample has **zero
+  changed pixels** compared with beta 4.
+- Explicitly forced-locale derivative builds check Czech/Finnish long dates,
+  abbreviated weekday fallback and localized columns. These differ at platform
+  locale reads only; they do not verify installing a language pack on hardware.
+- Visual checking caught `Fill` treating column newlines as spaces. Columns now
+  use `WordWrap` for measurement and rendering; fresh English and Finnish
+  screenshots confirm distinct rows. Classic retains its original inline mode.
+- The harness waits for AppMessage acknowledgements and for injected watch time
+  to settle before evaluating sample ages. This avoids stale fixture reads while
+  changing emulator apps or dates. Syntax and `git diff --check` pass.
+
+No physical phone/watch testing is claimed. Native Weather delivery and the
+other historical runtime limitations below still apply.
+
+## 1.4.3 beta 4 — historical localization checks
 
 The localization update targets the same 17 supported languages on the watch
 and in Halftone's phone settings. It adds translated watch weather-detail

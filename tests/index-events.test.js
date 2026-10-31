@@ -21,7 +21,8 @@ function fixture(settings = {}, locales = {}) {
   const keys = {
     REQUEST_WEATHER: 10001, TEXT_COLOR: 10003, USE_FAHRENHEIT: 10008,
     FOLLOW_PEBBLE_UNITS: 10012, WEATHER_LOCATION: 10013,
-    SHOW_DAILY_RANGE: 10015, SHOW_RAIN_CHANCE: 10016, WEATHER_DETAILS: 10017
+    SHOW_DAILY_RANGE: 10015, SHOW_RAIN_CHANCE: 10016, WEATHER_DETAILS: 10017,
+    LAYOUT_STYLE: 10018
   };
   const storage = {
     getItem: () => saved,
@@ -252,6 +253,32 @@ test('Daily range and rain chance settings reach the watch independently and ret
   assert.equal(f.deliveries[1][f.keys.SHOW_DAILY_RANGE], 1);
   assert.equal(f.deliveries[1][f.keys.SHOW_RAIN_CHANCE], 0);
   assert.equal(f.settings().SHOW_RAIN_CHANCE, false);
+});
+
+test('Layout selections reach the watch as integers while retaining the saved choice and weather options', () => {
+  const f = fixture({SHOW_RAIN_CHANCE: true, SHOW_DAILY_RANGE: false});
+  for (const value of ['1', '2', '0', 2]) {
+    f.handlers.webviewclosed({response: JSON.stringify({
+      LAYOUT_STYLE: {value}, SHOW_RAIN_CHANCE: {value: true}, SHOW_DAILY_RANGE: {value: false}
+    })});
+    const payload = f.deliveries.at(-1);
+    assert.equal(payload[f.keys.LAYOUT_STYLE], Number(value));
+    assert.equal(typeof payload[f.keys.LAYOUT_STYLE], 'number');
+    assert.equal(payload.LAYOUT_STYLE, undefined);
+    assert.equal(payload[f.keys.SHOW_RAIN_CHANCE], 1);
+    assert.equal(payload[f.keys.SHOW_DAILY_RANGE], 0);
+    assert.equal(f.settings().LAYOUT_STYLE, value);
+  }
+});
+
+test('Invalid layout values cannot replace the watch layout or block unrelated settings', () => {
+  const f = fixture({LAYOUT_STYLE: '2'});
+  for (const value of [-1, 3, 1.5, null, '', '01', 'Classic', {}, []]) {
+    f.handlers.webviewclosed({response: JSON.stringify({LAYOUT_STYLE: {value}, TEXT_COLOR: {value: 123}})});
+    const payload = f.deliveries.at(-1);
+    assert.equal(payload[f.keys.LAYOUT_STYLE], undefined);
+    assert.equal(payload[f.keys.TEXT_COLOR], 123);
+  }
 });
 
 test('Late legacy deliveries are gated after switching to shared weather', () => {

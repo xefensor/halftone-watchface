@@ -247,6 +247,46 @@ var ROWS = {
   ]
 };
 
+// Append new settings so the existing catalogue indices remain stable.
+KEYS = KEYS.concat(['layout','layoutStyle','layoutClassic','layoutComic','layoutStacked','layoutHelp']);
+var LAYOUT_ROWS = {
+  en:['Layout','Layout style','Classic','Comic cover','Stacked time',
+    'Comic cover keeps a wide clock with a weather column. Stacked time puts hours above minutes. Timeline Peek uses a compact clock.'],
+  cs:['Rozložení','Styl rozložení','Klasické','Komiksová obálka','Čas pod sebou',
+    'Komiksová obálka zachovává široké zobrazení času a sloupec s počasím. Čas pod sebou zobrazuje hodiny nad minutami. Při Timeline Peek se čas zobrazí kompaktně.'],
+  sk:['Rozloženie','Štýl rozloženia','Klasické','Komiksová obálka','Čas pod sebou',
+    'Komiksová obálka zachováva široké zobrazenie času a stĺpec s počasím. Čas pod sebou zobrazuje hodiny nad minútami. Pri Timeline Peek sa čas zobrazí kompaktne.'],
+  de:['Anordnung','Art der Anordnung','Klassisch','Comic-Cover','Zeit untereinander',
+    'Comic-Cover zeigt eine breite Uhrzeit mit einer Wetterspalte. Zeit untereinander zeigt die Stunden über den Minuten. Timeline Peek verwendet eine kompakte Uhrzeit.'],
+  fr:['Disposition','Style de disposition','Classique','Couverture de BD','Heure sur deux lignes',
+    'Couverture de BD conserve une heure large avec une colonne météo. Heure sur deux lignes place les heures au-dessus des minutes. Timeline Peek utilise une heure compacte.'],
+  es:['Distribución','Estilo de distribución','Clásico','Portada de cómic','Hora en dos líneas',
+    'Portada de cómic mantiene un reloj ancho junto a una columna del tiempo. Hora en dos líneas coloca las horas sobre los minutos. Timeline Peek usa un reloj compacto.'],
+  it:['Disposizione','Stile della disposizione','Classico','Copertina a fumetti','Ora su due righe',
+    'Copertina a fumetti mantiene un orologio largo con una colonna meteo. Ora su due righe dispone le ore sopra i minuti. Timeline Peek usa un orologio compatto.'],
+  pt:['Disposição','Estilo da disposição','Clássico','Capa de quadrinhos','Hora em duas linhas',
+    'Capa de quadrinhos mantém um relógio largo com uma coluna do tempo. Hora em duas linhas coloca as horas acima dos minutos. O Timeline Peek usa um relógio compacto.'],
+  nl:['Indeling','Stijl van de indeling','Klassiek','Stripomslag','Tijd onder elkaar',
+    'Stripomslag behoudt een brede klok met een weerkolom. Tijd onder elkaar zet de uren boven de minuten. Timeline Peek gebruikt een compacte klok.'],
+  pl:['Układ','Styl układu','Klasyczny','Okładka komiksu','Godziny nad minutami',
+    'Okładka komiksu zachowuje szeroki zegar z kolumną pogody. Układ pionowy umieszcza godziny nad minutami. Timeline Peek używa kompaktowego zegara.'],
+  da:['Layout','Layoutstil','Klassisk','Tegneserieforside','Tid i to rækker',
+    'Tegneserieforside har et bredt ur med en vejrkolonne. Tid i to rækker viser timer over minutter. Timeline Peek bruger et kompakt ur.'],
+  sv:['Layout','Layoutstil','Klassisk','Serietidningsomslag','Tid i två rader',
+    'Serietidningsomslag har en bred klocka med en väderkolumn. Tid i två rader visar timmar ovanför minuter. Timeline Peek använder en kompakt klocka.'],
+  no:['Oppsett','Oppsettstil','Klassisk','Tegneserieomslag','Tid i to rader',
+    'Tegneserieomslag har en bred klokke med en værkolonne. Tid i to rader viser timer over minutter. Timeline Peek bruker en kompakt klokke.'],
+  fi:['Asettelu','Asettelutyyli','Perinteinen','Sarjakuvakansi','Kellonaika allekkain',
+    'Sarjakuvakansi näyttää leveän kellon ja sääsarakkeen. Kellonaika allekkain näyttää tunnit minuuttien yläpuolella. Timeline Peek käyttää pienikokoista kelloa.'],
+  hu:['Elrendezés','Elrendezési stílus','Klasszikus','Képregényborító','Óra és perc egymás alatt',
+    'A Képregényborító széles órát és időjárási oszlopot jelenít meg. Az Óra és perc egymás alatt az órákat a percek fölé helyezi. A Timeline Peek kompakt órát használ.'],
+  ro:['Aspect','Stil de afișare','Clasic','Copertă de benzi desenate','Oră pe două rânduri',
+    'Stilul Copertă de benzi desenate păstrează un ceas lat și o coloană meteo. Oră pe două rânduri afișează orele deasupra minutelor. Timeline Peek folosește un ceas compact.'],
+  tr:['Düzen','Düzen stili','Klasik','Çizgi roman kapağı','Dikey saat',
+    'Çizgi roman kapağı, geniş bir saat ve hava durumu sütunu sunar. Dikey saat, saat hanesini dakika hanesinin üstüne yerleştirir. Timeline Peek kompakt bir saat kullanır.']
+};
+Object.keys(LAYOUT_ROWS).forEach(function(language) { ROWS[language] = ROWS[language].concat(LAYOUT_ROWS[language]); });
+
 var LANGUAGES = ['en','cs','sk','de','fr','es','it','pt','nl','pl','da','sv','no','fi','hu','ro','tr'];
 var LITERALS = Object.create(null);
 ROWS.en.forEach(function(value, index) { LITERALS[value] = index; });
