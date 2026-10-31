@@ -1,6 +1,8 @@
 #include <pebble.h>
 #include "weather_schedule.h"
 #include "weather_forecast.h"
+#include "weather_display.h"
+#include "weather_details.h"
 
 #define PERSIST_KEY_TEMPERATURE 1
 #define PERSIST_KEY_BACKGROUND_COLOR 2
@@ -14,6 +16,9 @@
 #define PERSIST_KEY_WEATHER_UPDATED_AT 10
 #define PERSIST_KEY_FORECAST 11
 #define PERSIST_KEY_WEATHER_RECEIVED_AT 12
+#define PERSIST_KEY_SHOW_DAILY_RANGE 13
+#define PERSIST_KEY_SHOW_RAIN_CHANCE 14
+#define PERSIST_KEY_WEATHER_DETAILS 15
 
 #define DOT_OUTER_CORNER_RADIUS 30
 #define DOT_SPACING 10
@@ -35,9 +40,11 @@ static Layer *s_background_layer;
 static TextLayer *s_date_layer;
 static TextLayer *s_time_layer;
 static TextLayer *s_temperature_layer;
+static TextLayer *s_weather_details_layer;
 static TextLayer *s_date_shadow_layer;
 static TextLayer *s_time_shadow_layer;
 static TextLayer *s_temperature_shadow_layer;
+static TextLayer *s_weather_details_shadow_layer;
 static GFont s_date_font;
 static GFont s_time_font;
 static GFont s_temperature_font;
@@ -58,6 +65,8 @@ static bool s_text_shadow_enabled;
 static bool s_large_text_enabled;
 static bool s_use_12_hour;
 static bool s_use_fahrenheit;
+static bool s_show_daily_range;
+static bool s_show_rain_chance;
 static int s_temperature_celsius;
 static int s_temperature_fahrenheit;
 static bool s_has_temperature;
@@ -67,10 +76,13 @@ static time_t s_weather_requested_time;
 static AppTimer *s_weather_startup_timer;
 static uint8_t s_forecast[FORECAST_MAX_BYTES];
 static size_t s_forecast_length;
+static uint8_t s_weather_details[WEATHER_DETAILS_BYTES];
+static size_t s_weather_details_length;
 
 static char s_date_buffer[40];
 static char s_time_buffer[6];
 static char s_temperature_buffer[12];
+static char s_weather_details_buffer[48];
 
 static const char *const s_english_days[] = {
   "SUNDAY",
@@ -436,6 +448,24 @@ static GFont prv_get_date_font(GFont preferred, int available_width) {
   return s_small_date_font;
 }
 
+static void prv_refresh_weather_details(void) {
+  if (s_weather_details_layer == NULL || s_weather_details_shadow_layer == NULL ||
+      s_window_layer == NULL) {
+    return;
+  }
+  const bool available = weather_details_format(
+      s_weather_details, s_weather_details_length, time(NULL),
+      s_show_daily_range, s_show_rain_chance, s_use_fahrenheit,
+      s_weather_details_buffer, sizeof(s_weather_details_buffer));
+  const bool visible = available &&
+      layer_get_unobstructed_bounds(s_window_layer).size.h >= 215;
+  text_layer_set_text(s_weather_details_layer, s_weather_details_buffer);
+  text_layer_set_text(s_weather_details_shadow_layer, s_weather_details_buffer);
+  layer_set_hidden(text_layer_get_layer(s_weather_details_layer), !visible);
+  layer_set_hidden(text_layer_get_layer(s_weather_details_shadow_layer),
+                   !visible || !s_text_shadow_enabled);
+}
+
 static void prv_apply_unobstructed_layout(void) {
   if (s_window == NULL || s_date_layer == NULL || s_time_layer == NULL ||
       s_temperature_layer == NULL) {
@@ -513,6 +543,12 @@ static void prv_apply_unobstructed_layout(void) {
                              visible_height)),
       temperature_font, 1);
 
+  prv_set_text_pair_layout(
+      s_weather_details_shadow_layer, s_weather_details_layer,
+      GRect(16, 193, root_bounds.size.w - 32, 24),
+      fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD), 1);
+  prv_refresh_weather_details();
+
   layer_mark_dirty(s_background_layer);
 }
 
@@ -577,17 +613,16 @@ static void prv_refresh_temperature(void) {
       weather_is_fresh(now, s_weather_observation_time);
   const int forecast_index = forecast_hour_index(s_forecast,
                                                  s_forecast_length, now);
-  if (has_observation && weather_observation_is_current(
-      now, s_weather_observation_time, s_weather_received_time)) {
+  const WeatherDisplay display = weather_display_select(has_observation, forecast_index);
+  if (display == WEATHER_DISPLAY_CURRENT) {
     prv_show_temperature(s_temperature_celsius, s_temperature_fahrenheit, false);
-  } else if (forecast_index >= 0) {
+  } else if (display == WEATHER_DISPLAY_FORECAST) {
     prv_show_temperature(forecast_i16(s_forecast + 9 + forecast_index * 4),
                          forecast_i16(s_forecast + 11 + forecast_index * 4), true);
-  } else if (has_observation) {
-    prv_show_temperature(s_temperature_celsius, s_temperature_fahrenheit, false);
   } else {
     prv_show_temperature_placeholder();
   }
+  prv_refresh_weather_details();
 }
 
 static void prv_request_weather(void) {
@@ -648,6 +683,9 @@ static void prv_apply_colors(void) {
   if (s_temperature_layer != NULL) {
     text_layer_set_text_color(s_temperature_layer, s_text_color);
   }
+  if (s_weather_details_layer != NULL) {
+    text_layer_set_text_color(s_weather_details_layer, s_text_color);
+  }
   if (s_background_layer != NULL) {
     layer_mark_dirty(s_background_layer);
   }
@@ -678,6 +716,8 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
       dict_find(iterator, MESSAGE_KEY_TEMPERATURE_FAHRENHEIT);
   Tuple *updated_at_tuple = dict_find(iterator, MESSAGE_KEY_WEATHER_UPDATED_AT);
   Tuple *forecast_tuple = dict_find(iterator, MESSAGE_KEY_FORECAST_DATA);
+  Tuple *details_tuple = dict_find(iterator, MESSAGE_KEY_WEATHER_DETAILS);
+  Tuple *clear_tuple = dict_find(iterator, MESSAGE_KEY_WEATHER_CLEAR);
   Tuple *background_color_tuple =
       dict_find(iterator, MESSAGE_KEY_BACKGROUND_COLOR);
   Tuple *text_color_tuple = dict_find(iterator, MESSAGE_KEY_TEXT_COLOR);
@@ -688,9 +728,24 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
       dict_find(iterator, MESSAGE_KEY_USE_12_HOUR);
   Tuple *use_fahrenheit_tuple =
       dict_find(iterator, MESSAGE_KEY_USE_FAHRENHEIT);
+  Tuple *show_daily_range_tuple =
+      dict_find(iterator, MESSAGE_KEY_SHOW_DAILY_RANGE);
+  Tuple *show_rain_chance_tuple =
+      dict_find(iterator, MESSAGE_KEY_SHOW_RAIN_CHANCE);
 
   bool clock_format_changed = false;
   bool temperature_unit_changed = false;
+  const bool details_settings_changed = show_daily_range_tuple != NULL ||
+      show_rain_chance_tuple != NULL;
+
+  if (show_daily_range_tuple != NULL) {
+    s_show_daily_range = show_daily_range_tuple->value->int32 != 0;
+    persist_write_bool(PERSIST_KEY_SHOW_DAILY_RANGE, s_show_daily_range);
+  }
+  if (show_rain_chance_tuple != NULL) {
+    s_show_rain_chance = show_rain_chance_tuple->value->int32 != 0;
+    persist_write_bool(PERSIST_KEY_SHOW_RAIN_CHANCE, s_show_rain_chance);
+  }
 
   if (use_12_hour_tuple != NULL) {
     s_use_12_hour = use_12_hour_tuple->value->int32 != 0;
@@ -699,9 +754,24 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
   }
 
   if (use_fahrenheit_tuple != NULL) {
+    temperature_unit_changed = s_use_fahrenheit !=
+        (use_fahrenheit_tuple->value->int32 != 0);
     s_use_fahrenheit = use_fahrenheit_tuple->value->int32 != 0;
     persist_write_bool(PERSIST_KEY_USE_FAHRENHEIT, s_use_fahrenheit);
-    temperature_unit_changed = true;
+  }
+
+  if (clear_tuple != NULL && clear_tuple->value->int32 != 0) {
+    s_has_temperature = false;
+    s_weather_observation_time = 0;
+    s_weather_received_time = 0;
+    s_forecast_length = 0;
+    s_weather_details_length = 0;
+    persist_delete(PERSIST_KEY_TEMPERATURE);
+    persist_delete(PERSIST_KEY_TEMPERATURE_FAHRENHEIT);
+    persist_delete(PERSIST_KEY_WEATHER_UPDATED_AT);
+    persist_delete(PERSIST_KEY_WEATHER_RECEIVED_AT);
+    persist_delete(PERSIST_KEY_FORECAST);
+    persist_delete(PERSIST_KEY_WEATHER_DETAILS);
   }
 
   if (temperature_tuple != NULL) {
@@ -722,27 +792,49 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
       s_temperature_fahrenheit = fahrenheit;
       s_has_temperature = true;
       s_weather_observation_time = observation;
-      s_weather_received_time = time(NULL);
       persist_write_int(PERSIST_KEY_TEMPERATURE, temperature);
       persist_write_int(PERSIST_KEY_TEMPERATURE_FAHRENHEIT, fahrenheit);
       persist_write_int(PERSIST_KEY_WEATHER_UPDATED_AT, observation);
-      persist_write_int(PERSIST_KEY_WEATHER_RECEIVED_AT, s_weather_received_time);
-      // Every successful update replaces the forecast for that location. Empty
-      // or invalid data clears it rather than leaving another city's forecast.
-      if (forecast_tuple != NULL && forecast_tuple->type == TUPLE_BYTE_ARRAY &&
-          forecast_tuple->length <= FORECAST_MAX_BYTES &&
-          forecast_hour_index(forecast_tuple->value->data,
-                              forecast_tuple->length, time(NULL)) >= 0) {
-        s_forecast_length = forecast_tuple->length;
-        memcpy(s_forecast, forecast_tuple->value->data, s_forecast_length);
-        persist_write_data(PERSIST_KEY_FORECAST, s_forecast, s_forecast_length);
-      } else {
-        s_forecast_length = 0;
-        persist_delete(PERSIST_KEY_FORECAST);
-      }
     }
   }
-  if (temperature_tuple != NULL || temperature_unit_changed) {
+  if (forecast_tuple != NULL) {
+    // A timestamped forecast can remain usable after the observation expires.
+    if (forecast_tuple->type == TUPLE_BYTE_ARRAY &&
+        forecast_tuple->length <= FORECAST_MAX_BYTES &&
+        forecast_hour_index(forecast_tuple->value->data,
+                            forecast_tuple->length, time(NULL)) >= 0) {
+      s_forecast_length = forecast_tuple->length;
+      memcpy(s_forecast, forecast_tuple->value->data, s_forecast_length);
+      persist_write_data(PERSIST_KEY_FORECAST, s_forecast, s_forecast_length);
+    } else {
+      s_forecast_length = 0;
+      persist_delete(PERSIST_KEY_FORECAST);
+    }
+  }
+  if (details_tuple != NULL) {
+    if (details_tuple->type == TUPLE_BYTE_ARRAY &&
+        weather_details_read(details_tuple->value->data,
+                             details_tuple->length, time(NULL), NULL)) {
+      s_weather_details_length = WEATHER_DETAILS_BYTES;
+      memcpy(s_weather_details, details_tuple->value->data,
+             s_weather_details_length);
+      persist_write_data(PERSIST_KEY_WEATHER_DETAILS, s_weather_details,
+                         s_weather_details_length);
+    } else {
+      // Explicit absence and malformed replacement both remove older details.
+      s_weather_details_length = 0;
+      persist_delete(PERSIST_KEY_WEATHER_DETAILS);
+    }
+  }
+  if (temperature_tuple != NULL || forecast_tuple != NULL || clear_tuple != NULL ||
+      details_tuple != NULL) {
+    // Transport receipt drives the retry schedule; it must not renew sample age.
+    s_weather_received_time = time(NULL);
+    persist_write_int(PERSIST_KEY_WEATHER_RECEIVED_AT, s_weather_received_time);
+  }
+  if (temperature_tuple != NULL || temperature_unit_changed ||
+      forecast_tuple != NULL || clear_tuple != NULL || details_tuple != NULL ||
+      details_settings_changed) {
     prv_refresh_temperature();
   }
   if (temperature_unit_changed) {
@@ -887,6 +979,13 @@ static void prv_window_load(Window *window) {
   layer_add_child(s_window_layer,
                   text_layer_get_layer(s_temperature_shadow_layer));
 
+  s_weather_details_shadow_layer =
+      text_layer_create(GRect(17, 194, bounds.size.w - 32, 24));
+  prv_configure_shadow_layer(s_weather_details_shadow_layer,
+                            fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  layer_add_child(s_window_layer,
+                  text_layer_get_layer(s_weather_details_shadow_layer));
+
   s_date_layer = text_layer_create(GRect(8, 28, bounds.size.w - 16, 38));
   prv_configure_text_layer(s_date_layer, s_date_font);
   layer_add_child(s_window_layer, text_layer_get_layer(s_date_layer));
@@ -899,6 +998,12 @@ static void prv_window_load(Window *window) {
       text_layer_create(GRect(14, 145, bounds.size.w - 28, 54));
   prv_configure_text_layer(s_temperature_layer, s_temperature_font);
   layer_add_child(s_window_layer, text_layer_get_layer(s_temperature_layer));
+
+  s_weather_details_layer =
+      text_layer_create(GRect(16, 193, bounds.size.w - 32, 24));
+  prv_configure_text_layer(s_weather_details_layer,
+                          fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  layer_add_child(s_window_layer, text_layer_get_layer(s_weather_details_layer));
 
   prv_refresh_temperature();
 
@@ -921,6 +1026,8 @@ static void prv_window_load(Window *window) {
 
 static void prv_window_unload(Window *window) {
   unobstructed_area_service_unsubscribe();
+  text_layer_destroy(s_weather_details_layer);
+  text_layer_destroy(s_weather_details_shadow_layer);
   text_layer_destroy(s_temperature_layer);
   text_layer_destroy(s_time_layer);
   text_layer_destroy(s_date_layer);
@@ -953,6 +1060,8 @@ static void prv_init(void) {
   s_large_text_enabled = false;
   s_use_12_hour = false;
   s_use_fahrenheit = false;
+  s_show_daily_range = false;
+  s_show_rain_chance = false;
 
   if (persist_exists(PERSIST_KEY_BACKGROUND_COLOR)) {
     s_background_color = GColorFromHEX(
@@ -976,6 +1085,12 @@ static void prv_init(void) {
   if (persist_exists(PERSIST_KEY_USE_FAHRENHEIT)) {
     s_use_fahrenheit = persist_read_bool(PERSIST_KEY_USE_FAHRENHEIT);
   }
+  if (persist_exists(PERSIST_KEY_SHOW_DAILY_RANGE)) {
+    s_show_daily_range = persist_read_bool(PERSIST_KEY_SHOW_DAILY_RANGE);
+  }
+  if (persist_exists(PERSIST_KEY_SHOW_RAIN_CHANCE)) {
+    s_show_rain_chance = persist_read_bool(PERSIST_KEY_SHOW_RAIN_CHANCE);
+  }
   s_has_temperature = persist_exists(PERSIST_KEY_TEMPERATURE);
   s_temperature_celsius = persist_read_int(PERSIST_KEY_TEMPERATURE);
   s_temperature_fahrenheit = persist_read_int(PERSIST_KEY_TEMPERATURE_FAHRENHEIT);
@@ -986,6 +1101,15 @@ static void prv_init(void) {
     const int read_length = persist_read_data(PERSIST_KEY_FORECAST, s_forecast,
                                               sizeof(s_forecast));
     if (read_length == forecast_length) { s_forecast_length = read_length; }
+  }
+  if (persist_get_size(PERSIST_KEY_WEATHER_DETAILS) == WEATHER_DETAILS_BYTES &&
+      persist_read_data(PERSIST_KEY_WEATHER_DETAILS, s_weather_details,
+                        sizeof(s_weather_details)) == WEATHER_DETAILS_BYTES &&
+      weather_details_read(s_weather_details, WEATHER_DETAILS_BYTES,
+                           time(NULL), NULL)) {
+    s_weather_details_length = WEATHER_DETAILS_BYTES;
+  } else {
+    persist_delete(PERSIST_KEY_WEATHER_DETAILS);
   }
 
   s_window = window_create();
@@ -999,7 +1123,7 @@ static void prv_init(void) {
   app_message_register_inbox_received(prv_inbox_received);
   app_message_register_inbox_dropped(prv_inbox_dropped);
   app_message_register_outbox_failed(prv_outbox_failed);
-  app_message_open(128, 32);
+  app_message_open(256, 32);
 
   tick_timer_service_subscribe(MINUTE_UNIT, prv_tick_handler);
   window_stack_push(s_window, false);

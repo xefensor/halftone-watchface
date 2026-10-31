@@ -36,6 +36,17 @@ module.exports = [
         "defaultValue": "Time & temperature"
       },
       {
+        "type": "text",
+        "id": "weather-status",
+        "defaultValue": "Weather source: waiting for data"
+      },
+      {
+        "type": "toggle",
+        "messageKey": "FOLLOW_PEBBLE_UNITS",
+        "defaultValue": true,
+        "label": "Follow Pebble temperature units"
+      },
+      {
         "type": "toggle",
         "messageKey": "USE_12_HOUR",
         "defaultValue": false,
@@ -46,6 +57,42 @@ module.exports = [
         "messageKey": "USE_FAHRENHEIT",
         "defaultValue": false,
         "label": "Temperature in Fahrenheit"
+      },
+      {
+        "type": "text",
+        "defaultValue": "Fahrenheit applies when Follow Pebble is off. Shared weather uses Pebble's saved locations; older apps use the phone's current location."
+      },
+      {
+        "type": "select",
+        "messageKey": "WEATHER_LOCATION",
+        "defaultValue": "",
+        "label": "Weather location",
+        "options": [{"label": "First Pebble weather location", "value": ""}]
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "Weather details"
+      },
+      {
+        "type": "toggle",
+        "messageKey": "SHOW_DAILY_RANGE",
+        "defaultValue": false,
+        "label": "Show today's low and high"
+      },
+      {
+        "type": "toggle",
+        "messageKey": "SHOW_RAIN_CHANCE",
+        "defaultValue": false,
+        "label": "Show today's rain / snow chance"
+      },
+      {
+        "type": "text",
+        "defaultValue": "Uses Pebble's shared weather. L/H show today's low/high; P shows precipitation probability. Missing data stays hidden. Details hide while Timeline Peek is visible."
       }
     ]
   },

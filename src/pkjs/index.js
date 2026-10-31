@@ -2,46 +2,108 @@ var MessageKeys = require('message_keys');
 var Clay = require('@rebble/clay');
 var clayConfig = require('./config');
 var createWeatherClient = require('./weather');
-
-new Clay(clayConfig);
-
-var weather = createWeatherClient({
-  keys: MessageKeys,
-  geolocation: navigator.geolocation,
-  XMLHttpRequest: XMLHttpRequest,
-  send: function(payload, success, failure) {
-    Pebble.sendAppMessage(payload, success, failure);
-  },
-  now: function() { return Date.now(); },
-  later: function(callback, delay) { return setTimeout(callback, delay); },
-  cancelLater: function(timer) { clearTimeout(timer); },
-  autoRefresh: true,
-  log: function(message) { console.log(message); }
-});
+var createSharedWeather = require('./shared-weather');
+var clay = new Clay(clayConfig, null, {autoHandleEvents: false});
 
 function messageValue(payload, name) {
-  // The current Pebble mobile app resolves message IDs to their appinfo names.
-  // Older runners/emulators may deliver the numeric IDs instead.
   return payload[name] !== undefined ? payload[name] : payload[MessageKeys[name]];
 }
-
-function savedFahrenheit() {
-  try {
-    var settings = JSON.parse(localStorage.getItem('clay-settings')) || {};
-    return !!messageValue(settings, 'USE_FAHRENHEIT');
-  } catch (error) {
-    return false;
+function savedSettings() {
+  try { return JSON.parse(localStorage.getItem('clay-settings')) || {}; }
+  catch (error) { return {}; }
+}
+function migrateSettings() {
+  var s = savedSettings();
+  if (messageValue(s, 'FOLLOW_PEBBLE_UNITS') === undefined) {
+    // Existing installs retain their explicit unit. New installs follow Pebble.
+    s.FOLLOW_PEBBLE_UNITS = Object.keys(s).length === 0;
+    localStorage.setItem('clay-settings', JSON.stringify(s));
   }
 }
+function weatherSettings() {
+  var s = savedSettings();
+  return {
+    followPebbleUnits: !!messageValue(s, 'FOLLOW_PEBBLE_UNITS'),
+    useFahrenheit: !!messageValue(s, 'USE_FAHRENHEIT'),
+    locationId: messageValue(s, 'WEATHER_LOCATION') || ''
+  };
+}
+function send(payload, success, failure) { Pebble.sendAppMessage(payload, success, failure); }
+function now() { return Date.now(); }
+function later(callback, delay) { return setTimeout(callback, delay); }
+function cancelLater(timer) { clearTimeout(timer); }
+function log(message) { console.log(message); }
 
-Pebble.addEventListener('ready', function() {
-  weather.refresh(savedFahrenheit());
+var weather = createSharedWeather({
+  pebble: Pebble, keys: MessageKeys, storage: localStorage, getSettings: weatherSettings,
+  send: send, now: now, later: later, cancelLater: cancelLater, log: log,
+  legacy: function() {
+    return createWeatherClient({
+      keys: MessageKeys, geolocation: navigator.geolocation, XMLHttpRequest: XMLHttpRequest,
+      send: function(payload, success, failure) {
+        if (weather.isLegacy()) {
+          // Compatibility weather has no shared daily details. Clear any
+          // persisted values from the previous provider in the same update.
+          payload[MessageKeys.WEATHER_DETAILS] = [];
+          send(payload, success, failure);
+        }
+        else if (failure) { failure(); }
+      },
+      now: now, later: later, cancelLater: cancelLater, autoRefresh: true, log: log
+    });
+  }
 });
 
+Pebble.addEventListener('ready', function() {
+  migrateSettings();
+  weather.refresh(weatherSettings().useFahrenheit);
+});
 Pebble.addEventListener('appmessage', function(event) {
   var payload = event.payload || {};
   if (messageValue(payload, 'REQUEST_WEATHER')) {
     var unit = messageValue(payload, 'USE_FAHRENHEIT');
-    weather.refresh(unit !== undefined ? !!unit : savedFahrenheit());
+    weather.refresh(unit !== undefined ? !!unit : weatherSettings().useFahrenheit);
   }
+});
+
+Pebble.addEventListener('showConfiguration', function() {
+  migrateSettings();
+  var places = weather.locations();
+  var chosen = weatherSettings().locationId;
+  if (chosen && !places.some(function(p) { return p.id === chosen; })) {
+    places.push({id: chosen, name: 'Saved location (currently unavailable)'});
+  }
+  clay.config.forEach(function(section) {
+    (section.items || []).forEach(function(item) {
+      if (item.id === 'weather-status') {
+        var status = weather.status();
+        item.defaultValue = 'Halftone 1.4.2 beta 3. ' +
+          (status.source === 'shared' ? 'Pebble shared current conditions' : 'Compatibility weather') +
+          (status.location ? ' · ' + status.location : '') +
+          (status.temperature ? ' · Received ' + status.temperature : '') +
+          (status.receivedAt ? ' · Last source read ' +
+            Math.max(0, Math.floor((Date.now() / 1000 - status.receivedAt) / 60)) + ' min ago' : '') +
+          (status.error ? ' · ' + status.error : '');
+      }
+      if (item.messageKey === 'WEATHER_LOCATION') {
+        item.options = [{label: 'First Pebble weather location', value: ''}].concat(
+          places.map(function(p) { return {label: p.name, value: p.id}; }));
+      }
+    });
+  });
+  Pebble.openURL(clay.generateUrl());
+});
+Pebble.addEventListener('webviewclosed', function(event) {
+  if (!event || !event.response) { return; }
+  var payload;
+  try { payload = clay.getSettings(event.response); }
+  catch (error) { log('Invalid settings response'); return; }
+  delete payload[MessageKeys.FOLLOW_PEBBLE_UNITS];
+  delete payload[MessageKeys.WEATHER_LOCATION];
+  // The plugin's preference wins when following global units. Keep the saved
+  // explicit Fahrenheit toggle untouched for when the user turns following off.
+  if (weatherSettings().followPebbleUnits) { delete payload[MessageKeys.USE_FAHRENHEIT]; }
+  send(payload, function() { weather.configure(); }, function() {
+    log('Settings delivery failed'); weather.configure();
+  });
 });

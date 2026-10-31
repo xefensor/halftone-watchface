@@ -1,5 +1,31 @@
 # Halftone
 
+## Shared weather beta — 1.4.2 beta 3
+
+The beta reads the same weather database as Pebble's Weather app, keeps a
+six-hour offline forecast cache, and supports saved-location selection and
+**Follow Pebble** temperature units. Existing explicit unit choices are retained.
+Older apps and disabled plugin preview retain the compatibility weather client.
+
+Install [Halftone-1.4.2-beta.3.pbw](dist/Halftone-1.4.2-beta.3.pbw).
+Source: [Halftone-1.4.2-beta.3-source.zip](dist/Halftone-1.4.2-beta.3-source.zip).
+Beta 3 adds optional **Show today's low and high** and **Show today's rain / snow
+chance** settings. Both default to off. When enabled and supplied by shared
+Pebble weather, they appear in a small line below the temperature, such as
+`L5° H9° · P40%`. The line hides while Timeline Peek is visible. Missing values
+stay hidden; a supplied zero probability is valid and displays as `P0%`.
+These details make no extra weather HTTP requests.
+
+Beta 3 also corrects unit preference handling and tracks forecast age by its
+absolute UTC hour, so a moving forecast window cannot renew old cached hours.
+Settings show the active source, selected location and received temperature.
+See [setup, build instructions and limitations](docs/PLUGIN-WEATHER.md).
+
+This beta is for sideloading and device testing; 1.3.1 remains the prepared
+stable release. When building this beta, run `pebble clean` before `pebble build`
+to regenerate message keys, then `python3 scripts/package-beta.py` so plugin
+permissions are present in the final PBW.
+
 Open Halftone from the Pebble phone app and tap the gear icon to choose the
 background and text colors. Both settings are stored on the watch and applied
 immediately after saving. The dithered border remains black.
@@ -12,6 +38,7 @@ Halftone displays:
 - configurable 12-hour or 24-hour time
 - automatically localized day name and numeric date
 - current temperature in Celsius or Fahrenheit
+- optional shared-weather daily high/low and rain/snow probability
 - a black-to-orange halftone transition drawn directly from the screen edge
 - an adaptive Timeline Peek layout for upcoming events
 - optional recessed-dot and floating-text optical effects
@@ -26,6 +53,9 @@ available as [`dist/Halftone-1.3.1-store-release.zip`](dist/Halftone-1.3.1-store
 You can also build the source yourself as described below.
 
 ## How it works
+
+The following describes the compatibility weather client. The 1.4.2 beta uses
+shared Pebble weather when available; see the beta setup guide above.
 
 The watch-side C app draws the interface and updates the clock once per minute.
 Every 30 minutes it asks PebbleKit JS on the connected phone for fresh weather.
@@ -174,10 +204,15 @@ cc -std=c99 -Wall -Wextra -Werror tests/weather-schedule.c -o /tmp/halftone-weat
 /tmp/halftone-weather-test
 cc -std=c99 -Wall -Wextra -Werror tests/weather-forecast.c -o /tmp/halftone-forecast-test
 /tmp/halftone-forecast-test
+cc -std=c99 -Wall -Wextra -Werror tests/weather-display.c -o /tmp/halftone-display-test
+/tmp/halftone-display-test
+cc -std=c99 -Wall -Wextra -Werror tests/weather-details.c -o /tmp/halftone-details-test
+/tmp/halftone-details-test
 ```
 
 The tests use mocked location, HTTP and AppMessage callbacks; they send no
 location data to either service.
+See [beta validation and remaining device checks](docs/VALIDATION.md).
 
 ## License
 

@@ -12,12 +12,6 @@ static bool weather_is_fresh(time_t now, time_t observation) {
          now - observation <= WEATHER_MAX_AGE_SECONDS;
 }
 
-static bool weather_observation_is_current(time_t now, time_t observation,
-                                           time_t received) {
-  return weather_is_fresh(now, observation) && received > 0 && received <= now &&
-         now - received < WEATHER_REFRESH_SECONDS;
-}
-
 static bool weather_refresh_due(time_t now, time_t received, time_t requested) {
   const bool needs_refresh = received == 0 || received > now ||
                             now - received >= WEATHER_REFRESH_SECONDS;

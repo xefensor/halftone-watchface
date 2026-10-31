@@ -41,6 +41,7 @@ module.exports = function(options) {
   var startedAt = 0;
   var cancelInFlight = null;
   var refreshTimer = null;
+  var stopped = false;
 
   function cancelTimer(timer) {
     if (timer !== null && timer !== undefined) { options.cancelLater(timer); }
@@ -95,6 +96,7 @@ module.exports = function(options) {
   }
 
   function complete() {
+    if (stopped) { return; }
     busy = false;
     cancelInFlight = null;
     if (queuedUnit !== null) {
@@ -253,6 +255,7 @@ module.exports = function(options) {
   }
 
   function refresh(useFahrenheit) {
+    stopped = false;
     useFahrenheit = !!useFahrenheit;
     if (busy) {
       var age = options.now() - startedAt;
@@ -321,5 +324,16 @@ module.exports = function(options) {
     }
   }
 
-  return { refresh: refresh };
+  return { refresh: refresh, stop: function() {
+    stopped = true;
+    generation++;
+    cancelTimer(refreshTimer);
+    refreshTimer = null;
+    if (cancelInFlight) { cancelInFlight(); }
+    cancelInFlight = null;
+    busy = false;
+    queuedUnit = null;
+    lastSuccess = 0;
+    lastUnit = null;
+  } };
 };
