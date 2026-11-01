@@ -1,6 +1,6 @@
 # Dynamic content
 
-Halftone 1.9.0 rc.5 uses one adaptive layout. Two large complications sit side
+Halftone 1.9.0 rc.6 uses one adaptive layout. Two large complications sit side
 by side below the clock and plain date. When music or a brief new-notification
 summary appears, both readings shrink into a compact horizontal row above it.
 Neither selected reading is replaced by contextual content.

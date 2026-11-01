@@ -1,5 +1,15 @@
 # Halftone release validation
 
+## Distribution and documentation
+
+The current downloads are the
+[v1.9.0-rc.6 GitHub prerelease](https://github.com/xefensor/halftone-watchface/releases/tag/v1.9.0-rc.6),
+frozen from tested commit `dca19138bae62455609d359065324acffedbf041`.
+The measurements below describe those artifacts and their earlier candidates.
+Later documentation and [release automation](GITHUB-RELEASES.md) changes on
+`main` do not rebuild or replace them. Release-helper tests and asset validation
+are separate from native rendering and physical phone/watch verification.
+
 ## 1.9.0 rc.6 — shared core migration
 
 - The data, transport and native cache/lifecycle engine is now supplied by the

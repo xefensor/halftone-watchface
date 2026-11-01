@@ -1,5 +1,14 @@
 # Changelog
 
+## Repository updates after rc.6
+
+- Publishes the checked rc.6 PBW, source and prepared store archives through
+  [automatic GitHub releases](docs/GITHUB-RELEASES.md), with per-release checksums
+  and checks that preserve published tags and asset bytes.
+- Updates setup and contributor documentation for the current two-slot layout,
+  Halftone's independently pinned Core 0.1.0 and the remaining device checks.
+  These repository updates do not change the published rc.6 watchface or archives.
+
 ## 1.9.0 rc.6
 
 - Moves complication/context source handling, message transport and native

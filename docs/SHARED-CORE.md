@@ -3,7 +3,8 @@
 Halftone now consumes [Pebble Watchface Core 0.1.0](https://github.com/xefensor/pebble-watchface-core).
 The shared package contains the C data/lifecycle engine and the phone-side
 JavaScript source coordinators. [Dynamic](https://github.com/xefensor/dynamic-watchface)
-uses the same release with its own borderless renderer.
+uses the same engine family with its own renderer and independently pinned
+version. A newer Core or Dynamic release does not change Halftone's 0.1.0 pin.
 
 ## Ownership
 
@@ -31,8 +32,9 @@ rendering results are recorded in [validation](VALIDATION.md).
 
 `package.json` references `vendor/pebble-watchface-core-0.1.0.tgz` with a `file:`
 dependency. The lockfile pins the archive's integrity, and `vendor/CORE.json`
-records upstream/version/checksum provenance. `npm ci` installs that exact
-release; building does not fetch a moving branch or require an npm account.
+records upstream/version/checksum provenance. `npm ci --ignore-scripts` installs
+that exact release; building does not fetch a moving branch or require an npm
+account.
 
 To update the dependency, first build/test a new core release. Copy its exact
 tarball into `vendor/`, update the dependency and lockfile, and refresh the
@@ -43,3 +45,7 @@ previous release artifact until the replacement has passed those checks.
 The shared code is bundled in the PBW. Updating its repository alone does not
 change installed watchfaces; each app is rebuilt and released independently.
 The project's existing noncommercial/attribution license still applies.
+
+The [GitHub release process](GITHUB-RELEASES.md) publishes the checked Halftone
+PBW and archives. Published assets retain the dependency used for their tests;
+documentation updates on `main` do not replace those assets.

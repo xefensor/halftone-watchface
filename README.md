@@ -8,9 +8,18 @@ and stay visible above the contextual panel. Its procedural black halftone
 border continues the PT2 bezel. Both readings also stay visible when Pebble
 opens Timeline Peek.
 
-Install [Halftone-1.9.0-rc.6.pbw](dist/Halftone-1.9.0-rc.6.pbw).
-[Source archive](dist/Halftone-1.9.0-rc.6-source.zip) and
-[prepared store package](dist/Halftone-1.9.0-rc.6-store-package.zip) are included.
+The current GitHub release is
+[**v1.9.0-rc.6**](https://github.com/xefensor/halftone-watchface/releases/tag/v1.9.0-rc.6),
+marked as a prerelease for Pebble Time 2 / Emery:
+
+- [Installable PBW](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6.pbw)
+- [Source archive](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6-source.zip)
+- [Prepared store package](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6-store-package.zip)
+- [SHA-256 checksums](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/SHA256SUMS.txt)
+
+The PBW's numeric SDK version is **1.9.0**; `rc.6` identifies the candidate
+in its filename and GitHub tag. The PBW and ZIP archives also remain in `dist/`;
+the attached checksum file lists only this release's three assets.
 This candidate is for sideloading with Pebble's plugin preview enabled. Pebble's
 [current plugin guide](https://developer.repebble.com/guides/plugins/) says not
 to publish apps using plugins to the public appstore yet. Public submission
@@ -176,7 +185,7 @@ Use the Pebble command-line tool and an SDK supporting the Emery target
 (Pebble Time 2). From this repository:
 
 ```sh
-npm ci
+npm ci --ignore-scripts
 npm test
 pebble clean
 pebble build
@@ -209,6 +218,14 @@ pebble install --cloudpebble dist/Halftone-1.9.0-rc.6.pbw
 
 See [version-specific validation and remaining device checks](docs/VALIDATION.md).
 
+Versioned GitHub downloads publish automatically from the checked packages on
+`main`; GitHub Actions does not build the SDK project or submit an appstore
+release. See [GitHub release preparation](docs/GITHUB-RELEASES.md) for archive,
+checksum and publication checks. Published downloads stay unchanged when only
+the documentation is updated.
+
+Contributor guidance and compatibility rules are in [AGENTS.md](AGENTS.md).
+
 ## Project structure
 
 ```text
@@ -226,6 +243,8 @@ resources/fonts/      Custom date, clock and reading fonts
 docs/COMPLICATIONS.md  Fixed slot map, formats and data limits
 docs/DYNAMIC-CONTENT.md Context behavior, privacy and source contract
 docs/SHARED-CORE.md    Engine extraction and dependency updates
+docs/GITHUB-RELEASES.md Automated GitHub downloads and release preparation
+AGENTS.md             Contributor invariants and verification commands
 package.json          Emery target, permissions and message keys
 ```
 

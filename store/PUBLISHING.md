@@ -41,8 +41,20 @@ Incoming source artwork remains capped at 24 pixels. Rectangular music images
 are center-cropped to a square without stretching; generic complication images
 and notification icons fit inside their boxes without cropping. The title
 inset follows the displayed art, preserving the long-title hide-art rule.
-The box sizes, clock fitting, text positions, halftone dots and rounded border
-are unchanged from rc.4.
+Release candidate 6 retains rc.5's artwork alignment and rc.4's box sizes,
+clock fitting, text positions, halftone dots and rounded border.
+
+## GitHub downloads
+
+The [v1.9.0-rc.6 GitHub prerelease](https://github.com/xefensor/halftone-watchface/releases/tag/v1.9.0-rc.6)
+provides the exact checked PBW, source archive, prepared store package and
+`SHA256SUMS.txt`. It is a sideload distribution; the older public store listing
+and appstore eligibility are separate. No appstore upload is performed by the
+[automatic GitHub release workflow](../docs/GITHUB-RELEASES.md).
+
+Published files stay tied to their original tested commit. Later edits to this
+checklist or the README do not replace the archives. A changed PBW or package
+requires a new candidate/version and the corresponding checks before publication.
 
 ## Listing fields
 

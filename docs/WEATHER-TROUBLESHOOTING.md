@@ -24,7 +24,7 @@ guide describes mobile app **1.16.0.5**; earlier preview builds can differ.
 
 ## Read the whole error
 
-From **Halftone 1.6.1 beta 8**, its gear settings show the numbered slot,
+Halftone's gear settings show the numbered slot,
 category/item, code and the provider/host's original failure message. For example:
 
 `#1 · weather/location · PLUGIN_UNAVAILABLE · No plugin for weather/location`
@@ -44,7 +44,10 @@ An empty built-in weather database produces an empty instance list; the demo
 can show **No location**. That is not the same evidence as a router reporting
 **No plugin**. Changing providers cannot be diagnosed from the short code alone.
 
-## Automatic recovery in beta 8
+This diagnostic was introduced in 1.6.1 beta 8 and remains available in
+1.9.0 rc.6 for the two selected readings.
+
+## Automatic recovery
 
 Halftone rebinds its generic sources after a `PLUGIN_UNAVAILABLE` error with
 backoff of **5 seconds, 15 seconds, 60 seconds, then 120 seconds**. The normal
@@ -58,8 +61,8 @@ are not written into the watch snapshot, persisted in its cache or sent to a
 developer service. Provider text is bounded and escaped as literal text in Clay.
 
 If the checks above do not resolve the failure, record the complete Halftone
-error line and the exact Pebble phone-app version from About. Beta 8 improves
-recovery and exposes the cause; no root cause for the reported on-device
+error line and the exact Pebble phone-app version from About. Halftone retries
+registration and exposes the cause; no root cause for the reported on-device
 weather failure has been confirmed from the code and fixture checks alone.
 
 ## Primary implementation references

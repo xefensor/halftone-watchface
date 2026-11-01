@@ -1,56 +1,85 @@
 # GitHub releases
 
-The release workflow publishes versioned downloads to the repository's
-[Releases page](https://github.com/xefensor/halftone-watchface/releases).
-The release workflow uploads the existing, checked packages; it preserves their
-bytes and keeps the native SDK build separate from publishing.
+The [Releases page](https://github.com/xefensor/halftone-watchface/releases)
+provides versioned sideload downloads. GitHub Actions uploads the existing,
+checked packages; the native SDK build and render checks happen before
+publication. This workflow does not submit anything to the Pebble appstore.
 
-## Current candidate
+## Published candidate
 
-The initial automated release is **v1.9.0-rc.6**, using tested commit
-`dca19138bae62455609d359065324acffedbf041`. Its native Pebble version is
-`1.9.0`; `halftoneReleaseCandidate: 6` supplies the `-rc.6` GitHub/filename
-suffix. The GitHub release is marked **prerelease**.
+[**v1.9.0-rc.6**](https://github.com/xefensor/halftone-watchface/releases/tag/v1.9.0-rc.6)
+is published as a **prerelease**, using tested artifact commit
+`dca19138bae62455609d359065324acffedbf041`. Its numeric Pebble SDK version is
+`1.9.0`; `halftoneReleaseCandidate: 6` supplies the `-rc.6` GitHub/filename suffix.
 
-The selected assets are:
+| Download | Purpose |
+| --- | --- |
+| [Halftone-1.9.0-rc.6.pbw](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6.pbw) | Installable Emery watchface |
+| [Halftone-1.9.0-rc.6-source.zip](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6-source.zip) | Source matching the candidate |
+| [Halftone-1.9.0-rc.6-store-package.zip](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6-store-package.zip) | Prepared listing materials and the same PBW |
+| [SHA256SUMS.txt](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/SHA256SUMS.txt) | Flat checksums for these three assets |
 
-- `Halftone-1.9.0-rc.6.pbw`
-- `Halftone-1.9.0-rc.6-source.zip`
-- `Halftone-1.9.0-rc.6-store-package.zip`
-- A checksum file for the selected release assets.
+The initial tag stays on the tested commit. The automation was added later on
+`main` and did not rebuild the PBW or archives. Documentation-only updates do
+not require repackaging that release; its source archive remains the source
+snapshot shipped with the candidate.
 
-The initial tag points to that tested commit. Adding the automation does not
-rebuild those packages or change the previously checked source archive.
-
-## Future releases
+## Prepare a future release
 
 1. Update `package.json` to the intended numeric SDK version and prerelease
    number. Keep only one of `halftoneReleaseCandidate` or `halftoneBeta`; omit
-   both for a stable version. Keep the existing app UUID.
-2. Run the portable tests and the normal SDK/render checks described in
-   [validation](VALIDATION.md). Package the intended PBW, source archive and
-   store archive, then update `dist/SHA256SUMS.txt` and the release notes.
-3. Confirm the exact filenames match `.github/release.json`. The templates
-   use `{release_id}`, including any `-rc.N` or `-beta.N` suffix. Check the
-   configured GitHub prerelease flag before publishing a stable release.
-4. Commit the version, exact artifacts, checksums and notes to `main`. The
-   GitHub Actions release workflow validates them and publishes the versioned
-   downloads. It attaches the prepared packages rather than rebuilding them.
+   both for a stable version. Preserve the existing app UUID.
+2. Run the portable tests, SDK build and packaged-font checks from the
+   [README](../README.md), then the affected render/lifecycle checks in
+   [validation](VALIDATION.md). `scripts/package-beta.py` prepares the PBW;
+   assemble the matching source and store ZIPs separately. Refresh listing
+   captures if the native output changes.
+3. Update `dist/SHA256SUMS.txt` and the release notes. Confirm all exact filenames
+   match `.github/release.json`; its `{release_id}` includes any `-rc.N` or
+   `-beta.N` suffix. Before a stable release, set the configured GitHub prerelease
+   flag to false. Candidates must keep it true.
+4. Commit the version, intended artifacts, checksums, notes and relevant source
+   locally. The preflight reads **committed `HEAD`**, so run it after this commit:
 
-The release configuration is repository-maintained metadata. Its `bootstrap`
-entry identifies only the initial existing candidate; future versions use
-their own artifact commit. Source-archive metadata and PBW identity must agree
-with the chosen version, UUID and Emery target. Existing release assets are
-immutable: bump the candidate/version when package bytes need to change.
+   ```sh
+   python3 -m unittest discover -s tests -p test_github_release.py
+   python3 scripts/github-release.py prepare --output ../tmp/halftone-release-check
+   ```
 
-A manual rerun through the release workflow's **Run workflow** button is safe
-for the same version and identical assets. It verifies the existing release
-instead of creating a duplicate. Conflicting tag targets or changed asset
-bytes fail validation rather than replacing a published release.
+5. Resolve any validation failure and commit the correction before rerunning.
+   Push the checked commit to `main`. The release workflow validates it and
+   publishes the versioned downloads without rebuilding the SDK project.
+
+The release-helper suite currently has **18 tests** and needs Python's standard
+library only. The local `prepare` command writes a release plan, selected assets
+and checksums outside the source tree; it does not upload them.
+
+## Validation and automation
+
+The workflow runs on release-related pushes to `main`, or through **Run workflow**
+in GitHub Actions. It installs the locked Node dependencies, runs `npm test`,
+runs the Python release-helper tests and prepares the release. Publication is a
+separate job using the built-in GitHub token with `contents: write`; the check
+job has read access. No personal access token or external schedule is required.
+
+The helper validates PBW identity/version, matching source metadata,
+checksums and the PBW inside the store package. The source archive must exclude
+root `build/`, `node_modules/`, `.git/` and `.pebble/` directories and any embedded
+PBW, including differently cased names. Use the explicit asset allowlist in
+`.github/release.json`; unrelated historical files in `dist/` are not uploaded.
+The attached checksum file contains only the selected release assets.
+
+The configuration's `bootstrap` entry freezes the first existing candidate to
+its tested commit. Future versions use their own artifact commit. Versioned tags
+and published asset bytes are immutable: changes require a new candidate or
+version. Identical reruns verify and reuse the existing release rather than
+creating duplicates; interrupted drafts can resume. Conflicting tags or changed
+published bytes fail rather than replacing a release. The live rc.6 rerun was
+checked to preserve the existing tag, asset IDs and bytes.
 
 ## Pebble distribution status
 
-GitHub provides the sideloaded candidate downloads. Pebble appstore submission
-remains governed by the [publishing checklist](../store/PUBLISHING.md), the
-plugin-preview restriction and the remaining physical phone/watch checks.
-The GitHub workflow does not submit anything to the Pebble appstore.
+GitHub downloads are separate from the older public store listing. Appstore
+submission remains governed by the [publishing checklist](../store/PUBLISHING.md),
+Pebble's plugin-preview restriction and the remaining physical phone/watch
+checks. See [privacy](../store/PRIVACY.md) for the current source/cache contract.
