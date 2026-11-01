@@ -1,0 +1,25 @@
+{
+  "repository": "xefensor/halftone-watchface",
+  "kind": "watchface",
+  "display_name": "Halftone",
+  "tag_prefix": "v",
+  "prerelease": true,
+  "assets": [
+    "dist/Halftone-{release_id}.pbw",
+    "dist/Halftone-{release_id}-source.zip",
+    "dist/Halftone-{release_id}-store-package.zip"
+  ],
+  "checksums_file": "dist/SHA256SUMS.txt",
+  "app_uuid": "d4dd5046-53be-4624-99e8-46e0b377fe66",
+  "source_archive": {
+    "path": "dist/Halftone-{release_id}-source.zip",
+    "prefix": ""
+  },
+  "notes": {
+    "path": "store/release-notes.txt"
+  },
+  "bootstrap": {
+    "version": "1.9.0-rc.6",
+    "source_commit": "dca19138bae62455609d359065324acffedbf041"
+  }
+}
