@@ -15,3 +15,10 @@ timeline-preview.png
 
 # Local release assembly workspace
 release/
+
+# Portable development tools
+__pycache__/
+*.pyc
+.venv/
+core
+core.*

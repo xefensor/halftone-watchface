@@ -1,3 +1,8 @@
+# Development behavior
+
+For the current ACT3 activity, privacy, eight-second notification and public-only cache
+contracts, read [MAINTENANCE](MAINTENANCE.md). The following is historical rc.6 behavior.
+
 # Dynamic content
 
 Halftone 1.9.0 rc.6 uses one adaptive layout. Two large complications sit side

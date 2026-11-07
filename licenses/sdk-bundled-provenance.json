@@ -1,0 +1,12 @@
+{
+  "sdkVersion": "4.33.1",
+  "sourceMapSource": "_pkjs_shared_additions.js",
+  "sdkSourceFile": "sdk-core/pebble/common/include/_pkjs_shared_additions.js",
+  "sourceBytes": 1124,
+  "sourceSha256": "3d23174c39cbe6fb12d4d162d63a37c41a41941fdd0df3a19290eabffbf3f888",
+  "copyright": "Copyright 2024 Google LLC",
+  "license": "Apache License, Version 2.0",
+  "licenseFile": "licenses/Apache-2.0.txt",
+  "licenseSha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+  "scope": "Exact reviewed SDK-injected JavaScript source before Webpack footer comments; not a license assertion about the complete SDK."
+}

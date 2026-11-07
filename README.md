@@ -1,5 +1,18 @@
 # Halftone
 
+## Development candidate
+
+Halftone now adopts Core 0.5.2, Activities 0.4.4 and shared UI 0.1.1, with plugin
+activities, editable primary/secondary priorities, presented-activity navigation,
+current privacy/cache handling and reliable phone settings delivery. Its centered Fira
+clock, dot border, Big text, depth and shadow remain Halftone's own.
+
+The local development SDK label remains 1.9.0. This work does **not** replace the
+published rc.6 PBW or its validation evidence. Use [CONTRIBUTING](CONTRIBUTING.md)
+for candidate builds and [current UI](docs/UI.md) / [maintenance contracts](docs/MAINTENANCE.md)
+for the new behavior. See [candidate validation](docs/DEVELOPMENT-VALIDATION.md) for
+checks and remaining device/browser gaps. The release-specific material below describes rc.6.
+
 ## Shared-core release candidate — 1.9.0 rc.6
 
 Halftone pairs a plain date and wide clock with two large readings side by

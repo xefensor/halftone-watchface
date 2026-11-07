@@ -4,8 +4,9 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include "complication_data.h"
 
-#define READING_PART_BYTES 49
+#define READING_PART_BYTES (COMPLICATION_MAX_TEXT_BYTES + 1)
 
 typedef struct {
   char number[READING_PART_BYTES];
@@ -49,6 +50,19 @@ static inline bool reading_parts(const char *text, ReadingParts *result) {
   memcpy(value.unit, unit, unit_length);
   *result = value;
   return true;
+}
+
+// Fredoka vector glyphs are intentionally a numeric subset. Normalize only the
+// rendered sign; the shared complication value and unit remain untouched.
+static inline void reading_native_number(const char *source, char *result, size_t capacity) {
+  if (capacity == 0) { return; }
+  size_t at = 0;
+  if (capacity > 1 && strncmp(source,"−",3)==0) {
+    result[at++]='-';
+    source += 3;
+  }
+  while (*source && at+1<capacity) { result[at++]=*source++; }
+  result[at]='\0';
 }
 
 static inline bool reading_is_probability(const ReadingParts *value) {

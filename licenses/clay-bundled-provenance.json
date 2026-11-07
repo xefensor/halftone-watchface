@@ -1,0 +1,52 @@
+{
+  "clay_version": "1.1.0",
+  "installed_bundle_file": "node_modules/@rebble/clay/dist/js/index.js",
+  "notice_file": "licenses/Clay-bundled-NOTICES.txt",
+  "components": [
+    {
+      "component": "buffer",
+      "repository": "feross/buffer",
+      "path": "LICENSE",
+      "license_blob_sha1": "83f0736f35d3f57a1d10e7d48b5bb81df2a2fcc9"
+    },
+    {
+      "component": "base64-js",
+      "repository": "beatgammit/base64-js",
+      "path": "LICENSE",
+      "license_blob_sha1": "6d52b8acfbe771e96a1b862c620f00efd7d48d1e"
+    },
+    {
+      "component": "deepcopy",
+      "repository": "sasaplus1/deepcopy.js",
+      "path": "LICENSE",
+      "license_blob_sha1": "95dccda6f12ac409a0735f9909909bc5890285a6"
+    },
+    {
+      "component": "ieee754",
+      "repository": "feross/ieee754",
+      "path": "LICENSE",
+      "license_blob_sha1": "5aac82c78c2d9982865f4432ab6a9b5d77aa9245"
+    },
+    {
+      "component": "isarray",
+      "repository": "juliangruber/isarray",
+      "path": "LICENSE",
+      "license_blob_sha1": "de3226673c3874b1c6506db022393c753495655c"
+    },
+    {
+      "component": "tosource",
+      "repository": "marcello3d/node-tosource",
+      "path": "LICENSE",
+      "license_blob_sha1": "ccc98aa199a2cd1c55f26f90ab47ce9d075cf36e"
+    },
+    {
+      "component": "bourbon",
+      "repository": "thoughtbot/bourbon",
+      "path": "LICENSE.md",
+      "license_blob_sha1": "1ba822ca9a4e7cae2aef0ff500ab6adc9674808d"
+    }
+  ],
+  "installed_bundle_sha256": "35cd2d77870676b5ff072cd5cb3c481b0dfbd47a4bc6f0d02382defed0d153c9",
+  "notice_sha256": "3ec81f7beffe431490042a1a4c858ee8a3c3ec05391e7a61f509f7eef28bcb63",
+  "minified_notice_source": "node_modules/@rebble/clay/src/scripts/vendor/minified.js"
+}

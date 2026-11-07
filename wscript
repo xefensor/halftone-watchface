@@ -32,9 +32,9 @@ def font_cache_inputs(task_gen):
         definition = getattr(task, 'definition', None)
         if definition is not None and definition.type == 'font':
             task.env = task.env.derive()
-            task.env.HALFTONE_FONT_DEFINITION = json.dumps(
+            task.env.WATCHFACE_FONT_DEFINITION = json.dumps(
                 definition.__dict__, sort_keys=True)
-            task.vars = list(task.vars) + ['HALFTONE_FONT_DEFINITION']
+            task.vars = list(task.vars) + ['WATCHFACE_FONT_DEFINITION']
 
 
 def options(ctx):

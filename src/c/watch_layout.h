@@ -7,106 +7,82 @@
 
 #define WATCH_LAYOUT_SLOT_COUNT 5
 
-typedef enum {
-  WATCH_LAYOUT_CLASSIC = 0,
-  WATCH_LAYOUT_COMIC_COVER = 1,
-  WATCH_LAYOUT_STACKED = 2,
-} WatchLayoutStyle;
+enum { WATCH_CLOCK_FOLLOW=0, WATCH_CLOCK_12=12, WATCH_CLOCK_24=24, WATCH_CLOCK_QUERY=255 };
+static inline uint8_t watch_clock_format(int stored,int legacy) {
+  if(stored==WATCH_CLOCK_FOLLOW||stored==WATCH_CLOCK_12||stored==WATCH_CLOCK_24)return (uint8_t)stored;
+  return legacy<0?WATCH_CLOCK_FOLLOW:legacy?WATCH_CLOCK_12:WATCH_CLOCK_24;
+}
+static inline bool watch_clock_uses_12(unsigned format,bool system_24) {
+  return format==WATCH_CLOCK_12||(format==WATCH_CLOCK_FOLLOW&&!system_24);
+}
 
-typedef struct { int16_t x, y, width, height; } WatchLayoutRect;
-typedef struct { WatchLayoutRect rect; uint8_t font_size; } WatchSlotGeometry;
 typedef struct {
-  WatchLayoutRect date, time, minutes;
-  WatchSlotGeometry slots[WATCH_LAYOUT_SLOT_COUNT];
-  WatchLayoutRect context;
-  int16_t divider_x, divider_top, divider_bottom;
-} WatchLayoutGeometry;
+  float clock_x, clock_y, clock_size, date_x, date_y;
+  float row_y, number_size, label_y;
+  float context, music, notice, peek;
+} WatchPose;
 
-static inline WatchLayoutStyle watch_layout_sanitize(int value) {
-  (void)value;
-  return WATCH_LAYOUT_CLASSIC;
+static inline float watch_clamp(float value) {
+  return value < 0 ? 0 : value > 1 ? 1 : value;
 }
 
-static inline WatchLayoutStyle watch_layout_effective(int value, int height) {
-  (void)height;
-  return watch_layout_sanitize(value);
+static inline float watch_lerp(float first, float last, float amount) {
+  return first + (last - first) * amount;
 }
 
-static inline int watch_layout_interpolate(int full, int peek, int height) {
-  if (height >= 228) { return full; }
-  if (height <= 171) { return peek; }
-  return peek + ((full - peek) * (height - 171) + 28) / 57;
+// Stock quadratic timing, clamped to complete endpoints with no overshoot.
+static inline float watch_ease_out(float value) {
+  value=watch_clamp(value);return value*(2-value);
+}
+static inline float watch_ease_in_out(float value) {
+  value=watch_clamp(value);
+  return value<0.5f?2*value*value:1-2*(1-value)*(1-value);
+}
+static inline float watch_smooth(float value) {
+  value=watch_clamp(value);return value*value*(3-2*value);
+}
+static inline float watch_incoming(float progress) {
+  return watch_ease_out(progress);
 }
 
-// Ink bounds of the bundled clock glyphs (digits and colon), measured from
-// the compiled resources. Position visible glyphs, not the font's line box.
-static inline int watch_layout_clock_y(int font_size, int height, bool contextual) {
-  const struct { uint8_t size, top, bottom; } fonts[] = {
-    {64,20,66}, {72,21,74}, {76,23,78}, {80,24,82}, {84,25,86},
-    {88,27,90}, {92,27,94}, {96,29,98}, {100,30,102},
-    {104,32,107}, {108,33,111}
-  };
-  int top = 23, bottom = 78;
-  for (size_t i = 0; i < sizeof(fonts) / sizeof(fonts[0]); ++i) {
-    if (fonts[i].size == font_size) { top = fonts[i].top; bottom = fonts[i].bottom; break; }
-  }
-  const int center = watch_layout_interpolate(contextual ? 88 : 96, 88, height);
-  return center - (top + bottom) / 2;
+static inline WatchPose watch_pose_idle(void) {
+  return (WatchPose){100,111,88,100,43,
+    158,38,31,0,0,0,0};
 }
 
-// Some Latin capitals extend below the nominal date-font line (especially
-// Romanian comma-below letters). Keep those tails clear of the clock too.
-static inline int watch_layout_date_y(int font_size, const char *text, int base_y,
-                                      int height, bool contextual, bool shadow) {
-  const uint8_t sizes[] = {28,24,22,20,18};
-  const struct { const char *text; uint8_t bottom[5]; } tails[] = {
-    {"9",{29,25,23,21,18}}, {"J",{33,28,26,23,21}},
-    {"Q",{32,27,25,23,20}}, {"Ç",{35,31,28,25,23}},
-    {"Ø",{31,27,25,22,20}}, {"Ą",{35,30,27,24,22}},
-    {"Ş",{35,31,28,26,23}}, {"Ț",{37,32,29,26,24}}
-  };
-  size_t index = 4;
-  for (size_t i = 0; i < sizeof(sizes)/sizeof(sizes[0]); ++i) {
-    if (sizes[i] == font_size) { index = i; break; }
-  }
-  int bottom = font_size;
-  if (text != NULL) {
-    for (size_t i = 0; i < sizeof(tails)/sizeof(tails[0]); ++i) {
-      if (strstr(text, tails[i].text) != NULL && tails[i].bottom[index] > bottom) {
-        bottom = tails[i].bottom[index];
-      }
-    }
-  }
-  const int limit = watch_layout_interpolate(contextual ? 49 : 50, 49, height);
-  const int overflow = base_y + bottom + (shadow ? 1 : 0) - limit;
-  return base_y - (overflow > 0 ? overflow : 0);
+static inline WatchPose watch_pose_context(bool notice) {
+  return (WatchPose){100,74,52,100,34,
+    99,28,25,1,notice?0:1,notice?1:0,0};
 }
 
-// Indices are global: a missing slot never moves another slot to its place.
-static inline WatchLayoutGeometry watch_layout_geometry(int selected_style,
-                                                         int height, bool large,
-                                                         bool contextual) {
-  WatchLayoutGeometry result = {0};
-  (void)selected_style;
-  // Timeline Peek owns the lower 57px, but both chosen readings still fit.
-  // Interpolate their bottom clearance through the native Peek animation.
-  const int inset = large ? 14 : 18;
-  const int width = 96 - inset;
-  const int full_y = contextual ? (large ? 116 : 122) : 118;
-  const int full_height = contextual ? (large ? 38 : 40) : 76;
-  const int full_font = contextual ? (large ? 38 : 32) : (large ? 44 : 38);
-  const int y = watch_layout_interpolate(full_y, 110, height);
-  const int row_height = watch_layout_interpolate(full_height, 44, height);
-  const int font_size = watch_layout_interpolate(full_font, large ? 32 : 28, height);
-  result.slots[0] = (WatchSlotGeometry){{inset, y, width, row_height}, font_size};
-  result.slots[1] = (WatchSlotGeometry){{104, y, width, row_height}, font_size};
-  // A moving Peek edge brings its bezel upward before the compact threshold.
-  // Yield the footer immediately instead of letting text touch that edge.
-  if (height >= 228) {
-    result.context = (WatchLayoutRect){inset, large ? 156 : 164,
-        200 - inset * 2, large ? 48 : 40};
-  }
+static inline WatchPose watch_pose_peek(void) {
+  return (WatchPose){100,94,68,100,39,
+    127,28,25,0,0,0,1};
+}
+
+static inline WatchPose watch_pose_summary(void) {
+  WatchPose pose=watch_pose_peek();
+  pose.peek=0;pose.notice=1;
+  return pose;
+}
+
+static inline float watch_context_visibility(WatchPose pose) {
+  return watch_clamp(pose.music+pose.notice);
+}
+
+// Each reading remains one group throughout a pose transition.
+static inline WatchPose watch_pose_between(WatchPose a,WatchPose b,float amount) {
+  WatchPose result;amount=watch_clamp(amount);
+#define WATCH_MIX(field) result.field=watch_lerp(a.field,b.field,amount)
+  WATCH_MIX(clock_x);WATCH_MIX(clock_y);WATCH_MIX(clock_size);
+  WATCH_MIX(date_x);WATCH_MIX(date_y);WATCH_MIX(row_y);WATCH_MIX(number_size);
+  WATCH_MIX(label_y);WATCH_MIX(context);WATCH_MIX(music);WATCH_MIX(notice);WATCH_MIX(peek);
+#undef WATCH_MIX
   return result;
+}
+// Follow the actual native unobstructed height while bounding Peek overshoot.
+static inline WatchPose watch_pose_at_height(WatchPose full,int height) {
+  return watch_pose_between(full,watch_pose_peek(),watch_clamp((228-height)/57.0f));
 }
 
 // Used while fitting text to a pixel width, never as a fixed character limit.
@@ -120,8 +96,28 @@ static inline bool watch_layout_pop_utf8(char *text) {
   return true;
 }
 
-// Split the already-formatted clock, preserving 12-hour leading-zero removal
-// and the two-digit minute field. Reject malformed input without partial text.
+// Copy whole UTF-8 characters for the compact localized weekday header.
+static inline void watch_layout_abbreviate(const char *source, char *result,
+                                            size_t capacity, size_t characters) {
+  if (capacity == 0) { return; }
+  size_t at = 0;
+  while (source != NULL && *source && characters) {
+    size_t bytes = 1;
+    while (source[bytes] && ((unsigned char)source[bytes] & 0xc0) == 0x80) { ++bytes; }
+    if (at + bytes >= capacity) { break; }
+    memcpy(result + at, source, bytes);
+    at += bytes;
+    source += bytes;
+    --characters;
+  }
+  result[at] = '\0';
+}
+
+static inline void watch_layout_copy_utf8(const char *source, char *result, size_t capacity) {
+  // The byte capacity also bounds the maximum number of complete characters.
+  watch_layout_abbreviate(source,result,capacity,capacity);
+}
+
 static inline bool watch_layout_split_time(const char *text,
                                            char hours[3], char minutes[3]) {
   if (hours == NULL || minutes == NULL) { return false; }
@@ -139,10 +135,19 @@ static inline bool watch_layout_split_time(const char *text,
     hour = hour * 10 + text[i] - '0';
   }
   if (hour > 23) { return false; }
-  for (size_t i = 0; i < colon; ++i) { hours[i] = text[i]; }
+  memcpy(hours, text, colon);
   hours[colon] = '\0';
-  minutes[0] = text[colon + 1];
-  minutes[1] = text[colon + 2];
+  memcpy(minutes, text + colon + 1, 2);
   minutes[2] = '\0';
   return true;
+}
+
+static inline WatchPose halftone_pose(bool active,bool large) {
+  WatchPose p=active?watch_pose_context(false):watch_pose_idle();
+  if(large){p.clock_size+=active?4:12;p.clock_y+=active?7:12;p.number_size+=active?4:6;}
+  return p;
+}
+static inline WatchPose halftone_pose_at_height(WatchPose full,int height,bool large) {
+  WatchPose peek=watch_pose_peek();if(large){peek.clock_size+=4;peek.number_size+=4;}
+  return watch_pose_between(full,peek,watch_clamp((228-height)/57.0f));
 }

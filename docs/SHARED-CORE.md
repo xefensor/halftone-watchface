@@ -1,3 +1,9 @@
+# Current shared dependencies
+
+The development candidate pins Core **0.5.2**, Activities **0.4.4** and UI **0.1.1**.
+See [current contracts](MAINTENANCE.md) and [development](../CONTRIBUTING.md).
+The following describes the frozen rc.6 extraction and its original Core 0.1.0 pin.
+
 # Shared core migration — 1.9.0 rc.6
 
 Halftone now consumes [Pebble Watchface Core 0.1.0](https://github.com/xefensor/pebble-watchface-core).

@@ -1,0 +1,23 @@
+{
+  "clockFont": {
+    "file": "resources/fonts/FiraSansCondensed-Bold.ttf",
+    "sha256": "7ea603ffe9e04b7746213bf9414c3d63babb722c8034079bb9106bd2237a8bd3",
+    "bytes": 334872
+  },
+  "bodyFont": {
+    "file": "resources/fonts/RobotoCondensed-Bold.ttf",
+    "sha256": "6e949e8aa3f6e0b4db88aacafccf0c0e55e708c4564c8f3d145792adbbf80ef6",
+    "bytes": 112580
+  },
+  "generatedClock": {
+    "file": "src/c/generated_clock_glyphs.h",
+    "sha256": "0509d3295b420adad4fe2b2198e7cbe77f6bfcfa5f519dd8d86203a86b65a4e2",
+    "bytes": 14676
+  },
+  "generatedBody": {
+    "file": "src/c/generated_body_metrics.h",
+    "sha256": "b42cdaad10b83f580278fddfa3f429f2eeba66179d964000394c87e931393017",
+    "bytes": 21560
+  },
+  "derivation": "Clock outlines: generate-clock-glyphs.py; body metrics: generate-body-metrics.py. Native screenshot verification remains separate."
+}
