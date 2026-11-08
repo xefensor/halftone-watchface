@@ -1,5 +1,7 @@
 # Developing Halftone
 
+Follow the [XOCE contributor conventions](https://github.com/xefensor/xoce/blob/main/docs/contributor-conventions.md). Project-specific commands and exceptions are below.
+
 Use Node 22 (see .node-version), Python 3.12 (see .python-version), a C99 compiler,
 and Pebble SDK 4.33.1 on PATH for native builds. Font asset regeneration additionally
 uses fontTools 4.61.1 and skia-pathops 0.9.2; ordinary builds use committed geometry.
