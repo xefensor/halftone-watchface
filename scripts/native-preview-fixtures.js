@@ -296,11 +296,31 @@ function complicationPresets(options) {
     activitiesVersion:require('pebble-activities/package.json').version,activityWireVersion:3,
     coreWireVersion:4,session,now,presets,productionReadingHost:true,halftoneLabelAdapter:true};
 }
-module.exports={fixtures,activityPresets,summaryPresets,musicFromSource,notificationFromSource,complicationReading,complicationPresets};
+function musicMotionPresets(options){
+  const now=options.now,session=options.session;let sequence=options.sequence||12000;
+  const second=presentation.project(library.summary.toView({provider:'50e9ef12-a5ab-4369-a3b5-3447bfba5151',displayName:'Timer',revision:1,
+    observedAt:now,validUntil:now+600,record:{id:'static-secondary',type:'standard',name:'Secondary',icon:'timer',
+      headline:{type:'text',text:'STATIC SECONDARY'}}}));
+  const presets=[];
+  for(const theme of ['light','dark'])for(const item of ['old','new'])for(const loaded of [false,true]){
+    const title=item==='old'?'Old Music Title Ending':'New Music Title Ending';
+    const image=loaded?cover():null;
+    if(image&&item==='new')image.palette=image.palette.slice().reverse();
+    const card=presentation.project(musicFromSource(now,session,title,item==='old'?'Old Artist Ending':'New Artist Ending',image));
+    card.revision=++sequence;
+    presets.push({name:item+'-'+(loaded?'ready':'loading')+'-'+theme,state:'music',theme,format:24,fixtureNow:now,
+      integers:{BACKGROUND_COLOR:theme==='dark'?0:0xffffff,TEXT_COLOR:theme==='dark'?0xffffff:0,ACCENT_COLOR:0x55aaff,
+        ANIMATIONS:1,CLOCK_FORMAT:24,SHOW_STATUS:0,NOTIFICATION_VIBRATION:0,NIGHT_PALETTE:0,REQUEST_CONTEXT:session},
+      bytes:{ACTIVITY_DATA:activity.encode([card,second],{session,revision:sequence,sentAt:now}),
+        CONTEXT_DATA:core.packComplications([],now),CONTEXT_STATE:[session&255,(session>>>8)&255,(session>>>16)&255,(session>>>24)&255,0,0,0,0,0,0,0,0,0]}});
+  }
+  return {session,now,presets};
+}
+module.exports={musicMotionPresets,fixtures,activityPresets,summaryPresets,musicFromSource,notificationFromSource,complicationReading,complicationPresets};
 if(require.main===module) {
   let input='';process.stdin.setEncoding('utf8');process.stdin.on('data',value=>input+=value);
   process.stdin.on('end',()=>{
     const options=JSON.parse(input);
-    process.stdout.write(JSON.stringify(options.mode==='complications'?complicationPresets(options):options.mode==='activities'||options.mode==='summary'?summaryPresets(options):fixtures(options)));
+    process.stdout.write(JSON.stringify(options.mode==='music-motion'?musicMotionPresets(options):options.mode==='complications'?complicationPresets(options):options.mode==='activities'||options.mode==='summary'?summaryPresets(options):fixtures(options)));
   });
 }

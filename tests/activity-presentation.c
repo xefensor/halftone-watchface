@@ -39,6 +39,17 @@ static void check(ActivityLayout *p,const char *main,bool vector) {
   }
 }
 int main(void) {
+  // Loading/missing artwork uses precisely the same metadata and title geometry.
+  for(unsigned secondary=0;secondary<2;++secondary)for(unsigned artist=0;artist<2;++artist){
+    ActivityLayout pending,loaded;
+    activity_layout_build("A long song title that wraps across lines","","",artist?"Paused · Artist":"",
+        true,false,false,secondary,false,false,true,24,22,ACTIVITY_CONTENT_TOP,
+        measure,measure,NULL,&pending);
+    activity_layout_build("A long song title that wraps across lines","","",artist?"Paused · Artist":"",
+        true,false,false,secondary,true,false,true,24,22,ACTIVITY_CONTENT_TOP,
+        measure,measure,NULL,&loaded);
+    assert(pending.icon_size==28&&pending.main.count&&memcmp(&pending,&loaded,sizeof(pending))==0);
+  }
   ActivityLayout p;
   const char *clocks[]={"00:00","02:31","59:59","24:00:00","1193046:28:15"};
   for(unsigned top=ACTIVITY_EXPANDED_TOP;top<=ACTIVITY_CONTENT_TOP;++top)

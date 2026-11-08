@@ -1288,7 +1288,7 @@ static void prv_prepare_activity(const PavCard *card,uint32_t now,ActivityPlan *
   bool footer_symbol=true;int footer_point=s_type.footer;
   const bool fold_support=!media&&out->support[0]&&card->main.type!=PAV_TEXT;
   if(media&&card->source_state==PAV_PAUSED) {
-    int width=(card->flags&PAV_HAS_IMAGE)?116:152;
+    int width=116;
     if(prv_measure(language->paused,footer_point).w>width){footer_symbol=false;width=152;}
     footer_point=prv_footer_point(language->paused);
     if(prv_measure(footer,footer_point).w>width&&
@@ -1374,6 +1374,10 @@ static void prv_activity_clock_schedule(void) {
 }
 static void prv_draw_activity_image(GContext *ctx,const PavCard *activity,int x,int y,int size) {
   if(!(activity->flags&PAV_HAS_IMAGE)||!activity->width||!activity->height) {
+    if(activity->presentation==PAV_PRESENTATION_MEDIA){
+      xoce_ui_draw_content_icon(ctx,XOCE_ICON_MUSIC,GPoint(x+size/2,y+size/2),size,prv_accent_color());
+      return;
+    }
     graphics_context_set_stroke_color(ctx,prv_accent_color());graphics_context_set_stroke_width(ctx,2);
     graphics_draw_round_rect(ctx,GRect(x,y,size,size),3);
     for(int line=1;line<=2;++line)
@@ -1448,7 +1452,7 @@ static void prv_draw_activity(GContext *ctx,const PavCard *card,int y) {
   for(int i=0;i<layout->footer.count;++i)prv_text(ctx,layout->footer.text[i],layout->footer_point,
       x+layout->footer_left,y+layout->footer_baseline[i],layout->footer_width,
       prv_muted_text(1),GTextAlignmentLeft);
-  if(layout->icon_size>0&&(card->flags&PAV_HAS_IMAGE)&&(layout->media||layout->footer.count))
+  if(layout->icon_size>0&&(layout->media||((card->flags&PAV_HAS_IMAGE)&&layout->footer.count)))
     prv_draw_activity_image(ctx,card,x+24,y+layout->icon_top,layout->icon_size);
   else if(layout->icon_size>0&&!layout->media&&layout->footer.count)prv_activity_symbol(ctx,card->identity_symbol,0,
       x+24,y+layout->icon_top,layout->icon_size);
@@ -1794,13 +1798,16 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
   bool valid=false;
   if(request)valid=request->type==TUPLE_BYTE_ARRAY&&display_decode(request->value->data,request->length,&next,&status,&flags)&&next.revision&&!status&&!flags;
   else {
-    static const uint32_t *const keys[]={&MESSAGE_KEY_BACKGROUND_COLOR,&MESSAGE_KEY_TEXT_COLOR,&MESSAGE_KEY_ACCENT_COLOR,&MESSAGE_KEY_NIGHT_BACKGROUND_COLOR,&MESSAGE_KEY_NIGHT_TEXT_COLOR,&MESSAGE_KEY_NIGHT_ACCENT_COLOR,&MESSAGE_KEY_CLOCK_FORMAT,&MESSAGE_KEY_SHOW_STATUS,&MESSAGE_KEY_ANIMATIONS,&MESSAGE_KEY_NOTIFICATION_VIBRATION,&MESSAGE_KEY_LARGE_TEXT,&MESSAGE_KEY_DEPTH_EFFECT,&MESSAGE_KEY_TEXT_SHADOW,&MESSAGE_KEY_PANEL_TRANSITIONS};
-    for(unsigned i=0;i<14;++i){uint32_t value;if(!native_setting_value(dict_find(iterator,*keys[i]),&value))continue;
-      display_set(&next,i<10?i:i+3,value);
+    // Read the legacy mode first; an explicit modern field below wins.
+    uint32_t legacy_night;
+    if(native_setting_value(dict_find(iterator,MESSAGE_KEY_NIGHT_PALETTE),&legacy_night)&&legacy_night<=1)
+      next.value[DISPLAY_MODE]=legacy_night?DISPLAY_QUIET:DISPLAY_EXPLICIT;
+    static const uint32_t *const keys[]={&MESSAGE_KEY_BACKGROUND_COLOR,&MESSAGE_KEY_TEXT_COLOR,&MESSAGE_KEY_ACCENT_COLOR,&MESSAGE_KEY_NIGHT_BACKGROUND_COLOR,&MESSAGE_KEY_NIGHT_TEXT_COLOR,&MESSAGE_KEY_NIGHT_ACCENT_COLOR,&MESSAGE_KEY_CLOCK_FORMAT,&MESSAGE_KEY_SHOW_STATUS,&MESSAGE_KEY_ANIMATIONS,&MESSAGE_KEY_NOTIFICATION_VIBRATION,&MESSAGE_KEY_TEXT_SIZE,&MESSAGE_KEY_APPEARANCE_MODE,&MESSAGE_KEY_MANUAL_APPEARANCE,&MESSAGE_KEY_LARGE_TEXT,&MESSAGE_KEY_DEPTH_EFFECT,&MESSAGE_KEY_TEXT_SHADOW,&MESSAGE_KEY_PANEL_TRANSITIONS};
+    for(unsigned i=0;i<DISPLAY_FIELDS;++i){uint32_t value;if(!native_setting_value(dict_find(iterator,*keys[i]),&value))continue;
+      display_set(&next,i,value);
     }
     uint32_t value;
     if(!dict_find(iterator,MESSAGE_KEY_CLOCK_FORMAT)&&native_setting_value(dict_find(iterator,MESSAGE_KEY_USE_12_HOUR),&value)&&value<=1)next.value[DISPLAY_CLOCK]=value?12:24;
-    if(native_setting_value(dict_find(iterator,MESSAGE_KEY_NIGHT_PALETTE),&value)&&value<=1)next.value[DISPLAY_MODE]=value?DISPLAY_QUIET:DISPLAY_EXPLICIT;
     changed=memcmp(&next,&s_native->display,sizeof(next))!=0;valid=changed;
   }
   uint32_t format;
@@ -1809,7 +1816,9 @@ static void prv_inbox_received(DictionaryIterator *iterator, void *context) {
     if(display_save(&next)){
       clock_changed=next.value[DISPLAY_CLOCK]!=s_native->display.value[DISPLAY_CLOCK];
       layout_changed|=memcmp(next.value+DISPLAY_TEXT_SIZE,s_native->display.value+DISPLAY_TEXT_SIZE,7*sizeof(uint32_t))||next.value[DISPLAY_ANIMATIONS]!=s_native->display.value[DISPLAY_ANIMATIONS];
-      background_changed|=next.value[DISPLAY_STATUS]!=s_native->display.value[DISPLAY_STATUS];
+      // Type and optical settings paint in the background layer as well as
+      // the activity layer. Invalidate both immediately after a verified save.
+      background_changed|=layout_changed||next.value[DISPLAY_STATUS]!=s_native->display.value[DISPLAY_STATUS];
       if(layout_changed){activity_navigation_update(&s_native->navigation,s_session.token,s_activities.snapshot.view_sequence,ACTIVITY_NAV_ABSENT,ACTIVITY_NAV_ABSENT,0,0,(uint32_t)time(NULL));}
       prv_display_apply(&next);
       prv_display_reply(&next,DISPLAY_APPLIED,request?0:DISPLAY_HELLO);

@@ -24,7 +24,7 @@ with zipfile.ZipFile(PBW) as source,zipfile.ZipFile(OUT/'native.pbw','w') as nat
     for name in source.namelist():
         if name=='appinfo.json' or name.startswith('emery/'):native.writestr(name,source.read(name))
 keys=info['messageKeys'];inverse={value:key for key,value in keys.items()};target=uuid.UUID(info['uuid'])
-p=connect();service=AppMessageService(p);lines=queue.Queue();lock=threading.Lock();closing=threading.Event();transactions={};transport_lock=threading.Lock();transport_trace=[];replies=[];sessions=[];activity_fixtures=[];commands=0;responses={}
+p=connect();service=AppMessageService(p);lines=queue.Queue();lock=threading.Lock();closing=threading.Event();transactions={};transport_lock=threading.Lock();transport_trace=[];acknowledged=set();replies=[];sessions=[];activity_fixtures=[];commands=0;responses={}
 phone=subprocess.Popen(['node',str(ROOT/'scripts/emulator-preferences-phone.cjs'),str(OUT)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
 def write(value):
     with lock:
@@ -42,6 +42,7 @@ def receive(transaction,app,data):
 def transport(transaction,app,ok):
     with transport_lock:
         identifier=transactions.pop(transaction,None)
+        if ok:acknowledged.add(transaction)
         transport_trace.append({'event':'ack' if ok else 'nack','transaction':transaction,'phoneId':identifier})
     if identifier is not None:write({'type':'transport','id':identifier,'ok':ok})
 handles=[service.register_handler('appmessage',receive),
@@ -71,7 +72,7 @@ try:
     page=request({'type':'load_settings','language':'en'});assert page['ok']
     chosen=page['settings'];chosen.update({'BACKGROUND_COLOR':0x005555,'TEXT_COLOR':0xffffff,'ACCENT_COLOR':0x55aaff,'NIGHT_BACKGROUND_COLOR':0x550000,'NIGHT_TEXT_COLOR':0xffffff,'NIGHT_ACCENT_COLOR':0xffff55,'ANIMATIONS':False,'SHOW_STATUS':False})
     chosen.update({key:bool(args.optics) for key in ['LARGE_TEXT','DEPTH_EFFECT','TEXT_SHADOW','PANEL_TRANSITIONS']})
-    p.send_packet(TimeMessage(message=SetUTC(unix_time=1704112450,utc_offset=0,tz_name='UTC')))
+    p.send_packet(TimeMessage(message=SetUTC(unix_time=1704112410,utc_offset=0,tz_name='UTC')))
     def wait_applied():
         until=time.monotonic()+10
         while time.monotonic()<until:
@@ -82,14 +83,24 @@ try:
             pump()
         raise AssertionError('Exact native application receipt missing: '+str(current))
     def inject_activity():
+        if os.environ.get("PEBBLE_QA_IDLE_FONT")=="1":return
         until=time.monotonic()+4
         while not sessions and time.monotonic()<until:pump()
         assert sessions,'Native activity epoch missing'
-        options={'session':sessions[-1],'now':1704112450,'sequence':9000}
+        options={'session':sessions[-1],'now':1704112410,'sequence':9000}
         result=subprocess.run(['node',str(ROOT/'scripts/native-preview-fixtures.js')],input=json.dumps(options),text=True,capture_output=True,check=True,cwd=ROOT)
         preset=next(item for item in json.loads(result.stdout)['presets'] if item['name']=='music-24-light')
-        frame=bytes(preset['bytes']['ACTIVITY_DATA']);activity_fixtures.append({'session':sessions[-1],'sha256':hashlib.sha256(frame).hexdigest(),'observedAt':1704112450})
-        service.send_message(target,{keys['ACTIVITY_DATA']:ByteArray(frame)})
+        frame=bytes(preset['bytes']['ACTIVITY_DATA']);activity_fixtures.append({'session':sessions[-1],'sha256':hashlib.sha256(frame).hexdigest(),'observedAt':1704112410})
+        # The synthetic owner shares the single transport with PKJS.
+        # Drain the real phone queue before injection, then wait for its ACK
+        # before pumping another phone packet into the watch inbox.
+        until=time.monotonic()+8
+        while transactions and time.monotonic()<until:pump()
+        assert not transactions,'Phone transport did not drain before fixture'
+        with transport_lock:transaction=service.send_message(target,{keys['ACTIVITY_DATA']:ByteArray(frame)})
+        until=time.monotonic()+8
+        while transaction not in acknowledged and time.monotonic()<until:time.sleep(.01)
+        assert transaction in acknowledged,'Native fixture ACK missing'
         until=time.monotonic()+.5
         while time.monotonic()<until:pump()
     def restart(size):
@@ -119,7 +130,9 @@ try:
             p.send_packet(AppRunState(data=AppRunStateStart(uuid=target)));time.sleep(.2);request(start=True)
         wait_applied();replies.clear();restart(index);baseline=capture('follow-size-'+str(index))
         chosen['TEXT_SIZE']=3 if index==1 else 1
-        request({'type':'save_settings','settings':chosen});wait_applied();time.sleep(.2);capture('other-profile-before-'+str(index))
+        request({'type':'save_settings','settings':chosen});wait_applied();time.sleep(.2);other=capture('other-profile-before-'+str(index))
+        date_box=(24,16,176,60)
+        assert ImageChops.difference(baseline.crop(date_box),other.crop(date_box)).getbbox() is not None,'Saved text size did not repaint date/readings immediately'
         chosen['TEXT_SIZE']=index
         saved=request({'type':'save_settings','settings':chosen});assert saved['ok'] and saved['delivery']['pending'],saved
         applied=wait_applied();time.sleep(.2);manual=capture('manual-size-'+str(index))

@@ -104,3 +104,13 @@ the clock, face typography, palette and artwork remain unchanged.
 
 The compact-layout implementation and current verification scope are recorded in
 [the compact layout checkpoint](compact-layout-checkpoint.md).
+
+## Music loading and saved Text Size
+
+Music reserves its artwork home before the cover arrives and shows a music-note
+symbol there. The image replaces that symbol without reflowing the title/artist.
+Saved Text Size updates repaint the date, reading/supporting text and activity
+text immediately; individual appearance keys and atomic settings both apply.
+
+See [music and Text Size verification](music-font-checkpoint.md) for candidate
+hashes, regression checks, actual emulator frames and remaining device scope.

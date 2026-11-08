@@ -120,3 +120,16 @@ test('focused complications cover real host values, identity, failures and activ
     assert.ok(slots.slice(0,2).every(slot=>slot.text===''&&slot.observedAt===0&&slot.semanticFlags===0));
   }
 });
+
+test('music loading fixtures preserve item identity across artwork and keep the secondary static',()=>{
+  const plan=fixtures.musicMotionPresets({now:N,session:S});assert.equal(plan.presets.length,8);
+  const find=name=>plan.presets.find(p=>p.name===name).bytes.ACTIVITY_DATA;
+  const token=bytes=>Array.from(bytes.slice(24+96,24+104));
+  for(const theme of ['light','dark']){
+    const pending=find('old-loading-'+theme),ready=find('old-ready-'+theme),next=find('new-loading-'+theme);
+    assert.deepEqual(token(pending),token(ready));assert.notDeepEqual(token(ready),token(next));
+    assert.deepEqual(records(pending)[1],records(next)[1]);
+    assert.equal(records(pending)[0].main,records(ready)[0].main);
+    assert.ok(ready.length>pending.length);
+  }
+});
