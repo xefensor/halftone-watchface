@@ -185,7 +185,7 @@ def capture(pebble,pbw,output,preview=None,appmessage=None):
         if owned:service.shutdown()
 
 
-def capture_activities(pebble,session,output,appmessage=None,verify_ticks=True):
+def capture_activities(pebble,session,output,appmessage=None,verify_ticks=True,names=None):
     """Capture affected generic layouts on the existing native candidate.
 
     Call after capture() in the same emulator session. This function does not
@@ -208,7 +208,7 @@ def capture_activities(pebble,session,output,appmessage=None,verify_ticks=True):
     if preview['version']!=json.loads((ROOT/'package.json').read_text())['version']:
         raise ValueError('Capture the current twenty-four native presets first')
     service=appmessage or AppMessageService(pebble);owned=appmessage is None
-    condition=threading.Condition();receipts={};changed=[]
+    condition=threading.Condition();receipts={};changed=[];presentations=[]
     def receipt(success):
         def callback(tid,app_uuid):
             if app_uuid==target:
@@ -216,6 +216,10 @@ def capture_activities(pebble,session,output,appmessage=None,verify_ticks=True):
         return callback
     def receive(_tid,app_uuid,data):
         if app_uuid!=target:return
+        painted=data.get(keys['ACTIVITY_PRESENTED'])
+        if isinstance(painted,(bytes,bytearray)) and len(painted)==24:
+            presentations.append({'primary':painted[1],'secondary':painted[2],
+                'session':int.from_bytes(painted[4:8],'little'),'view':int.from_bytes(painted[8:12],'little')})
         token=data.get(keys['REQUEST_ACTIVITIES'],data.get(keys['REQUEST_CONTEXT'],0))
         if isinstance(token,int) and token>=2 and token!=session:changed.append(token)
     handles=[service.register_handler('ack',receipt(True)),service.register_handler('nack',receipt(False)),
@@ -227,6 +231,8 @@ def capture_activities(pebble,session,output,appmessage=None,verify_ticks=True):
         if previous.get('session')==session:
             sequence=max([sequence]+[int.from_bytes(bytes(p['bytes']['ACTIVITY_DATA'])[16:20],'little') for p in previous['presets']])
     plan=fixture_plan(session,now=SAMPLE_TIME,mode='activities',sequence=sequence)
+    if names:plan['presets']=[preset for preset in plan['presets'] if preset['name'].rsplit('-',1)[0] in names]
+    if not plan['presets']:raise ValueError('No activity cases matched')
     (output/'fixtures.json').write_text(json.dumps(plan,indent=2)+'\n')
     captures=[]
     try:
@@ -273,9 +279,29 @@ def capture_activities(pebble,session,output,appmessage=None,verify_ticks=True):
                 'settled_header_readings_rgb_equal':True,'running_clock_changes_allowed':True,
                 'capture_delay_seconds':preset.get('captureDelaySeconds',.8),
                 'two_configured_readings':True,'region_checks':region_checks}
+            painted=[entry for entry in presentations if entry['view']==preset['viewSequence']]
+            if not painted:raise RuntimeError('No native presentation for '+preset['name'])
+            painted=painted[-1]
+            expected_primary=1 if preset.get('captureDelaySeconds',0)>=3 and preset['name'].startswith(('local-promotion','notification-promotes-timer')) else 0
+            if painted['primary']!=expected_primary:raise RuntimeError('Primary activity not painted: '+preset['name']+' '+str(painted))
+            if preset['name'].startswith(('secondary-unfit-value','paused-value-state-unfit')) and painted['secondary']!=255:
+                raise RuntimeError('An unpainted secondary escaped into navigation: '+preset['name'])
+            captured['nativePresentation']=painted
+            # A compact activity that yielded to larger primary text has no
+            # painted clock. Never require a tick in an intentionally hidden row.
+            selected=preset.get('activities',[preset.get('activity',{})])
+            visible=[]
+            for position,index in [('primary',painted['primary']),('secondary',painted['secondary'])]:
+                if index<len(selected):
+                    item=selected[index]
+                    visible.extend([item.get('support') if item.get('compactItem') else item.get('main')]
+                        if position=='secondary' else [item.get('main'),item.get('support')])
+            visible_clock=any(value and value.get('type')=='clock' and value.get('running') for value in visible)
+            if preset.get('verifyClockTick') and not visible_clock:
+                captured['clock_tick_check']='Not applicable: only clock is in an unpainted compact activity'
             if preset.get('verifyClockTick') and not verify_ticks:
                 captured['clock_tick_check']='Not run: this is a layout-only capture'
-            if preset.get('verifyClockTick') and verify_ticks:
+            if preset.get('verifyClockTick') and verify_ticks and visible_clock:
                 # Guest execution can trail host wall time while other build
                 # jobs are busy. Observe one unchanged fixture for a bounded
                 # interval; never resend it to manufacture a clock update.
@@ -298,7 +324,7 @@ def capture_activities(pebble,session,output,appmessage=None,verify_ticks=True):
             print('Captured '+preset['name'],flush=True)
         # Native Peek hides the activity area, so different clock values must
         # intentionally produce the same unobstructed face above its OS panel.
-        # Equivalent layouts are valid: retired LARGE_TEXT has no effect, and
+        # Equivalent layouts are valid when optional compact content yields, and
         # native Peek intentionally hides differing activity content. Functional
         # regions and local tick proofs above establish the affected behavior.
         report={'version':preview['version'],'session':session,'source':preview['source'],
@@ -528,7 +554,7 @@ def capture_motion(pebble,pbw,output):
                 'settledNativeRgbEqual':True,
                 'observation':'Only observed states are reported. Screenshot transfer may observe two endpoints without an intermediate frame; no extra frames are invented.'},
             'genuineReplacement':{'gif':'genuine-replacement.gif','captures':replacement_meta,
-                'identityChanged':True,'expectedDistancePx':200,'expectedDurationMs':231,
+                'identityChanged':True,'expectedEffect':'incoming dot dissolve','expectedDurationMs':180,
                 'expectedCurve':'quadratic EaseOut','expectedFrameIntervalMs':33,
                 'endpointStatesObserved':2,'intermediateFramesObserved':replacement_intermediate,
                 'settledNativeRgbEqual':True,'liveActivityClocks':False},

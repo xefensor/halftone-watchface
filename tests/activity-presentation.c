@@ -64,5 +64,14 @@ int main(void) {
   activity_footer_optional(protected,sizeof(protected),"Long optional identity",24,width,measure,NULL);
   assert(!strcmp(protected,"5:12 /km"));
   assert(activity_simple_unit("km")&&!activity_simple_unit(":12 /km"));
+  activity_layout_build_type("02:31","","","Paused\n1111111111111 km",
+      false,true,false,true,false,false,false,16,26,116,measure,clock_measure,NULL,&p,
+      28,26,30,203,true);
+  assert(p.main.count==1&&p.main.complete&&p.footer.count==2&&p.footer.complete);
+  assert(!strcmp(p.footer.text[1],"1111111111111 km"));
+  activity_layout_build_type("Xef","","See you at the station!","Signal",
+      false,false,false,true,true,false,true,26,26,116,measure,clock_measure,NULL,&p,
+      28,26,30,203,false);
+  assert(p.main.count&&p.support.count&&!p.secondary);
   return 0;
 }

@@ -30,7 +30,9 @@ and reading layout helpers use its bezel-safe content bounds. `src/pkjs` and
 `src/common` integrate sources, atomic settings and navigation; `src/plugin`
 exposes Halftone's own navigation source. Libraries are independently pinned in vendor/.
 
-For UI changes inspect fresh native renders in both text sizes, themes and Peek.
+For UI changes inspect fresh native renders at all three actual OS text sizes,
+in both themes and Peek, with Bigger Text/depth/shadow off and on.
+The supporting-type and Peek proof is in [the native checkpoint](docs/native-type-checkpoint.md).
 Phone settings checks must exercise the actual generated config.html. Fixture transports
 are simulated and do not establish live plugin, phone delivery, hardware or battery results.
 

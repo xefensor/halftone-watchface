@@ -8,7 +8,9 @@ The v1.9.0-rc.6 release and its docs/VALIDATION.md evidence remain frozen.
 
 - Halftone owns its centered Fira clock/value outlines, black zig-zag dot border,
   rounded corners, adaptive geometry, Big text, shadow and three/four-step depth.
-  Keep both readings in their fixed positions above activities and native Peek.
+  Keep the two left/right reading homes above activities and native Peek. Small
+  measured vertical shifts may keep supporting text clear of the dot border;
+  retain Fira shapes, clock sizes, Bigger Text, colours and border design.
 - Core 0.5.2 owns public readings/cache/transport. Activities 0.4.4 owns ACT3
   sources, roles and private context. UI 0.1.1 supplies utility roles and symbols.
   Exact archives and provenance live in vendor/. Never fix installed node_modules.

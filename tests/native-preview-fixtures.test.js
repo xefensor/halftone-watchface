@@ -33,7 +33,7 @@ test('twenty-four native settings states use production ACT3 encoders and retain
   }
 });
 test('approved normal and compact activity combinations have light and dark native fixtures',()=>{
-  const plan=fixtures.summaryPresets({now:N,session:S});assert.equal(plan.presets.length,68);
+  const plan=fixtures.summaryPresets({now:N,session:S});assert.equal(plan.presets.length,72);
   const names=['timer-media','media-timer','workout-timer','navigation-media','recording-delivery','download-recording','message-timer','media-alone','timer-alone','long-timer','long-artist','delivery-text'];
   for(const name of names)for(const theme of ['light','dark'])assert.ok(plan.presets.some(x=>x.name===name+'-'+theme));
   for(const preset of plan.presets){assert.equal(records(preset.bytes.ACTIVITY_DATA).length,preset.activities.length);assert.ok(preset.activities.length<=2);}
@@ -74,7 +74,7 @@ function readings(value) {
   assert.equal(at,bytes.length);return result;
 }
 test('focused complications cover real host values, identity, failures and active/Peek boundaries',()=>{
-  const plan=fixtures.complicationPresets({now:N,session:S});assert.equal(plan.presets.length,132);
+  const plan=fixtures.complicationPresets({now:N,session:S});assert.equal(plan.presets.length,138);
   assert.equal(plan.productionReadingHost,true);assert.equal(plan.halftoneLabelAdapter,true);
   for(const preset of plan.presets) {
     const slots=readings(preset.bytes.COMPLICATION_DATA);

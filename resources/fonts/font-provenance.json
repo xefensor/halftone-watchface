@@ -16,8 +16,8 @@
   },
   "generatedBody": {
     "file": "src/c/generated_body_metrics.h",
-    "sha256": "b42cdaad10b83f580278fddfa3f429f2eeba66179d964000394c87e931393017",
-    "bytes": 21560
+    "sha256": "3cafc215c12133417514e8b1b93121a7ee985c88b9234bdab27720055a11597d",
+    "bytes": 22948
   },
   "derivation": "Clock outlines: generate-clock-glyphs.py; body metrics: generate-body-metrics.py. Native screenshot verification remains separate."
 }

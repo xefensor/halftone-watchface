@@ -247,5 +247,122 @@ int main(void){
             subprocess.run([str(output)], check=True)
 
 
+    def test_primary_required_detail_wraps_while_unfit_secondary_stays_absent(self):
+        source = (ROOT / 'src/c/halftone.c').read_text()
+        body = callback(source, 'prv_activity_line')
+        harness = r'''
+#include <assert.h>
+#include <stdio.h>
+#include "watch_layout.h"
+#define ACTIVITY_LINE_BYTES 128
+enum {PAV_TEXT=1,PAV_VALUE=2};
+typedef struct {unsigned type;}PavDatum;
+typedef struct {const char *value,*label;}PavCard;
+typedef struct {int w;}GSize;
+static bool s_phone_connected=true;
+static struct {int secondary;}s_type={26};
+static bool pav_format_item(const PavCard *card,const PavDatum *datum,unsigned now,
+    bool connected,char *out,size_t capacity){(void)datum;(void)now;(void)connected;snprintf(out,capacity,"%s",card->value);return true;}
+static GSize prv_measure(const char *text,int point){return (GSize){(int)strlen(text)*point/2};}
+static void prv_activity_append(char *text,size_t capacity,const char *tail){
+ const size_t n=strlen(text);if(n+4<capacity){watch_layout_copy_utf8(" · ",text+n,capacity-n);watch_layout_copy_utf8(tail,text+strlen(text),capacity-strlen(text));}
+}
+static const char *activity_role(const PavCard *card,const PavDatum *datum){(void)datum;return card->label?card->label:"";}
+static void prv_ellipsize(char *text,size_t capacity,int point,int width){(void)text;(void)capacity;(void)point;(void)width;assert(false);}
+''' + body + r'''
+int main(void){
+ const PavCard card={"1111111111111 km",NULL};const PavDatum detail={PAV_VALUE};char text[128];
+ assert(prv_activity_line(&card,&detail,1,152,true,NULL,NULL,text,sizeof(text)));
+ assert(!strcmp(text,card.value));
+ assert(!prv_activity_line(&card,&detail,1,152,false,NULL,NULL,text,sizeof(text)));
+ s_type.secondary=16;
+ assert(prv_activity_line(&card,&detail,1,152,false,NULL,NULL,text,sizeof(text)));
+ assert(!strcmp(text,card.value));
+ s_type.secondary=26;
+ const PavCard labelled={"5:12 /km","A very long optional timer label"};
+ assert(prv_activity_line(&labelled,&detail,1,152,true,NULL,NULL,text,sizeof(text)));
+ assert(!strcmp(text,labelled.value));return 0;
+}
+'''
+        with tempfile.TemporaryDirectory(prefix='halftone-required-detail-') as tmp:
+            path = Path(tmp) / 'detail.c'
+            path.write_text(harness)
+            output = Path(tmp) / 'detail'
+            subprocess.run([os.environ.get('CC', 'cc'), '-std=c99', '-Wall', '-Wextra', '-Werror',
+                            '-I' + str(ROOT / 'src/c'), str(path), '-o', str(output)], check=True)
+            subprocess.run([str(output)], check=True)
+
+
+    def test_long_navigation_value_measures_and_draws_the_same_fitted_unit(self):
+        source = (ROOT / 'src/c/halftone.c').read_text()
+        bodies = '\n'.join(callback(source, name) for name in
+                           ['prv_vector_width', 'prv_activity_clock_measure',
+                            'prv_draw_number', 'prv_activity_value_measure'])
+        harness = r'''
+#include <assert.h>
+#include <stdio.h>
+#include "watch_layout.h"
+#include "supporting_type.h"
+#include "generated_body_metrics.h"
+#include "generated_clock_glyphs.h"
+typedef int GContext;
+typedef struct {int w;} GSize;
+typedef struct {char number[32],unit[16];} ReadingParts;
+typedef struct {int directions[2];} Card;
+typedef struct {const Card *card;} ActivityPlan;
+enum {READING_PART_BYTES=32,GTextAlignmentLeft=0};
+static HalftoneType s_type;
+static int s_text_color,drawn_unit_point;
+static int prv_round(float value){return (int)(value+.5f);}
+static int prv_point(int point){return point;}
+static const ClockGlyph *prv_clock_glyph(unsigned code){
+ for(unsigned i=0;i<CLOCK_GLYPH_COUNT;++i)if(clock_glyphs[i].code==code)return &clock_glyphs[i];
+ return NULL;
+}
+/* The packaged Roboto PFO advances for "mi" equal the selected point at
+ * 14,16,20,22,24,26 and28px. Its fallback is independent of Fira's advances. */
+static GSize prv_measure(const char *text,int point){return (GSize){(int)strlen(text)*point/2};}
+static MusicTextMetrics prv_music_measure(void *ctx,const char *text,int point){
+ (void)ctx;return (MusicTextMetrics){prv_measure(text,point).w,
+   body_text_ascent(text,point),body_text_descent(text,point)};
+}
+static bool reading_parts(const char *text,ReadingParts *parts){
+ return sscanf(text,"%31s %15s",parts->number,parts->unit)==2;
+}
+static void reading_native_number(const char *text,char *out,size_t size){snprintf(out,size,"%s",text);}
+static bool activity_simple_unit(const char *unit){return !strcmp(unit,"mi");}
+static void prv_vector(GContext *ctx,const char *text,float x,float y,float point,int color){
+ (void)ctx;(void)text;(void)x;(void)y;(void)point;(void)color;
+}
+static void prv_text(GContext *ctx,const char *text,int point,int x,int y,int width,int color,int align){
+ (void)ctx;(void)text;(void)x;(void)y;(void)width;(void)color;(void)align;drawn_unit_point=point;
+}
+''' + bodies + r'''
+int main(void){
+ const Card card={{1,0}};ActivityPlan plan={&card};
+ ReadingParts parts;assert(reading_parts("1234567890123 mi",&parts));
+ for(unsigned size=0;size<3;++size){
+  s_type=halftone_type(size);
+  MusicTextMetrics value=prv_activity_value_measure(&plan,"1234567890123 mi",14);
+  assert(value.width==142&&value.ascent+value.descent==32);
+  assert(prv_draw_number(NULL,&parts,106,160,14,halftone_unit_point(s_type,14),112,true));
+  assert(drawn_unit_point==14);
+ }
+ return 0;
+}
+'''
+        profile=(ROOT / 'src/c/supporting_type.h').read_text()
+        profile=profile[profile.index('typedef struct {int date'):profile.index('typedef struct {\n  WatchPose')]
+        harness=harness.replace('#include "supporting_type.h"',
+            'typedef struct {int width,ascent,descent;} MusicTextMetrics;\n'+profile)
+        with tempfile.TemporaryDirectory(prefix='halftone-fitted-unit-') as tmp:
+            path = Path(tmp) / 'unit.c'
+            path.write_text(harness)
+            output = Path(tmp) / 'unit'
+            subprocess.run([os.environ.get('CC', 'cc'), '-std=c99', '-Wall', '-Wextra', '-Werror',
+                            '-I' + str(ROOT / 'src/c'), str(path), '-o', str(output)], check=True)
+            subprocess.run([str(output)], check=True)
+
+
 if __name__ == '__main__':
     unittest.main()

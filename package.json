@@ -22,7 +22,7 @@
     "@rebble/clay": "^1.0.0",
     "pebble-activities": "file:vendor/pebble-activities-0.4.4.tgz",
     "pebble-watchface-core": "file:vendor/pebble-watchface-core-0.5.2.tgz",
-    "pebble-xoce-ui": "file:vendor/pebble-xoce-ui-0.1.1.tgz"
+    "pebble-xoce-ui": "file:vendor/pebble-xoce-ui-0.1.1-native-type-63526c2e66e1.tgz"
   },
   "pebble": {
     "displayName": "Halftone",
@@ -93,13 +93,6 @@
       "media": [
         {
           "type": "font",
-          "name": "FONT_BODY_11",
-          "file": "fonts/RobotoCondensed-Bold.ttf",
-          "extended": true,
-          "characterRegex": "[\\u0020-\\uFFFF]"
-        },
-        {
-          "type": "font",
           "name": "FONT_BODY_14",
           "file": "fonts/RobotoCondensed-Bold.ttf",
           "extended": true,
@@ -136,6 +129,13 @@
         {
           "type": "font",
           "name": "FONT_BODY_26",
+          "file": "fonts/RobotoCondensed-Bold.ttf",
+          "extended": true,
+          "characterRegex": "[\\u0020-\\uFFFF]"
+        },
+        {
+          "type": "font",
+          "name": "FONT_BODY_28",
           "file": "fonts/RobotoCondensed-Bold.ttf",
           "extended": true,
           "characterRegex": "[\\u0020-\\uFFFF]"

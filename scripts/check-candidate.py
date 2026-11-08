@@ -4,6 +4,7 @@ from pathlib import Path
 import hashlib,json,re,struct,zipfile
 from repo_workflow import candidate,check_build
 from pinned_dependencies import DEPENDENCIES,verify_dependency
+from check_body_fonts import audit_body_fonts
 root=Path(__file__).resolve().parents[1]
 def sha(data):return hashlib.sha256(data).hexdigest()
 def require(ok,message):
@@ -45,6 +46,7 @@ with zipfile.ZipFile(pbw) as built,zipfile.ZipFile(root/'build'/(root.name+'.pbw
     require(sha(binary)==native['emery/pebble-app.bin'] or
         sha(binary[:124]+b'\0'*4+binary[128:])==source['normalizedNativeBinarySha256'],
         'Native previews describe a different renderer')
-    report={'pbw':str(pbw),'sha256':sha(pbw.read_bytes()),'nativeBytes':len(binary),'nativePayloadsUnchanged':True,'firaGeometryMatches':True,'nativePreviewCodeAndResourcesMatch':True,'checks':'source fingerprints, package identity, keys, permissions, navigation, settings, native payloads, linked Fira tables'}
+    body_fonts=audit_body_fonts(root,built.read('emery/app_resources.pbpack'),binary)
+    report={'bodyFonts':body_fonts,'pbw':str(pbw),'sha256':sha(pbw.read_bytes()),'nativeBytes':len(binary),'nativePayloadsUnchanged':True,'firaGeometryMatches':True,'nativePreviewCodeAndResourcesMatch':True,'checks':'source fingerprints, package identity, keys, permissions, navigation, settings, native payloads, linked Fira tables'}
 output=root/'build/qa/artifact.json';output.parent.mkdir(parents=True,exist_ok=True);output.write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report,indent=2))

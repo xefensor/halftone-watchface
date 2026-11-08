@@ -35,3 +35,7 @@ transitions and native Peek movement respect the animation preference and unobst
 
 Development and QA use ignored build/. Historical documents and store materials describe
 their original published version; docs/VALIDATION.md does not certify this candidate.
+
+Supporting type follows the actual OS size using Halftone-owned profiles and
+measured bezel/Peek bounds. See [native type validation](native-type-checkpoint.md)
+for the exact local candidate, font audit, comparison captures and remaining scope.
