@@ -150,8 +150,9 @@ int main(void) {
   slot.observed_at=5000;assert(!reading_is_aged(&slot,4000));
 
   // Guard the actual four-level display palette, not just CSS input colours.
-  assert(reading_secondary_ink(0xc0,0xff)==0xd5);
-  assert(reading_secondary_ink(0xc6,0xff)==0xc6); // Muted blue would wash out.
+  assert(reading_secondary_ink(0xc0,0xff)==0xc0); // Black text on white.
+  assert(reading_secondary_ink(0xff,0xc0)==0xff); // White text on black.
+  assert(reading_secondary_ink(0xc6,0xff)==0xc6); // Preserve the chosen text colour.
   assert(reading_accent_ink(0xdb,0xff,0xc0)==0xdb); // Default blue stays blue.
   assert(reading_accent_ink(0xff,0xff,0xc0)==0xc0);
   for(unsigned background=0xc0;background<=0xff;++background) {
@@ -159,6 +160,7 @@ int main(void) {
     assert(reading_color_contrasts(reading_warning_ink(background),background,3000));
     for(unsigned foreground=0xc0;foreground<=0xff;++foreground) {
       const uint8_t secondary=reading_secondary_ink(foreground,background);
+      assert(secondary==foreground);
       if(reading_color_contrasts(foreground,background,4500))
         assert(reading_color_contrasts(secondary,background,4500));
       assert(reading_color_contrasts(reading_accent_ink(foreground,background,foreground),background,2000));

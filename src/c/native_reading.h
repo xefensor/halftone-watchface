@@ -211,10 +211,8 @@ static inline uint8_t reading_warning_ink(uint8_t background) {
   return reading_color_contrasts(amber,background,3000)?amber:reading_contrast_ink(background);
 }
 static inline uint8_t reading_secondary_ink(uint8_t foreground,uint8_t background) {
-  uint8_t muted=0xc0;
-  for(unsigned shift=0;shift<=4;shift+=2)
-    muted|=((((2*((foreground>>shift)&3)+((background>>shift)&3)+1)/3)&3)<<shift);
-  return reading_color_contrasts(muted,background,4500)?muted:foreground;
+  (void)background;
+  return foreground;
 }
 static inline uint8_t reading_accent_ink(uint8_t accent,uint8_t background,uint8_t foreground) {
   if(reading_color_contrasts(accent,background,2000))return accent;

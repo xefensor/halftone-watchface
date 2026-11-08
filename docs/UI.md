@@ -79,3 +79,11 @@ for the complete, verified 17-field snapshot permits Applied. Pending choices
 survive reopening and reconnect. Retry uses the existing queue, with bounded
 attempts. Status polling preserves drafts. Each optical toggle can independently
 make the page dirty, save, reopen and Discard without changing another choice.
+
+
+## Supporting text contrast
+
+Supporting/help text uses the normal foreground colour rather than blended grey.
+This keeps black text on white and white text on black readable without changing
+type sizes or layouts. See the [contrast checkpoint](text-contrast-checkpoint.md)
+for the current candidate and verification scope.
