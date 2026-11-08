@@ -34,3 +34,5 @@ with tempfile.TemporaryDirectory(prefix='watchface-tests-') as tmp:
 subprocess.run([sys.executable, str(root / 'tests/test_native_lifecycle.py')], check=True)
 
 subprocess.run([sys.executable, str(root / 'tests/test_native_display.py')], check=True)
+
+subprocess.run([sys.executable, str(root / "tests/test_native_reading_plan.py")], check=True)

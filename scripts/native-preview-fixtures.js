@@ -244,6 +244,11 @@ function complicationPresets(options) {
   const image={width:8,height:4,palette:Buffer.from([0xc0,0xff]).toString('base64'),pixels:Buffer.from(Array.from({length:16},(_,i)=>i%2?0x01:0x10)).toString('base64')};
   const specs=[
     {name:'temperature-rain',...ordinary},
+    {name:'matching-size',slots:ordinary.slots,sources:{'weather/location':[prague({temperature:temperature(1),precipitation:rain(35),...observed})]}},
+    {name:'matching-size-reversed',slots:[weather('precipitation'),weather('temperature')],sources:{'weather/location':[prague({temperature:temperature(1),precipitation:rain(35),...observed})]}},
+    {name:'number-text',slots:[weather('temperature'),weather('condition')],sources:{'weather/location':[prague({temperature:temperature(1),condition:short('Partly cloudy')})]}},
+    {name:'number-bitmap',slots:[weather('temperature'),{category:'camera',item:'view',property:'image',index:0}],sources:{'weather/location':[prague({temperature:temperature(1)})],'camera/view':[named('front-door','Front door',{image:{image}})]}},
+    {name:'number-unavailable',slots:ordinary.slots,sources:{'weather/location':[prague({temperature:temperature(1)})]}},
     {name:'custom-accent',...ordinary,accent:0xff5500},
     {name:'rain-100',slots:ordinary.slots,sources:{'weather/location':[prague({temperature:temperature(),precipitation:rain(100),...observed})]}},
     {name:'aged-weather',slots:ordinary.slots,sources:{'weather/location':[prague({temperature:temperature(),precipitation:rain(40),observed_at:{timestamp:{value:now-4000}}})]}},

@@ -846,7 +846,34 @@ static bool prv_draw_number(GContext *ctx,const ReadingParts *parts,float center
 static int prv_reading_height(void) {
   return (s_window_layer?layer_get_unobstructed_bounds(s_window_layer).size.h:FULL_LAYOUT_HEIGHT)-(s_depth_effect_enabled?23:16);
 }
+static ReadingNumberLayout s_reading_numbers[2];
+static void prv_fit_reading_numbers(WatchPose pose) {
+  ReadingNumberInput input[2]={0};
+  const time_t now=time(NULL);
+  if(s_has_complications)for(unsigned i=0;i<2;++i){
+    const ComplicationSlot *slot=&s_complications.slots[i];
+    char text[COMPLICATION_MAX_TEXT_BYTES+5],caption[COMPLICATION_MAX_LABEL_BYTES+16];
+    if(!complication_is_selected(slot)||reading_state(slot,now)!=READING_VALUE||
+        !prv_slot_text(slot,text,sizeof(text)))continue;
+    ReadingParts parts;const bool numeric=reading_parts(text,&parts);
+    const unsigned kind=reading_semantic(slot,&parts,numeric);
+    reading_caption(slot,kind,i,i18n_get_system_locale(),caption,sizeof(caption));
+    if(numeric){
+      char number[READING_PART_BYTES];reading_native_number(parts.number,number,sizeof(number));
+      const bool symbol=(slot->flags&COMPLICATION_FLAG_BITMAP)||
+          (kind>=COMPLICATION_SEMANTIC_TEMPERATURE&&kind<=COMPLICATION_SEMANTIC_CONDITION);
+      input[i]=(ReadingNumberInput){prv_vector_width(number,100),
+          parts.unit[0]?prv_measure(parts.unit,s_type.secondary).w:0,18,symbol,
+          symbol&&!strcmp(parts.unit,"%"),caption[0]||watch_context_visibility(pose)>.5f};
+    }else{
+      const float width=prv_vector_width(text,100);
+      if(width>0)input[i]=(ReadingNumberInput){width,0,0,false,false,true};
+    }
+  }
+  reading_number_pair(input,prv_round(pose.number_size),s_reading_numbers);
+}
 static HalftoneView prv_view(WatchPose pose,int height) {
+  prv_fit_reading_numbers(pose);
   int first_height=0,second_ascent=0,second_descent=0;
   bool second_line=false;
   if(s_has_complications)for(unsigned i=0;i<2;++i) {
@@ -862,19 +889,15 @@ static HalftoneView prv_view(WatchPose pose,int height) {
     reading_caption(slot,kind,i,i18n_get_system_locale(),caption,sizeof(caption));
     MusicTextMetrics first=prv_music_measure(NULL,text,s_type.secondary);
     const char *second=caption;
-    bool has_second=caption[0]!=0;
+    bool has_second=caption[0]!=0,overflow=false;
     if(state==READING_VALUE&&(slot->flags&COMPLICATION_FLAG_BITMAP)&&!value) {
       first=(MusicTextMetrics){0,prv_round(pose.number_size)/2,(prv_round(pose.number_size)+1)/2};
     } else if(numeric) {
-      const bool symbol=(slot->flags&COMPLICATION_FLAG_BITMAP)||
-          (kind>=COMPLICATION_SEMANTIC_TEMPERATURE&&kind<=COMPLICATION_SEMANTIC_CONDITION);
       char number[READING_PART_BYTES];reading_native_number(parts.number,number,sizeof(number));
-      const ReadingNumberLayout fit=reading_number_layout(prv_vector_width(number,100),prv_round(pose.number_size),
-          parts.unit[0]?prv_measure(parts.unit,s_type.secondary).w:0,18,symbol,
-          symbol&&!strcmp(parts.unit,"%"),has_second||watch_context_visibility(pose)>.5f);
+      const ReadingNumberLayout fit=s_reading_numbers[i];overflow=fit.overflow;
       first=fit.overflow?prv_music_measure(NULL,reading_overflow_label(i18n_get_system_locale()),s_type.secondary):
           prv_activity_clock_measure(NULL,number,fit.point);
-      if(!fit.unit_below&&parts.unit[0]) {
+      if(!fit.overflow&&!fit.unit_below&&parts.unit[0]) {
         const MusicTextMetrics unit=prv_music_measure(NULL,parts.unit,s_type.secondary);
         if(unit.ascent>first.ascent)first.ascent=unit.ascent;
         if(unit.descent>first.descent)first.descent=unit.descent;
@@ -882,11 +905,16 @@ static HalftoneView prv_view(WatchPose pose,int height) {
       if(!has_second&&fit.unit_below){second=parts.unit;has_second=true;}
 
     } else if(value&&prv_vector_width(text,100)>0) {
-      const ReadingNumberLayout fit=reading_number_layout(prv_vector_width(text,100),prv_round(pose.number_size),0,0,false,false,true);
+      const ReadingNumberLayout fit=s_reading_numbers[i];overflow=fit.overflow;
       first=fit.overflow?prv_music_measure(NULL,reading_overflow_label(i18n_get_system_locale()),s_type.secondary):
           prv_activity_clock_measure(NULL,text,fit.point);
     } else if(first.width>READING_CONTENT_WIDTH&&!has_second) {
       second=text;has_second=true;
+    }
+    /* Overflow can wrap just like a text-only value. Reserve its second
+     * line before placing the clock/activity, using the same fit as paint. */
+    if(overflow&&!has_second&&first.width>READING_CONTENT_WIDTH){
+      second=reading_overflow_label(i18n_get_system_locale());has_second=true;
     }
     if(first.ascent+first.descent>first_height)first_height=first.ascent+first.descent;
     if(has_second||reading_is_aged(slot,time(NULL))) {
@@ -983,7 +1011,6 @@ static void prv_draw_reading(GContext *ctx,unsigned index,const WatchPose *p) {
   }
   const bool bitmap=(slot->flags&COMPLICATION_FLAG_BITMAP)!=0;
   const bool aged=reading_is_aged(slot,time(NULL));
-  bool symbol=bitmap||(kind>=COMPLICATION_SEMANTIC_TEMPERATURE&&kind<=COMPLICATION_SEMANTIC_CONDITION);
   bool second_line=false;
   if(bitmap&&!has_text) {
     const int size=prv_round(p->number_size);
@@ -993,9 +1020,7 @@ static void prv_draw_reading(GContext *ctx,unsigned index,const WatchPose *p) {
   } else if(numeric) {
     char number[READING_PART_BYTES];reading_native_number(parts.number,number,sizeof(number));
     const int unit_width=parts.unit[0]?prv_measure(parts.unit,s_type.secondary).w:0;
-    const ReadingNumberLayout layout=reading_number_layout(prv_vector_width(number,100),
-        prv_round(p->number_size),unit_width,icon_size,symbol,symbol&&!strcmp(parts.unit,"%"),
-        caption[0]||watch_context_visibility(*p)>.5f||p->row_y+p->label_y+body_text_descent(parts.unit,s_type.secondary)>prv_reading_height()-2);
+    const ReadingNumberLayout layout=s_reading_numbers[index];
     if(layout.overflow)goto overflow;
     {
       float x=center-layout.width/2.0f;
@@ -1020,7 +1045,7 @@ static void prv_draw_reading(GContext *ctx,unsigned index,const WatchPose *p) {
     // become an ellipsis merely because their unit is not in our formatter.
     const float at100=prv_vector_width(text,100);
     if(at100>0) {
-      const ReadingNumberLayout layout=reading_number_layout(at100,prv_round(p->number_size),0,0,false,false,true);
+      const ReadingNumberLayout layout=s_reading_numbers[index];
       if(!layout.overflow) {
         const MusicTextMetrics ink=prv_activity_clock_measure(NULL,text,layout.point);
         prv_vector(ctx,text,center-layout.width/2.0f,p->row_y+(ink.ascent-ink.descent)/2.0f,layout.point,s_text_color);

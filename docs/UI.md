@@ -87,3 +87,20 @@ Supporting/help text uses the normal foreground colour rather than blended grey.
 This keeps black text on white and white text on black readable without changing
 type sizes or layouts. See the [contrast checkpoint](text-contrast-checkpoint.md)
 for the current candidate and verification scope.
+
+## Matching reading values
+
+Both visible numeric reading homes use one shared size. Before measuring row
+heights, the renderer chooses the largest point size within the face's existing
+range that fits both complete values, units and required symbols. Measurement
+and painting reuse the same per-slot fit, including optional-icon removal and
+second-line units where captions allow them. Required captions retain their line.
+Unfittable values use the existing overflow label rather than partial digits.
+Empty, unavailable, text-only and bitmap-only homes do not reduce the other
+home's numeric size. A single numeric home fits normally. The plan recomputes
+with each value, text-size, activity and Peek layout, including Bigger
+Text. Supporting values, units and captions keep their existing respective roles;
+the clock, face typography, palette and artwork remain unchanged.
+
+The compact-layout implementation and current verification scope are recorded in
+[the compact layout checkpoint](compact-layout-checkpoint.md).
