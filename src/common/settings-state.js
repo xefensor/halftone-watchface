@@ -7,14 +7,15 @@ var KEY = 'clay-settings';
 var PREFERENCES = '__halftoneActivityPreferences';
 var OLD_PREFERENCES = 'halftone-activity-preferences-v1';
 var names = ['TEMPERATURE','REQUEST_WEATHER','BACKGROUND_COLOR','TEXT_COLOR','DEPTH_EFFECT','TEXT_SHADOW','LARGE_TEXT','USE_12_HOUR','USE_FAHRENHEIT','TEMPERATURE_FAHRENHEIT','WEATHER_UPDATED_AT','FORECAST_DATA','FOLLOW_PEBBLE_UNITS','WEATHER_LOCATION','WEATHER_CLEAR','SHOW_DAILY_RANGE','SHOW_RAIN_CHANCE','WEATHER_DETAILS','LAYOUT_STYLE','SHOW_WEATHER_ICON','WEATHER_CONDITION','COMPLICATION_DATA','REQUEST_COMPLICATIONS','CONTEXT_DATA','REQUEST_CONTEXT','SHOW_MUSIC','SHOW_NOTIFICATIONS','NOTIFICATION_PREVIEW','NOTIFICATION_APPS','SHOW_STATUS','PANEL_TRANSITIONS','ACCENT_COLOR','ANIMATIONS','CLOCK_FORMAT','NOTIFICATION_VIBRATION','NIGHT_PALETTE','NIGHT_BACKGROUND_COLOR','NIGHT_TEXT_COLOR','NIGHT_ACCENT_COLOR','NOTIFICATION_APP_ONLY','CONTEXT_STATE','ACTIVITY_DATA','REQUEST_ACTIVITIES','SHOW_ACTIVITIES','ACTIVITY_PRESENTED','REQUEST_PRESENTATION'];
-var defaults = {BACKGROUND_COLOR:0xff5500,TEXT_COLOR:0xffffff,DEPTH_EFFECT:false,TEXT_SHADOW:false,LARGE_TEXT:false,PANEL_TRANSITIONS:true,ACCENT_COLOR:0x55aaff,CLOCK_FORMAT:0,ANIMATIONS:true,SHOW_STATUS:true,SHOW_ACTIVITIES:true,SHOW_MUSIC:true,SHOW_NOTIFICATIONS:false,NOTIFICATION_PREVIEW:false,NOTIFICATION_APP_ONLY:false,NOTIFICATION_VIBRATION:0,NIGHT_PALETTE:false,NIGHT_BACKGROUND_COLOR:0,NIGHT_TEXT_COLOR:0xffffff,NIGHT_ACCENT_COLOR:0x55aaff,NOTIFICATION_APPS:''};
+names=names.concat(['TEXT_SIZE','APPEARANCE_MODE','MANUAL_APPEARANCE','DISPLAY_PREFERENCES','DISPLAY_PREFERENCES_RESULT']);
+var defaults = {BACKGROUND_COLOR:0xff5500,TEXT_COLOR:0xffffff,DEPTH_EFFECT:false,TEXT_SHADOW:false,LARGE_TEXT:false,PANEL_TRANSITIONS:true,ACCENT_COLOR:0x55aaff,CLOCK_FORMAT:0,ANIMATIONS:true,SHOW_STATUS:true,SHOW_ACTIVITIES:true,SHOW_MUSIC:true,SHOW_NOTIFICATIONS:false,NOTIFICATION_PREVIEW:false,NOTIFICATION_APP_ONLY:false,NOTIFICATION_VIBRATION:0,NIGHT_PALETTE:false,NIGHT_BACKGROUND_COLOR:0,NIGHT_TEXT_COLOR:0xffffff,NIGHT_ACCENT_COLOR:0x55aaff,NOTIFICATION_APPS:'',TEXT_SIZE:0,APPEARANCE_MODE:2,MANUAL_APPEARANCE:0};
 function object(value) { return !!value && typeof value === 'object' && !Array.isArray(value); }
 function unwrap(value) { return object(value) && Object.prototype.hasOwnProperty.call(value,'value') ? value.value : value; }
-function value(source,name) {
-  var index=names.indexOf(name);
-  return unwrap(source[name] !== undefined ? source[name] : source[10000+index] !== undefined ? source[10000+index] : source[index]);
-}
+function value(source,name) { var index=names.indexOf(name);return unwrap(source[name]!==undefined?source[name]:source[10000+index]!==undefined?source[10000+index]:source[index]); }
 function valid(name,input) {
+  if (name==='TEXT_SIZE') return [0,1,2,3].indexOf(input)>=0;
+  if (name==='APPEARANCE_MODE') return [0,1,2].indexOf(input)>=0;
+  if (name==='MANUAL_APPEARANCE') return input===0 || input===1;
   if (/_COLOR$/.test(name)) return typeof input === 'number' && isFinite(input) && Math.floor(input) === input && input >= 0 && input <= 0xffffff;
   if (name === 'CLOCK_FORMAT') return input === 0 || input === 12 || input === 24;
   if (name === 'NOTIFICATION_VIBRATION') return input === 0 || input === 1 || input === 2;
@@ -26,6 +27,9 @@ function normalize(source,strict) {
   var result = {}, invalid = false;
   Object.keys(defaults).forEach(function(name) {
     var input = value(source,name);
+    // Old complete drafts and persisted numeric Clay keys remain valid.
+    if (input===undefined && name==='APPEARANCE_MODE') input=result.NIGHT_PALETTE ? 1 : 2;
+    if (input===undefined && (name==='TEXT_SIZE'||name==='MANUAL_APPEARANCE')) input=0;
     if (!strict && typeof defaults[name] === 'boolean' && ['true','false','0','1'].indexOf(input) >= 0) input = input === 'true' || input === '1';
     if (input === undefined && name === 'CLOCK_FORMAT') {
       var old = value(source,'USE_12_HOUR');
@@ -35,6 +39,7 @@ function normalize(source,strict) {
     if (!valid(name,input)) { if (strict) invalid = true; input = defaults[name]; }
     result[name] = typeof defaults[name] === 'boolean' ? !!input : input;
   });
+  result.NIGHT_PALETTE=result.APPEARANCE_MODE===1;
   var preferences = source[PREFERENCES];
   preferences = unwrap(preferences);
   if (typeof preferences === 'string') { try { preferences = JSON.parse(preferences); } catch (ignored) { invalid = true; } }
@@ -70,4 +75,13 @@ function save(storage,candidate) {
     return {ok:true,settings:actual};
   } catch (ignored) { return {ok:false}; }
 }
-module.exports = {read:read,save:save,normalize:normalize,defaults:defaults,names:names,preferencesKey:PREFERENCES};
+function patch(storage,source){
+  var current=read(storage),changed=false;if(!current||!object(source))return {ok:false};
+  Object.keys(defaults).forEach(function(name){var input=value(source,name);if(input!==undefined&&valid(name,input)){current[name]=typeof defaults[name]==='boolean'?!!input:input;changed=true;}});
+  if(value(source,'CLOCK_FORMAT')===undefined){var old=value(source,'USE_12_HOUR');if(old===true||old===1||old===false||old===0){current.CLOCK_FORMAT=old?12:24;changed=true;}}
+  if(value(source,'APPEARANCE_MODE')===undefined&&valid('NIGHT_PALETTE',value(source,'NIGHT_PALETTE')))current.APPEARANCE_MODE=value(source,'NIGHT_PALETTE')?1:2;
+  if(source[PREFERENCES]!==undefined){var p=unwrap(source[PREFERENCES]);if(typeof p==='string'){try{p=JSON.parse(p);}catch(ignored){return {ok:false};}}current[PREFERENCES]=selection.normalizePreferences(p);changed=true;}
+  current.NIGHT_PALETTE=current.APPEARANCE_MODE===1;
+  return changed?save(storage,current):{ok:true,settings:current};
+}
+module.exports = {read:read,save:save,patch:patch,normalize:normalize,defaults:defaults,names:names,preferencesKey:PREFERENCES};

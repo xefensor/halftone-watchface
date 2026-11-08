@@ -408,11 +408,15 @@ module.exports = function() {
     var customPalette = {background:bg.get(),foreground:fg.get()};
     var previousTheme = initialTheme;
     var paletteInput, paletteStatus;
-    var night = field('NIGHT_PALETTE');
+    var night = field('NIGHT_PALETTE'), appearanceMode=field('APPEARANCE_MODE'), manualAppearance=field('MANUAL_APPEARANCE');
+    show(night,false);
+    function nightSelected(){return Number(appearanceMode.get())!==1&&Number(manualAppearance.get())===1;}
+    function dayEditable(){return Number(appearanceMode.get())===1||!nightSelected();}
     var previewPalette;
     var theme = choice('halftone-theme',t('theme'),[['light',t('themeLight')],['dark',t('themeDark')],['custom',t('themeCustom')]],initialTheme);
     function updateColors() {
-      show(bg,theme.value === 'custom'); show(fg,theme.value === 'custom');
+      show(bg,dayEditable()&&theme.value === 'custom'); show(fg,dayEditable()&&theme.value === 'custom');
+      show(accent,dayEditable());
       var contrast = node(item('halftone-contrast'));
       function luminance(value) {
         return [16,8,0].map(function(shift) { var channel = ((value >> shift) & 255) / 255;
@@ -425,7 +429,7 @@ module.exports = function() {
         var front=(foreground>>shift)&255,back=(background>>shift)&255;
         return result | (Math.floor((2*(front/85)+(back/85)+1)/3)*85 << shift);
       },0);
-      var low = ratio(background,foreground) < 4.5 || night.get() && ratio(color('NIGHT_BACKGROUND_COLOR'),color('NIGHT_TEXT_COLOR')) < 4.5;
+      var low = dayEditable()&&ratio(background,foreground) < 4.5 || (Number(appearanceMode.get())===1||nightSelected())&&ratio(color('NIGHT_BACKGROUND_COLOR'),color('NIGHT_TEXT_COLOR')) < 4.5;
       var adjusted = ratio(background,secondary) < 4.5 || ratio(background,color('ACCENT_COLOR')) < 2 ||
         night.get() && ratio(color('NIGHT_BACKGROUND_COLOR'),color('NIGHT_ACCENT_COLOR')) < 2;
       if (contrast) { contrast.className += contrast.className.indexOf('halftone-warning') < 0 ? ' halftone-warning' : '';
@@ -491,14 +495,20 @@ module.exports = function() {
       updatePaletteCode();
     }
     function updateNight() {
-      ['NIGHT_BACKGROUND_COLOR','NIGHT_TEXT_COLOR','NIGHT_ACCENT_COLOR'].forEach(function(key) { show(field(key),!!night.get()); });
+      var mode=Number(appearanceMode.get()), isNight=nightSelected();
+      if(!!night.get()!==(mode===1))night.set(mode===1);
+      show(manualAppearance,mode===2);
+      show(item('halftone-appearance-unavailable'),mode===0);
+      show(item('halftone-theme'),dayEditable());show(item('halftone-palette-code'),dayEditable());
+      ['NIGHT_BACKGROUND_COLOR','NIGHT_TEXT_COLOR','NIGHT_ACCENT_COLOR'].forEach(function(key) { show(field(key),mode===1||isNight); });
       if (previewPalette) {
-        previewPalette.parentNode.hidden = !night.get();
-        if (!night.get()) { previewPalette.value = 'day'; }
+        previewPalette.parentNode.hidden = mode!==1;
+        if(mode!==1)previewPalette.value=isNight?'quiet':'day';
       }
       updateColors(); updateDirty();
     }
     night.on('change',updateNight);
+    appearanceMode.on('change',updateNight);manualAppearance.on('change',updateNight);
     ['NIGHT_BACKGROUND_COLOR','NIGHT_TEXT_COLOR','NIGHT_ACCENT_COLOR'].forEach(function(key) { field(key).on('change',updateColors); });
     updateNight();
 
@@ -696,7 +706,7 @@ module.exports = function() {
       submitHost.appendChild(reloadSaved);
     }
     function signature() {
-      return JSON.stringify(['BACKGROUND_COLOR','TEXT_COLOR','ACCENT_COLOR','CLOCK_FORMAT','ANIMATIONS','SHOW_STATUS','SHOW_ACTIVITIES','SHOW_MUSIC','SHOW_NOTIFICATIONS','NOTIFICATION_PREVIEW','NOTIFICATION_APP_ONLY','NOTIFICATION_VIBRATION','NOTIFICATION_APPS','NIGHT_PALETTE','NIGHT_BACKGROUND_COLOR','NIGHT_TEXT_COLOR','NIGHT_ACCENT_COLOR'].map(function(key) { return field(key).get(); }).concat([notification.get() && appMode.value === 'selected' ? appEntry.value.trim() : '',activityValue()]));
+      return JSON.stringify(['BACKGROUND_COLOR','TEXT_COLOR','ACCENT_COLOR','CLOCK_FORMAT','ANIMATIONS','SHOW_STATUS','SHOW_ACTIVITIES','SHOW_MUSIC','SHOW_NOTIFICATIONS','NOTIFICATION_PREVIEW','NOTIFICATION_APP_ONLY','NOTIFICATION_VIBRATION','NOTIFICATION_APPS','NIGHT_PALETTE','NIGHT_BACKGROUND_COLOR','NIGHT_TEXT_COLOR','NIGHT_ACCENT_COLOR','TEXT_SIZE','APPEARANCE_MODE','MANUAL_APPEARANCE','LARGE_TEXT','DEPTH_EFFECT','TEXT_SHADOW','PANEL_TRANSITIONS'].map(function(key) { return field(key).get(); }).concat([notification.get() && appMode.value === 'selected' ? appEntry.value.trim() : '',activityValue()]));
     }
     updateDirty = function() {
       if (!initialSnapshot || restoring) { return; }
@@ -710,7 +720,7 @@ module.exports = function() {
       if (button) { button.disabled = bridge ? phonePhase === 'saving' || !dirty && phonePhase !== 'uncertain' && phonePhase !== 'failed' : !dirty && saved !== 'none'; }
       if (reloadSaved) { reloadSaved.hidden = phonePhase !== 'uncertain'; reloadSaved.disabled = phonePhase === 'saving'; }
       if (discard) discard.disabled = !dirty || phonePhase === 'saving' || phonePhase === 'uncertain';
-      saveSpace();
+      saveSpace();updateDisplay();
     };
     var technical = node(item('complications-status')), context = node(item('context-status'));
     if (technical && context) {
@@ -838,7 +848,7 @@ module.exports = function() {
       if (!canvas) { return; }
       var format = Number(field('CLOCK_FORMAT').get());
       if (format !== 12 && format !== 24) { format = Number(assets.systemFormat) === 12 ? 12 : 24; }
-      var quietPreview = night.get() && previewPalette && previewPalette.value === 'quiet';
+      var quietPreview = nightSelected() || Number(appearanceMode.get())===1 && previewPalette && previewPalette.value === 'quiet';
       var background = color(quietPreview ? 'NIGHT_BACKGROUND_COLOR' : 'BACKGROUND_COLOR');
       var foreground = color(quietPreview ? 'NIGHT_TEXT_COLOR' : 'TEXT_COLOR');
       var highlight = color(quietPreview ? 'NIGHT_ACCENT_COLOR' : 'ACCENT_COLOR');
@@ -881,8 +891,29 @@ module.exports = function() {
     initialSnapshot = signature();
     confirmedForm = JSON.parse(JSON.stringify(clay.serialize()));
     if (bridge) bridge.remember(clay.serialize());
-    ['BACKGROUND_COLOR','TEXT_COLOR','ACCENT_COLOR','CLOCK_FORMAT','ANIMATIONS','SHOW_STATUS','SHOW_ACTIVITIES','SHOW_MUSIC','SHOW_NOTIFICATIONS','NOTIFICATION_PREVIEW','NOTIFICATION_APP_ONLY','NOTIFICATION_VIBRATION','NOTIFICATION_APPS','NIGHT_PALETTE','NIGHT_BACKGROUND_COLOR','NIGHT_TEXT_COLOR','NIGHT_ACCENT_COLOR'].forEach(function(key) { field(key).on('input change',updateDirty); });
+    ['BACKGROUND_COLOR','TEXT_COLOR','ACCENT_COLOR','CLOCK_FORMAT','ANIMATIONS','SHOW_STATUS','SHOW_ACTIVITIES','SHOW_MUSIC','SHOW_NOTIFICATIONS','NOTIFICATION_PREVIEW','NOTIFICATION_APP_ONLY','NOTIFICATION_VIBRATION','NOTIFICATION_APPS','NIGHT_PALETTE','NIGHT_BACKGROUND_COLOR','NIGHT_TEXT_COLOR','NIGHT_ACCENT_COLOR','TEXT_SIZE','APPEARANCE_MODE','MANUAL_APPEARANCE','LARGE_TEXT','DEPTH_EFFECT','TEXT_SHADOW','PANEL_TRANSITIONS'].forEach(function(key) { field(key).on('input change',updateDirty); });
     updateDirty();
+    var displayHost=node(item('halftone-display-status')),displayLabel,displayRetry,displayBusy=false;
+    if(displayHost){
+      clear(displayHost);displayLabel=make('p');displayLabel.setAttribute('aria-live','polite');displayHost.appendChild(displayLabel);
+      displayRetry=make('button',t('displayRetry'));displayRetry.type='button';displayHost.appendChild(displayRetry);
+      displayRetry.addEventListener('click',function(){pollDisplay(true);});
+    }
+    function updateDisplay(){
+      if(!displayLabel)return;
+      var dirty=signature()!==initialSnapshot, saved=data.save||{};
+      displayLabel.textContent=t(dirty?'saveUnsaved':saved.state==='none'?'saveNone':saved.applied?'displayApplied':saved.error?'displayFailed':'displayPending');
+      displayRetry.hidden=!!saved.applied;
+      displayRetry.disabled=dirty||displayBusy||phonePhase==='saving'||phonePhase==='uncertain';
+    }
+    function pollDisplay(retryDelivery){
+      if(!bridge||!bridge.display||displayBusy)return;
+      if(phonePhase==='saving'||phonePhase==='uncertain'||signature()!==initialSnapshot){updateDisplay();return;}
+      displayBusy=true;updateDisplay();
+      bridge.display(retryDelivery,function(delivery){displayBusy=false;if(delivery)data.save=delivery;updateDisplay();});
+    }
+    updateNight();updateDisplay();
+    if(bridge&&bridge.display){pollDisplay(false);setInterval(function(){pollDisplay(false);},3000);}
     var form = document.getElementById('main-form');
     if (form) {
       function resized() {saveSpace();}
@@ -920,7 +951,7 @@ module.exports = function() {
         try { candidate = bridge.snapshot(sentForm); } catch (ignored) { phonePhase = 'failed'; updateDirty(); return; }
         phonePhase = 'saving'; updateDirty();
         bridge.save(candidate,function(result) {
-          if (result && result.ok) { bridge.remember(sentForm,result.settings); confirmedForm = JSON.parse(JSON.stringify(sentForm)); initialSnapshot = sentSignature; phoneConfirmed = true; phonePhase = 'ready'; }
+          if (result && result.ok) { if(result.delivery)data.save=result.delivery;bridge.remember(sentForm,result.settings); confirmedForm = JSON.parse(JSON.stringify(sentForm)); initialSnapshot = sentSignature; phoneConfirmed = true; phonePhase = 'ready'; }
           else phonePhase = result && result.notSaved ? 'failed' : 'uncertain';
           updateDirty();
         });

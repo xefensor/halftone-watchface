@@ -7,6 +7,11 @@ module.exports = [
   {type:'text',id:'halftone-intro',defaultValue:'Choose colours and what appears on your watch.'},
   {type:'section',items:[
     {type:'heading',defaultValue:'Appearance'},
+    {type:'select',messageKey:'TEXT_SIZE',defaultValue:0,label:'Text size',serializeValueAs:'integer',options:[{label:'Follow Pebble',value:0},{label:'Small',value:1},{label:'Medium',value:2},{label:'Large',value:3}]},
+    {type:'select',messageKey:'APPEARANCE_MODE',defaultValue:2,label:'Appearance',serializeValueAs:'integer',options:[{label:'Follow Pebble',value:0},{label:'Follow Quiet Time',value:1},{label:'Manual',value:2}]},
+    {type:'select',messageKey:'MANUAL_APPEARANCE',defaultValue:0,label:'Manual palette',serializeValueAs:'integer',options:[{label:'Light',value:0},{label:'Dark',value:1}]},
+    {type:'text',id:'halftone-appearance-unavailable',defaultValue:'Follow Pebble appearance is unavailable on this build. It uses your last Light or Dark choice.'},
+    {type:'text',id:'halftone-display-status',defaultValue:'Saved on phone · Pending on watch'},
     {type:'text',id:'halftone-preview',defaultValue:'Layout & colour preview'},
     {type:'text',id:'halftone-theme',defaultValue:'Theme'},
     {type:'color',messageKey:'BACKGROUND_COLOR',defaultValue:'0xFF5500',label:'Background color',layout:'COLOR',sunlight:false},
@@ -15,9 +20,9 @@ module.exports = [
     {type:'text',id:'halftone-contrast',defaultValue:''},
     {type:'text',id:'halftone-palette-code',defaultValue:'Share colours'},
     {type:'toggle',messageKey:'NIGHT_PALETTE',defaultValue:false,label:'Quiet Time colours',description:'Use these watch colours while Pebble Quiet Time is active.'},
-    {type:'color',messageKey:'NIGHT_BACKGROUND_COLOR',defaultValue:'0x000000',label:'Quiet Time background',layout:'COLOR',sunlight:false},
-    {type:'color',messageKey:'NIGHT_TEXT_COLOR',defaultValue:'0xFFFFFF',label:'Quiet Time text',layout:'COLOR',sunlight:false},
-    {type:'color',messageKey:'NIGHT_ACCENT_COLOR',defaultValue:'0x55AAFF',label:'Quiet Time accent',layout:'COLOR',sunlight:false},
+    {type:'color',messageKey:'NIGHT_BACKGROUND_COLOR',defaultValue:'0x000000',label:'Night background',layout:'COLOR',sunlight:false},
+    {type:'color',messageKey:'NIGHT_TEXT_COLOR',defaultValue:'0xFFFFFF',label:'Night text',layout:'COLOR',sunlight:false},
+    {type:'color',messageKey:'NIGHT_ACCENT_COLOR',defaultValue:'0x55AAFF',label:'Night accent',layout:'COLOR',sunlight:false},
     {type:'select',messageKey:'CLOCK_FORMAT',defaultValue:0,label:'Time format',serializeValueAs:'integer',options:[
       {label:'Follow Pebble',value:0},{label:'12-hour time',value:12},{label:'24-hour time',value:24}
     ]},

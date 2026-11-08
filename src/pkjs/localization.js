@@ -3056,6 +3056,8 @@ Object.keys(SETTINGS_CLEANUP_MESSAGES).forEach(function(language) {
 });
 var PREVIEW_TIMER_MESSAGES = {"en":"Timer","cs":"Časovač","sk":"Časovač","de":"Timer","fr":"Minuteur","es":"Temporizador","it":"Timer","pt":"Temporizador","nl":"Timer","pl":"Minutnik","da":"Timer","sv":"Timer","no":"Tidtaker","fi":"Ajastin","hu":"Időzítő","ro":"Temporizator","tr":"Zamanlayıcı"};
 Object.keys(PREVIEW_TIMER_MESSAGES).forEach(function(language) { MESSAGES[language].previewTimer=PREVIEW_TIMER_MESSAGES[language]; });
+var displayWords=require('../common/display-words');
+Object.keys(displayWords).forEach(function(language){Object.assign(MESSAGES[language],displayWords[language]);});
 var LANGUAGES = Object.keys(MESSAGES);
 var LITERALS = Object.create(null);
 Object.keys(MESSAGES.en).forEach(function(key) { LITERALS[MESSAGES.en[key]] = key; });

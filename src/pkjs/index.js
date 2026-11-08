@@ -80,6 +80,7 @@ var send = createMessageQueue({
   later: function(callback, delay) { return setTimeout(callback, delay); },
   cancelLater: function(timer) { clearTimeout(timer); }
 });
+var display=require('./display-controller').create({storage:localStorage,send:send,keys:MessageKeys,changed:invalidateSettings,later:function(fn,ms){return setTimeout(fn,ms);},cancel:function(id){clearTimeout(id);}});
 function log(message) { console.log(message); }
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, function(character) {
@@ -220,6 +221,7 @@ function requestContextSession(attempt,generation) {
 }
 Pebble.addEventListener('ready', function() {
   invalidateSettings();
+  display.reconcile(true);
   resyncPresentation();
   complications.refresh(); context.refresh(true); activities.refresh();
   cancelContextBootstrap();contextBootstrapPending=true;
@@ -233,6 +235,8 @@ function systemClockFormat() {
   } catch (ignored) { return null; }
 }
 Pebble.addEventListener('appmessage', function(event) {
+  var result=messageValue(event.payload||{},'DISPLAY_PREFERENCES_RESULT');
+  if(result!==undefined)display.receive(result);
   var presented=messageValue(event.payload||{},'ACTIVITY_PRESENTED');
   if(presented!==undefined)navigation.receive(presented);
   var format = messageValue(event.payload || {}, 'CLOCK_FORMAT');
@@ -283,6 +287,7 @@ Pebble.addEventListener('showConfiguration', function() {
         item.defaultValue = previous;
       }
       if (item.messageKey === 'NOTIFICATION_APPS' && typeof previous === 'string') { item.defaultValue = previous; }
+      if (['TEXT_SIZE','APPEARANCE_MODE','MANUAL_APPEARANCE'].indexOf(item.messageKey)>=0) { var nativeSettings=settingsState.read(localStorage);if(nativeSettings)item.defaultValue=nativeSettings[item.messageKey]; }
       if (item.messageKey === 'CLOCK_FORMAT') { item.defaultValue = clockFormat(saved); }
       if (item.messageKey === 'NOTIFICATION_VIBRATION' && [0,1,2].indexOf(previous) >= 0) { item.defaultValue = previous; }
       if (item.id === 'halftone-settings-data') { item.defaultValue = escapeHtml(JSON.stringify(metadata)); return; }
@@ -319,48 +324,6 @@ Pebble.addEventListener('showConfiguration', function() {
   Pebble.openURL(clay.generateUrl());
 });
 
-function watchSettings(payload) {
-  var result = {};
-  ['BACKGROUND_COLOR', 'TEXT_COLOR', 'ACCENT_COLOR',
-    'LARGE_TEXT', 'DEPTH_EFFECT', 'TEXT_SHADOW', 'PANEL_TRANSITIONS', 'USE_12_HOUR', 'CLOCK_FORMAT', 'SHOW_STATUS', 'ANIMATIONS', 'NOTIFICATION_VIBRATION',
-    'NIGHT_PALETTE', 'NIGHT_BACKGROUND_COLOR', 'NIGHT_TEXT_COLOR', 'NIGHT_ACCENT_COLOR'].forEach(function(name) {
-    var value = messageValue(payload, name);
-    if (value === undefined) { return; }
-    if (/_COLOR$/.test(name)) {
-      if (typeof value !== 'number' || !isFinite(value) || Math.floor(value) !== value ||
-          value < 0 || value > 0xFFFFFF) { return; }
-    } else if (name === 'NOTIFICATION_VIBRATION') {
-      if (value !== 0 && value !== 1 && value !== 2) { return; }
-    } else if (name === 'CLOCK_FORMAT') {
-      if (value !== 0 && value !== 12 && value !== 24) { return; }
-    } else {
-      if (value === true || value === false || value === 0 || value === 1) { value = Number(value); }
-      else { return; }
-    }
-    result[MessageKeys[name]] = value;
-  });
-  return result;
-}
-
-var DELIVERY_KEY = 'halftone-settings-delivery-v1';
-var settingsDelivery = null;
-var settingsRetry = null;
-var deliverySequence = 0;
-function deliveryRecord() {
-  try {
-    var record = JSON.parse(localStorage.getItem(DELIVERY_KEY));
-    if (!record || typeof record.id !== 'string' ||
-        ['pending', 'failed', 'saved'].indexOf(record.state) < 0) { return null; }
-    // An earlier build may have queued only its now-retired text-size choice.
-    // There is no active setting to deliver or to show as waiting in this UI.
-    if (record.state !== 'saved' && !Object.keys(watchSettings(record.payload || {})).length) { return null; }
-    return record;
-  } catch (ignored) { return null; }
-}
-function storeDelivery(record) {
-  try { localStorage.setItem(DELIVERY_KEY, JSON.stringify(record)); }
-  catch (ignored) { log('Settings delivery status could not be stored'); }
-}
 function settingsMetadata(status, halftone) {
   var details = halftone.sourceStates || {};
   function source(name, enabled) {
@@ -372,7 +335,7 @@ function settingsMetadata(status, halftone) {
       halftone.ready ? 'ready' : 'waiting', message:error};
   }
   var slots = status.slots || [];
-  var record = deliveryRecord();
+  var delivery=display.status();
   return {slots:[0,1].map(function(index) {
     var slot = slots[index] || {};
     var privateValue = privateReading(slot);
@@ -394,90 +357,43 @@ function settingsMetadata(status, halftone) {
     })()},
     activityPreferences:activityPreferences(),
     activityProviders:typeof activities.providers==='function'?activities.providers():[],
-    save:{state:record ? record.state : 'none', message:''}};
+    save:delivery.ok?delivery.delivery:{state:'pending',applied:false,pending:true}};
 }
-function deliverSettings(record, attempt) {
-  settingsDelivery = record.id;
-  function current() { var latest = deliveryRecord(); return latest && latest.id === record.id; }
-  send(record.payload, function() {
-    if (settingsDelivery === record.id) { settingsDelivery = null; }
-    if (current()) { storeDelivery({id:record.id, state:'saved'}); }
-    complications.configure();
-  }, function() {
-    if (settingsDelivery === record.id) { settingsDelivery = null; }
-    if (!current()) { return; }
-    if (attempt < 3) {
-      settingsRetry = setTimeout(function() {
-        settingsRetry = null;
-        if (current()) { deliverSettings(record, attempt + 1); }
-      }, attempt * 1000);
-    } else {
-      record.state = 'failed'; storeDelivery(record);
-      log('Settings are saved on the phone; waiting for watch delivery'); complications.configure();
-    }
-  });
-}
-function retrySavedSettings() {
-  if (settingsDelivery || settingsRetry !== null) { return; }
-  var record = deliveryRecord();
-  if (!record || record.state === 'saved') { return; }
-  var payload = watchSettings(record.payload || {});
-  if (!Object.keys(payload).length) { return; }
-  record.payload = payload; record.state = 'pending'; storeDelivery(record);
-  deliverSettings(record, 1);
-}
-function resyncPresentation() {
-  // Phone settings survive watch resets and switching watches. Reapply only
-  // validated presentation values; private source controls never leave PKJS.
-  // A current pending save wins over older stored values. A fresh record also
-  // prevents an old watch/session's late ACK from marking this sync delivered.
-  var payload = watchSettings(savedSettings());
-  var previous = deliveryRecord();
-  if (previous && previous.state !== 'saved') {
-    var waiting = watchSettings(previous.payload || {});
-    Object.keys(waiting).forEach(function(key) { payload[key] = waiting[key]; });
-  }
-  if (!Object.keys(payload).length) { return; }
-  if (settingsRetry !== null) { clearTimeout(settingsRetry); settingsRetry = null; }
-  var record = {id:String(Date.now()) + '-' + (++deliverySequence), state:'pending', payload:payload};
-  storeDelivery(record); deliverSettings(record, 1);
-}
+function retrySavedSettings(){display.reconcile(false);}
+function resyncPresentation(){display.reconcile(false);}
 function applyPhoneSettings(candidate) {
-  var confirmed = settingsState.save(localStorage,candidate);
+  var confirmed=settingsState.save(localStorage,candidate);
   invalidateSettings();
-  if (!confirmed.ok) return confirmed;
-  applySavedSettings(watchSettings(confirmed.settings));
+  if(!confirmed.ok)return confirmed;
+  applySavedSettings();
+  confirmed.delivery=display.status().delivery;
   return confirmed;
 }
-function applySavedSettings(payload) {
-  // Apply phone-only source controls immediately, including privacy switches.
-  // Theme delivery can retry independently without postponing a context clear.
-  context.configure(); activities.reproject(); activities.configure();
-  if (!Object.keys(payload).length) { complications.configure(); return; }
-  if (settingsRetry !== null) { clearTimeout(settingsRetry); settingsRetry = null; }
-  var record = {id:String(Date.now()) + '-' + (++deliverySequence), state:'pending', payload:payload};
-  storeDelivery(record); deliverSettings(record, 1);
+function applySavedSettings() {
+  // Privacy and source controls apply immediately, independently of native save.
+  context.configure();activities.reproject();activities.configure();complications.configure();
+  display.reconcile(false);
 }
-Pebble.addEventListener('webviewclosed', function(event) {
-  if (!event || !event.response) return;
-  var payload;
-  try {
-    var response = JSON.parse(/^\{/.test(event.response) ? event.response : decodeURIComponent(event.response));
-    var preferences = response[ACTIVITY_PREFERENCES_RESPONSE];
-    delete response[ACTIVITY_PREFERENCES_RESPONSE];
-    if (preferences && typeof preferences.value === 'string') preferences = JSON.parse(preferences.value);
-    if (preferences && typeof preferences === 'object' && !Array.isArray(preferences))
-      response[ACTIVITY_PREFERENCES_RESPONSE] = {value:activityLibrary.selection.normalizePreferences(preferences)};
-    payload = watchSettings(settingsPage().getSettings(JSON.stringify(response)));
-  } catch (ignored) { log('Invalid settings response'); return; }
-  finally { invalidateSettings(); }
-  applySavedSettings(payload);
+Pebble.addEventListener('webviewclosed',function(event){
+  if(!event||!event.response)return;
+  try{
+    var response=JSON.parse(/^\{/.test(event.response)?event.response:decodeURIComponent(event.response));
+    var selected={};
+    Object.keys(response).forEach(function(key){var name=MessageKeys[key]!==undefined?key:settingsState.names.filter(function(name){return String(MessageKeys[name])===key;})[0];if(name)selected[name]=response[key];});
+    if(response[ACTIVITY_PREFERENCES_RESPONSE]!==undefined)selected[ACTIVITY_PREFERENCES_RESPONSE]=response[ACTIVITY_PREFERENCES_RESPONSE];
+    var confirmed=settingsState.patch(localStorage,selected);invalidateSettings();
+    if(confirmed.ok)applySavedSettings();
+  }catch(ignored){invalidateSettings();log('Invalid settings response');}
 });
 Pebble.addEventListener('configmessage',function(event){
   if (!event || typeof event.respond !== 'function') return;
   try {
     var message = event.message || event.data || event.payload || {};
     if (typeof message === 'string') message = JSON.parse(message);
+    if (message.type==='display_status'||message.type==='retry_display'){
+      if(message.type==='retry_display')display.reconcile(true);
+      event.respond(display.status());return;
+    }
     if (message.type === 'save_settings') { event.respond(applyPhoneSettings(message.settings)); return; }
     if (message.type === 'load_settings') {
       invalidateSettings();

@@ -87,7 +87,12 @@
       "REQUEST_ACTIVITIES",
       "SHOW_ACTIVITIES",
       "ACTIVITY_PRESENTED",
-      "REQUEST_PRESENTATION"
+      "REQUEST_PRESENTATION",
+      "TEXT_SIZE",
+      "APPEARANCE_MODE",
+      "MANUAL_APPEARANCE",
+      "DISPLAY_PREFERENCES",
+      "DISPLAY_PREFERENCES_RESULT"
     ],
     "resources": {
       "media": [

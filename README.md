@@ -47,6 +47,12 @@ watch battery and connection state keep their native watch behavior.
 [Reading formats and limits](docs/COMPLICATIONS.md) · [Weather setup](docs/PLUGIN-WEATHER.md) ·
 [Context and privacy](docs/DYNAMIC-CONTENT.md) · [Current UI](docs/UI.md).
 
+The local development candidate adds independent Text Size and Appearance choices,
+including Manual Day/Night and Follow Quiet Time. Bigger Text and optical settings
+remain separate. Follow Pebble Appearance is unavailable on the pinned SDK and
+retains the last manual palette. See the [preferences checkpoint](docs/ui-preferences-checkpoint.md)
+for candidate evidence and limits; published downloads retain their original UI.
+
 ## Development
 
 Use the runtimes and tools in [CONTRIBUTING](CONTRIBUTING.md): Node 22, Python

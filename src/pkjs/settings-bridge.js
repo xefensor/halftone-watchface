@@ -70,6 +70,16 @@ module.exports = function(wordsByLanguage,fieldDefaults,preferenceKey) {
       window.HalftoneSettingsBridge={
         snapshot:snapshot,
         remember:function(serialized,settings){rendered=snapshot(serialized,true);if(settings)confirmed=settings;},
+        display:function(retryDelivery,complete){
+          // Read polling has its own deadline and never supersedes a Save.
+          target(function(destination){
+            var done=false,deadline=setTimeout(function(){finish(null);},6500);
+            function finish(value){if(done)return;done=true;clearTimeout(deadline);complete(value);}
+            try{Promise.resolve(Pebble.sendMessage(destination,{type:retryDelivery?'retry_display':'display_status'})).then(function(value){
+              finish(value&&value.ok?stable(value.settings)===stable(confirmed)?value.delivery:{applied:false,pending:true,state:'pending'}:null);
+            },function(){finish(null);});}catch(ignored){finish(null);}
+          },function(){complete(null);});
+        },
         reload:function(){try{sessionStorage.setItem('halftone-settings-scroll',String(window.scrollY));}catch(ignored){}location.reload();},
         save:function(selected,complete){
           var attempts=0;

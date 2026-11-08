@@ -255,6 +255,40 @@ async function run() {
   await send('Emulation.setDeviceMetricsOverride',{width:360,height:800,deviceScaleFactor:1,mobile:true});await ready(fixture(seed,{},'cs'));
   await change('ANIMATIONS',false);await save();await saved('cs');await capture('saved-cs-360');
   checks.push('short/narrow enlarged-text layout remains bounded; Czech Save feedback uses actual packaged translations');
+  const displayState=require(root+'/src/common/display-state'),receiptValues=displayState.values(custom);
+  const confirmedSeed={...seed,[displayState.key]:JSON.stringify({version:2,revision:7,values:receiptValues,applied:displayState.encode(receiptValues,7),error:null})};
+  await ready(fixture(confirmedSeed));
+  assert.equal(await evaluate('window.__testClay.getItemById("halftone-display-status").$element[0].textContent.includes("Applied on watch")'),true);
+  await evaluate('const changed=JSON.parse(__qa.native["clay-settings"]);changed.TEXT_SIZE=1;__qa.native["clay-settings"]=JSON.stringify(changed)');
+  await wait('!window.__testClay.getItemById("halftone-display-status").$element[0].textContent.includes("Applied on watch")');
+  assert.equal(await evaluate('window.__testClay.getItemByMessageKey("TEXT_SIZE").get()'),0,'status polling cannot overwrite the form');
+  await ready(fixture(seed));
+  await change('TEXT_SIZE',3);await change('APPEARANCE_MODE',2);await change('MANUAL_APPEARANCE',1);
+  assert.equal(await evaluate('window.__testClay.getItemById("halftone-display-status").$element[0].textContent.includes("Unsaved changes")'),true);
+  assert.equal(await evaluate('window.__testClay.getItemByMessageKey("NIGHT_BACKGROUND_COLOR").$element[0].hidden'),false);
+  await save();await saved();
+  assert.equal(await evaluate('__qa.native["clay-settings"]&&JSON.parse(__qa.native["clay-settings"]).TEXT_SIZE'),3);
+  assert.equal(await evaluate('window.__testClay.getItemById("halftone-display-status").$element[0].textContent.includes("Pending on watch")'),true);
+  await capture('display-pending-manual-night-360');
+  await change('APPEARANCE_MODE',0);
+  assert.equal(await evaluate('window.__testClay.getItemById("halftone-appearance-unavailable").$element[0].hidden'),false);
+  assert.equal(await evaluate('window.__testClay.getItemByMessageKey("MANUAL_APPEARANCE").get()'),1);
+  await save();await saved();await capture('display-follow-fallback-360');
+  await change('APPEARANCE_MODE',1);
+  assert.equal(await evaluate('window.__testClay.getItemByMessageKey("NIGHT_PALETTE").get()'),true);
+  await save();await saved();
+  const displayStored=await evaluate('JSON.parse(__qa.native["clay-settings"])');
+  assert.equal(displayStored.APPEARANCE_MODE,1);assert.equal(displayStored.MANUAL_APPEARANCE,1);assert.equal(displayStored.NIGHT_PALETTE,true);
+  assert.equal(displayStored.BACKGROUND_COLOR,0x112233);assert.equal(displayStored.NIGHT_BACKGROUND_COLOR,custom.NIGHT_BACKGROUND_COLOR);
+  checks.push('native display selectors save/reopen with both raw palettes intact; Manual Night, unsupported Follow fallback and Quiet Time stay independent; unsaved drafts and phone-only saves cannot claim Applied on watch');
+  for(const key of ['LARGE_TEXT','DEPTH_EFFECT','TEXT_SHADOW','PANEL_TRANSITIONS']){
+    await ready(fixture(seed));const previous=custom[key];await change(key,!previous);
+    assert.equal(await status(),localization.settingsStrings('en').saveUnsaved,key+' must enable Save alone');
+    await save();await saved();assert.equal(await evaluate('JSON.parse(__qa.native["clay-settings"])['+JSON.stringify(key)+']'),!previous);
+    const reopened=await evaluate('__qa.native');await ready(fixture(reopened));assert.equal(await evaluate('window.__testClay.getItemByMessageKey('+JSON.stringify(key)+').get()'),!previous);
+    await change(key,previous);await evaluate('document.querySelector(".halftone-discard").click()');assert.equal(await evaluate('window.__testClay.getItemByMessageKey('+JSON.stringify(key)+').get()'),!previous);
+  }
+  checks.push('Bigger Text, depth, shadow and panel dissolve each enable Save alone, persist on reopening and restore on Discard independently');
   assert.deepEqual(errors,[]);
   const report={version,result:'PASS',pbw:{file:path.basename(artifact),sha256:hash},executedPackagedFiles:Object.fromEntries(Object.entries(files).map(([name,value])=>[name,sha(value)])),checks,captures,layouts,discardViewport,errors,
     scope:'Actual packaged config.html, plugin.js and PKJS in installed Chromium with a simulated SDK bridge and separate Android native/DOM preference snapshots. The stock Clay instance is exposed just before its unchanged customFn call. No live phone WebView or physical-watch verification.'};

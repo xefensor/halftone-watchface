@@ -4,7 +4,7 @@ Halftone keeps its centered Fira clock and value shapes, black alternating dot r
 rounded corners, orange/white default palette and three/four-step depth. Big text and
 floating shadows retain their old preferences. Fira source outlines scale continuously
 between the idle, activity and native Timeline Peek arrangements; utility text uses
-measured Roboto Condensed supporting roles selected from the OS text preference. The dot-ring algorithm remains Halftone's original.
+measured Roboto Condensed supporting roles selected by the per-face Text Size choice. The dot-ring algorithm remains Halftone's original.
 
 The two global reading homes stay left/right. Complete values and units take priority
 over optional symbols. Qualifiers and public source identity survive when meaningful;
@@ -33,10 +33,11 @@ retain their pixels. The same source supports legacy Clay and stay-open config d
 
 ## Supporting text and native Peek
 
-The native type checkpoint follows `preferred_content_size()` on launch. It keeps
+Follow Pebble reads `preferred_content_size()` on launch; Small, Medium and Large
+overrides select the same profiles independently of that OS choice. It keeps
 Fira clock points and width fitting separate from supporting text:
 
-| OS size | Date | Body | Secondary | Footer |
+| Effective size | Date | Body | Secondary | Footer |
 | --- | ---: | ---: | ---: | ---: |
 | Small | 22 | 22 | 20 | 22 |
 | Medium | 24 | 24 | 22 | 24 |
@@ -57,5 +58,24 @@ Optional text wraps from byte zero and ends in an ellipsis without paging. A com
 activity that does not fit is absent from both paint and navigation receipts.
 
 The profile applies to idle, activity and native Peek using one render plan.
-See [native validation and scope](native-type-checkpoint.md). Manual per-face
-preferences and confirmed phone delivery are a separate stage of the current task.
+See [native validation and scope](native-type-checkpoint.md) and the
+[display preferences checkpoint](ui-preferences-checkpoint.md).
+
+## Per-face appearance and confirmation
+
+Appearance selects Follow Pebble, Follow Quiet Time or Manual. Manual Light uses
+the saved Day palette; Manual Dark uses Night and exposes its colour editors.
+Follow Quiet Time selects Night only while Quiet Time is active. Switching modes
+preserves both palettes and all Bigger Text, depth, shadow and dissolve choices.
+Legacy Quiet Time users migrate to Follow Quiet Time; other saved colours stay
+Manual Light. Supported older boolean and numeric-key encodings remain readable.
+
+SDK 4.33.1 has no supported system appearance API. Follow Pebble Appearance stays
+saved and renders its last Manual Light/Dark fallback; the phone explains this
+limit. The main clock retains its own Bigger Text control and Fira shapes.
+
+Saved on phone and Applied on watch are distinct. Only an exact native receipt
+for the complete, verified 17-field snapshot permits Applied. Pending choices
+survive reopening and reconnect. Retry uses the existing queue, with bounded
+attempts. Status polling preserves drafts. Each optical toggle can independently
+make the page dirty, save, reopen and Discard without changing another choice.

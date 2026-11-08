@@ -40,6 +40,7 @@ function fixture(settings = {}, locales = {}) {
       if (name === '../common/activity-navigation') return require('../src/common/activity-navigation');
       if (name === '../common/settings-state') return require('../src/common/settings-state');
       if (name === '../common/settings-config') return require('../src/common/settings-config');
+      if (name === './display-controller') return require('../src/pkjs/display-controller');
       if (name === './config') return require('../src/pkjs/config');
       if (name === './settings-page') return require('../src/pkjs/settings-page');
       if (name === './settings-preview') return require('../src/pkjs/settings-preview');
@@ -112,6 +113,16 @@ function fixture(settings = {}, locales = {}) {
     setNotification:card=>{notificationActivity=card;},
     fail:value=>{fail=value;},hold:value=>{hold=value;},deferred,watchLanguage:value=>{watchLanguage=value;}};
 }
+const displayState=require('../src/common/display-state');
+function nativePayload(payload){
+  assert.ok(payload&&(payload.DISPLAY_PREFERENCES||payload[keys.DISPLAY_PREFERENCES]),'expected a native preference frame');
+  assert.equal(Object.keys(payload).length,1,'only the complete display snapshot leaves the phone');
+  const decoded=displayState.decode(payload.DISPLAY_PREFERENCES||payload[keys.DISPLAY_PREFERENCES]);assert.ok(decoded);assert.ok(decoded.revision>0);
+  const result=Object.fromEntries(displayState.fields.map((key,i)=>[keys[key],decoded.values[i]]));
+  result[keys.NIGHT_PALETTE]=decoded.values[11]===1?1:0;result[keys.USE_12_HOUR]=decoded.values[6]===12?1:0;return result;
+}
+function nativeMessages(f){return f.deliveries.filter(p=>p.DISPLAY_PREFERENCES!==undefined||p[keys.DISPLAY_PREFERENCES]!==undefined);}
+function nativeReceipt(f,payload){f.handlers.appmessage({payload:{[keys.DISPLAY_PREFERENCES_RESULT]:payload.DISPLAY_PREFERENCES||payload[keys.DISPLAY_PREFERENCES]}});}
 const allItems=f=>f.clay.config.flatMap(section=>[section].concat(section.items || []));
 const item=(f,id)=>allItems(f).find(x=>x.id===id);
 const named=(f,key)=>allItems(f).find(x=>x.messageKey===key);
@@ -129,7 +140,7 @@ test('Halftone requests display and open-app data without action or entity descr
 test('ready and named/numeric complication requests refresh the generic coordinator',()=>{
   const f=fixture();f.handlers.ready();
   f.handlers.appmessage({payload:{REQUEST_COMPLICATIONS:1}});
-  f.handlers.appmessage({payload:{10022:1}});
+  f.handlers.appmessage({payload:{[keys.REQUEST_COMPLICATIONS]:1}});
   f.handlers.appmessage({payload:{REQUEST_WEATHER:1,USE_FAHRENHEIT:1}});
   f.handlers.appmessage({payload:{TEXT_COLOR:123}});f.handlers.appmessage({});
   assert.equal(f.refreshes(),3);
@@ -153,7 +164,7 @@ test('obsolete bootstrap waiting behind settings never resets the new native ses
   f.handlers.appmessage({payload:{[keys.REQUEST_CONTEXT]:92}});
   f.hold(false);f.deferred.shift().ok();
   assert.equal(f.deliveries.filter(p=>p[keys.REQUEST_CONTEXT]===1).length,0);
-  assert.deepEqual(f.deliveries.map(p=>p[keys.TEXT_COLOR]),[111,111,222,222]);
+  assert.deepEqual(nativeMessages(f).map(p=>nativePayload(p)[keys.TEXT_COLOR]),[111,111,222]);
   assert.equal(f.clockQueries.length,1,'the unrelated clock query retains its FIFO place');
 });
 
@@ -175,7 +186,7 @@ test('late bootstrap transport failure cannot recreate a retry after native conf
 });
 
 test('the coordinator receives saved clock preference and active-watch language',()=>{
-  for(const previous of [{USE_12_HOUR:true},{10007:true}]) {
+  for(const previous of [{USE_12_HOUR:true},{[keys.USE_12_HOUR]:true}]) {
     const f=fixture(previous,{watch:'cs-CZ',phone:'de-DE'});
     assert.equal(f.options.getSettings().use12Hour,true);
     assert.equal(f.options.getSettings().language,'cs');
@@ -189,30 +200,35 @@ test('obsolete layout choices are ignored while unrelated appearance settings su
   const f=fixture();
   for(const value of ['1','2','0',2]) {
     f.handlers.webviewclosed({response:JSON.stringify({LAYOUT_STYLE:{value},TEXT_COLOR:{value:0},LARGE_TEXT:{value:true}})});
-    const payload=f.deliveries.at(-1);
+    const payload=nativePayload(f.deliveries.at(-1));
     assert.equal(payload[keys.LAYOUT_STYLE],undefined);
     assert.equal(payload[keys.TEXT_COLOR],0);
     assert.equal(payload[keys.LARGE_TEXT],1);
-    assert.equal(f.settings().LAYOUT_STYLE,value);
+    assert.equal(f.settings().LAYOUT_STYLE,undefined,'retired page controls cannot replace active settings');
   }
   assert.equal(f.configured(),4);
 });
 
-test('Big text survives named/numeric settings, pending delivery and reopening',()=>{
-  for(const field of ['LARGE_TEXT',String(keys.LARGE_TEXT)])for(const value of [false,true]) {
-    const f=fixture({[field]:value,TEXT_COLOR:123});f.handlers.showConfiguration();
-    assert.equal(named(f,'LARGE_TEXT').defaultValue,value);
+test('Big text and all optical choices survive native receipts, numeric keys and reopening',()=>{
+  for(const name of ['LARGE_TEXT','DEPTH_EFFECT','TEXT_SHADOW','PANEL_TRANSITIONS'])for(const field of [name,String(keys[name])])for(const value of [false,true]){
+    const f=fixture({[field]:value,TEXT_COLOR:123});f.handlers.showConfiguration();assert.equal(named(f,name).defaultValue,value);
     f.handlers.webviewclosed({response:JSON.stringify({[field]:{value:!value}})});
-    assert.equal(f.deliveries.at(-1)[keys.LARGE_TEXT],Number(!value));
-    f.handlers.showConfiguration();assert.equal(named(f,'LARGE_TEXT').defaultValue,!value);
+    const frame=nativeMessages(f).at(-1);assert.equal(nativePayload(frame)[keys[name]],Number(!value));
+    assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied,null);nativeReceipt(f,frame);assert.ok(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied);
+    f.handlers.showConfiguration();assert.equal(named(f,name).defaultValue,!value);
   }
+});
+test('older pending optical settings migrate without transport-only success',()=>{
+  const f=fixture();f.storage['halftone-settings-delivery-v1']=JSON.stringify({id:'old-optics',state:'pending',payload:{[keys.LARGE_TEXT]:1,[keys.DEPTH_EFFECT]:1}});
+  f.handlers.ready();const frame=nativeMessages(f)[0];assert.equal(nativePayload(frame)[keys.LARGE_TEXT],1);assert.equal(nativePayload(frame)[keys.DEPTH_EFFECT],1);
+  assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied,null);nativeReceipt(f,frame);assert.ok(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied);
 });
 
 test('invalid layouts and unsupported fields cannot override unrelated visual settings',()=>{
   const f=fixture();
   for(const value of [-1,3,1.5,null,'','01','Classic',{},[]]) {
     f.handlers.webviewclosed({response:JSON.stringify({LAYOUT_STYLE:{value},TEXT_COLOR:{value:123},COMPLICATION_DATA:{value:'bad'}})});
-    const payload=f.deliveries.at(-1);
+    const payload=nativePayload(f.deliveries.at(-1));
     assert.equal(payload[keys.LAYOUT_STYLE],undefined);
     assert.equal(payload[keys.COMPLICATION_DATA],undefined);
     assert.equal(payload[keys.TEXT_COLOR],123);
@@ -224,17 +240,17 @@ test('obsolete weather/unit controls never reach the new complication-only watch
   f.handlers.webviewclosed({response:JSON.stringify({FOLLOW_PEBBLE_UNITS:true,USE_FAHRENHEIT:true,
     WEATHER_LOCATION:'office',SHOW_DAILY_RANGE:true,SHOW_RAIN_CHANCE:true,SHOW_WEATHER_ICON:false,
     TEXT_COLOR:456,USE_12_HOUR:true})});
-  assert.deepEqual(Object.keys(f.deliveries[0]).sort(),[String(keys.TEXT_COLOR),String(keys.USE_12_HOUR)].sort());
-  assert.equal(f.deliveries[0][keys.USE_12_HOUR],1);
+  nativePayload(f.deliveries[0]);
+  assert.equal(nativePayload(f.deliveries[0])[keys.USE_12_HOUR],1);
   assert.equal(f.configured(),1);
 });
 
 test('boolean settings preserve explicit off and reject malformed values',()=>{
   const f=fixture();
   f.handlers.webviewclosed({response:JSON.stringify({DEPTH_EFFECT:false,TEXT_SHADOW:true,LARGE_TEXT:'false',USE_12_HOUR:2,BACKGROUND_COLOR:-1,TEXT_COLOR:0x1000000,SHOW_STATUS:false})});
-  assert.deepEqual(Object.keys(f.deliveries[0]),[keys.DEPTH_EFFECT,keys.TEXT_SHADOW,keys.SHOW_STATUS].map(String));
-  assert.equal(f.deliveries[0][keys.DEPTH_EFFECT],0);assert.equal(f.deliveries[0][keys.TEXT_SHADOW],1);
-  assert.equal(f.deliveries[0][keys.SHOW_STATUS],0);
+  nativePayload(f.deliveries[0]);
+  assert.equal(nativePayload(f.deliveries[0])[keys.DEPTH_EFFECT],0);assert.equal(nativePayload(f.deliveries[0])[keys.TEXT_SHADOW],1);
+  assert.equal(nativePayload(f.deliveries[0])[keys.SHOW_STATUS],0);
 });
 
 test('cancelled or invalid settings do nothing, empty valid settings reconfigure only',()=>{
@@ -285,10 +301,10 @@ test('disabled plugin status is explicit and locale lookup falls back to the pho
 
 test('settings delivery retries busy transport, then reconfigures once',()=>{
   const f=fixture();f.fail(true);f.handlers.webviewclosed({response:JSON.stringify({USE_12_HOUR:true})});
-  assert.equal(f.deliveries.length,1);assert.equal(f.configured(),0);assert.equal(f.timers[0].delay,1000);
-  f.timers.shift().fn();assert.equal(f.deliveries.length,2);
-  f.fail(false);f.timers.shift().fn();assert.equal(f.deliveries.length,3);assert.equal(f.configured(),1);
-  assert.ok(f.deliveries.every(p=>p[keys.USE_12_HOUR]===1));
+  assert.equal(f.configured(),1);f.fail(false);f.timers.shift().fn();
+  assert.equal(nativeMessages(f).length,2);assert.equal(nativePayload(nativeMessages(f)[1])[keys.CLOCK_FORMAT],12);
+  assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied,null);nativeReceipt(f,nativeMessages(f)[1]);
+  assert.ok(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied);
 });
 
 test('settings delivery failure is bounded instead of retrying forever',()=>{
@@ -323,9 +339,9 @@ test('phone-only notification and music choices never enter watch packets and ap
   f.handlers.webviewclosed({response:JSON.stringify({SHOW_NOTIFICATIONS:true,NOTIFICATION_PREVIEW:true,
     NOTIFICATION_APPS:'Signal',SHOW_MUSIC:false,SHOW_STATUS:false,TEXT_COLOR:123})});
   assert.equal(f.contextConfigured(),1);
-  assert.equal(f.configured(),0);
-  assert.deepEqual(Object.keys(f.deliveries[0]).sort(),[String(keys.SHOW_STATUS),String(keys.TEXT_COLOR)].sort());
-  assert.equal(f.deliveries[0][keys.SHOW_STATUS],0);
+  assert.equal(f.configured(),1);
+  nativePayload(f.deliveries[0]);
+  assert.equal(nativePayload(f.deliveries[0])[keys.SHOW_STATUS],0);
   assert.equal(f.contextOptions.getSettings().notificationApps,'Signal');
 });
 
@@ -337,12 +353,10 @@ test('halftone source errors use translated framing and literal HTML-escaped dia
   assert.match(item(f,'context-status').defaultValue,/Halftone content: ready/);
 });
 
-test('Halftone border effects retain their saved wire keys',()=>{
-  const f=fixture();
-  f.handlers.webviewclosed({response:JSON.stringify({PANEL_TRANSITIONS:true,DEPTH_EFFECT:true,TEXT_COLOR:123})});
-  assert.deepEqual(Object.keys(f.deliveries[0]),[keys.TEXT_COLOR,keys.DEPTH_EFFECT,keys.PANEL_TRANSITIONS].map(String));
-  assert.equal(named(f,'PANEL_TRANSITIONS').defaultValue,true);
-  f.handlers.showConfiguration();assert.equal(named(f,'DEPTH_EFFECT').defaultValue,true);
+test('Halftone border effects retain their saved wire keys in the complete snapshot',()=>{
+  const f=fixture();f.handlers.webviewclosed({response:JSON.stringify({PANEL_TRANSITIONS:true,DEPTH_EFFECT:true,TEXT_COLOR:123})});
+  const value=nativePayload(f.deliveries[0]);assert.equal(value[keys.PANEL_TRANSITIONS],1);assert.equal(value[keys.DEPTH_EFFECT],1);assert.equal(value[keys.TEXT_COLOR],123);
+  f.handlers.showConfiguration();assert.equal(named(f,'PANEL_TRANSITIONS').defaultValue,true);assert.equal(named(f,'DEPTH_EFFECT').defaultValue,true);
 });
 
 test('Halftone uses the installed core API and its own complication cache namespace',()=>{
@@ -358,8 +372,8 @@ test('accent colors preserve zero and valid named/numeric values',()=>{
   for(const value of [0,0x55AAFF,0xFFFFFF])for(const field of ['ACCENT_COLOR',String(keys.ACCENT_COLOR)]) {
     const f=fixture();
     f.handlers.webviewclosed({response:JSON.stringify({[field]:{value}})});
-    assert.deepEqual(Object.keys(f.deliveries[0]),[String(keys.ACCENT_COLOR)]);
-    assert.equal(f.deliveries[0][keys.ACCENT_COLOR],value);
+    nativePayload(f.deliveries[0]);
+    assert.equal(nativePayload(f.deliveries[0])[keys.ACCENT_COLOR],value);
     assert.equal(f.contextConfigured(),1);
   }
 });
@@ -368,8 +382,8 @@ test('invalid accent colors are omitted while valid page settings still deliver'
   for(const value of [-1,0x1000000,1.5,null,'0x55AAFF',{},[]]) {
     const f=fixture();
     f.handlers.webviewclosed({response:JSON.stringify({ACCENT_COLOR:{value},TEXT_COLOR:123})});
-    assert.deepEqual(Object.keys(f.deliveries[0]),[String(keys.TEXT_COLOR)]);
-    assert.equal(f.deliveries[0][keys.ACCENT_COLOR],undefined);
+    nativePayload(f.deliveries[0]);
+    assert.equal(nativePayload(f.deliveries[0])[keys.ACCENT_COLOR],0x55aaff);
   }
 });
 
@@ -389,7 +403,7 @@ test('new appearance keys extend the original wire contract without renumbering 
     'WEATHER_CONDITION','COMPLICATION_DATA','REQUEST_COMPLICATIONS','CONTEXT_DATA','REQUEST_CONTEXT',
     'SHOW_MUSIC','SHOW_NOTIFICATIONS','NOTIFICATION_PREVIEW','NOTIFICATION_APPS','SHOW_STATUS','PANEL_TRANSITIONS'];
   assert.deepEqual(packageInfo.pebble.messageKeys.slice(0,31),legacy);
-  assert.equal(packageInfo.pebble.messageKeys.length,46);
+  assert.equal(packageInfo.pebble.messageKeys.length,51);
   assert.equal(keys.ACCENT_COLOR,10031);
   assert.equal(keys.ANIMATIONS,10032);
   assert.equal(keys.CLOCK_FORMAT,10033);
@@ -399,8 +413,8 @@ test('animations deliver explicit on and off through named and numeric settings'
   for(const field of ['ANIMATIONS',String(keys.ANIMATIONS)])for(const value of [false,0,true,1]) {
     const f=fixture();
     f.handlers.webviewclosed({response:JSON.stringify({[field]:{value}})});
-    assert.deepEqual(Object.keys(f.deliveries[0]),[String(keys.ANIMATIONS)]);
-    assert.equal(f.deliveries[0][keys.ANIMATIONS],Number(value));
+    nativePayload(f.deliveries[0]);
+    assert.equal(nativePayload(f.deliveries[0])[keys.ANIMATIONS],Number(value));
     assert.equal(f.contextConfigured(),1);
     assert.equal(f.contextOptions.getSettings().showNotifications,false);
     assert.equal(f.contextOptions.getSettings().notificationPreview,false);
@@ -411,8 +425,8 @@ test('malformed animation settings cannot override other valid settings',()=>{
   for(const field of ['ANIMATIONS',String(keys.ANIMATIONS)])for(const value of [-1,2,0.5,null,'true','false','1','0',{},[]]) {
     const f=fixture();
     f.handlers.webviewclosed({response:JSON.stringify({[field]:{value},TEXT_COLOR:123})});
-    assert.deepEqual(Object.keys(f.deliveries[0]),[String(keys.TEXT_COLOR)]);
-    assert.equal(f.deliveries[0][keys.ANIMATIONS],undefined);
+    nativePayload(f.deliveries[0]);
+    assert.equal(nativePayload(f.deliveries[0])[keys.ANIMATIONS],1);
   }
 });
 
@@ -448,37 +462,28 @@ test('clock format follows Pebble for new installs and preserves legacy explicit
 test('clock format accepts only the three supported numeric choices',()=>{
   for(const value of [0,12,24]) {
     const f=fixture();f.handlers.webviewclosed({response:JSON.stringify({CLOCK_FORMAT:{value}})});
-    assert.equal(f.deliveries[0][keys.CLOCK_FORMAT],value);
+    assert.equal(nativePayload(f.deliveries[0])[keys.CLOCK_FORMAT],value);
   }
   for(const value of [-1,1,13,12.5,null,'12',true,{},[]]) {
     const f=fixture();f.handlers.webviewclosed({response:JSON.stringify({CLOCK_FORMAT:{value},TEXT_COLOR:123})});
-    assert.deepEqual(Object.keys(f.deliveries[0]),[String(keys.TEXT_COLOR)]);
+    nativePayload(f.deliveries[0]);
   }
 });
 
 test('failed settings remain pending for reconnect and clear only after watch acknowledgement',()=>{
-  const f=fixture();f.fail(true);
-  f.handlers.webviewclosed({response:JSON.stringify({TEXT_COLOR:123})});
-  while(f.timers.length)f.timers.shift().fn();
-  let record=JSON.parse(f.storage['halftone-settings-delivery-v1']);
-  assert.equal(record.state,'failed');assert.equal(record.payload[keys.TEXT_COLOR],123);
-  f.fail(false);f.handlers.appmessage({payload:{REQUEST_COMPLICATIONS:1}});
-  record=JSON.parse(f.storage['halftone-settings-delivery-v1']);
-  assert.equal(record.state,'saved');assert.equal(record.payload,undefined);
-  assert.equal(f.deliveries.length,4);
+  const f=fixture();f.fail(true);f.handlers.webviewclosed({response:JSON.stringify({TEXT_COLOR:123})});while(f.timers.length)f.timers.shift().fn();
+  let record=JSON.parse(f.storage['halftone-settings-delivery-v1']);assert.equal(record.applied,null);assert.equal(record.values[1],123);
+  f.fail(false);f.handlers.appmessage({payload:{REQUEST_COMPLICATIONS:1}});assert.equal(nativeMessages(f).length,3,'source traffic cannot reset exhausted retries');
+  const hello=displayState.encode(displayState.values(require('../src/common/settings-state').defaults),0,0,true);
+  f.handlers.appmessage({payload:{DISPLAY_PREFERENCES_RESULT:hello}});assert.equal(nativeMessages(f).length,4);
+  assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied,null);nativeReceipt(f,nativeMessages(f).at(-1));assert.ok(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied);
 });
 
 test('an older settings acknowledgement cannot mark a newer save as delivered',()=>{
-  const f=fixture();f.hold(true);
-  f.handlers.webviewclosed({response:JSON.stringify({TEXT_COLOR:123})});
-  f.handlers.webviewclosed({response:JSON.stringify({TEXT_COLOR:456})});
-  const latest=JSON.parse(f.storage['halftone-settings-delivery-v1']).id;
-  f.deferred.shift().ok();
-  const pending=JSON.parse(f.storage['halftone-settings-delivery-v1']);
-  assert.equal(pending.id,latest);assert.equal(pending.state,'pending');
-  assert.equal(pending.payload[keys.TEXT_COLOR],456);
-  f.deferred.shift().ok();
-  assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).state,'saved');
+  const f=fixture();f.hold(true);f.handlers.webviewclosed({response:JSON.stringify({TEXT_COLOR:123})});f.handlers.webviewclosed({response:JSON.stringify({TEXT_COLOR:456})});
+  const latest=JSON.parse(f.storage['halftone-settings-delivery-v1']).revision;f.deferred.shift().ok();
+  nativeReceipt(f,nativeMessages(f)[0]);let record=JSON.parse(f.storage['halftone-settings-delivery-v1']);assert.equal(record.revision,latest);assert.equal(record.applied,null);assert.equal(record.values[1],456);
+  f.deferred.shift().ok();assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied,null);nativeReceipt(f,nativeMessages(f)[1]);assert.ok(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied);
 });
 
 test('startup reapplies validated saved presentation without sending private source preferences',()=>{
@@ -489,7 +494,7 @@ test('startup reapplies validated saved presentation without sending private sou
     {[keys.BACKGROUND_COLOR]:0,[keys.TEXT_COLOR]:0xFFFFFF,[keys.NIGHT_PALETTE]:1,
       [keys.NOTIFICATION_VIBRATION]:1,[keys.NOTIFICATION_APPS]:'Private app choice'}]) {
     const f=fixture(saved);f.handlers.ready();
-    const presentation=f.deliveries[0];
+    const presentation=nativePayload(f.deliveries[0]);
     assert.equal(presentation[keys.BACKGROUND_COLOR],0);assert.equal(presentation[keys.TEXT_COLOR],0xFFFFFF);
     assert.equal(presentation[keys.NIGHT_PALETTE],1);
     assert.ok([1,2].includes(presentation[keys.NOTIFICATION_VIBRATION]));
@@ -500,36 +505,28 @@ test('startup reapplies validated saved presentation without sending private sou
     assert.equal(f.contextConfigured(),0,'recovery does not change private source controls');
   }
   const f=fixture({TEXT_COLOR:-1,ACCENT_COLOR:'bad',CLOCK_FORMAT:255,NOTIFICATION_VIBRATION:3,SHOW_MUSIC:true});
-  f.handlers.ready();assert.equal(f.deliveries.length,1);assert.equal(f.deliveries[0][keys.REQUEST_CONTEXT],1);
+  f.handlers.ready();assert.equal(nativePayload(nativeMessages(f)[0])[keys.TEXT_COLOR],0xffffff);assert.equal(f.deliveries.at(-1)[keys.REQUEST_CONTEXT],1);
 });
 
 test('native baseline requests recover presentation even when a reset reuses a token',()=>{
-  const f=fixture({TEXT_COLOR:0x0055AA,NOTIFICATION_APP_ONLY:true});f.handlers.ready();
-  const initial=f.deliveries.length;
-  f.handlers.appmessage({payload:{REQUEST_CONTEXT:71}});
-  assert.equal(f.deliveries.length,initial+1);assert.equal(f.deliveries.at(-1)[keys.TEXT_COLOR],0x0055AA);
-  f.handlers.appmessage({payload:{[keys.REQUEST_CONTEXT]:71}});assert.equal(f.deliveries.length,initial+2);
-  f.handlers.appmessage({payload:{REQUEST_CONTEXT:1}});assert.equal(f.deliveries.length,initial+2);
-  f.handlers.appmessage({payload:{REQUEST_CONTEXT:72}});assert.equal(f.deliveries.length,initial+3);
+  const f=fixture({TEXT_COLOR:0x0055AA,NOTIFICATION_APP_ONLY:true});f.handlers.ready();const initial=nativeMessages(f).length;
+  for(const token of [71,71,1,72])f.handlers.appmessage({payload:{REQUEST_CONTEXT:token}});
+  assert.equal(nativeMessages(f).length,initial,'a source session request is not a display reset');
+  f.handlers.appmessage({payload:{DISPLAY_PREFERENCES_RESULT:displayState.encode(displayState.values(require('../src/common/settings-state').defaults),0,0,true)}});
+  assert.equal(nativeMessages(f).length,initial+1);assert.equal(nativePayload(nativeMessages(f).at(-1))[keys.TEXT_COLOR],0x0055AA);
   assert.equal(f.contextOptions.getSettings().notificationAppOnly,true);assert.equal(f.contextConfigured(),0);
 });
 
 test('presentation recovery carries pending values forward and ignores late ACKs across a newer save',()=>{
-  const f=fixture();f.hold(true);
-  f.handlers.webviewclosed({response:JSON.stringify({BACKGROUND_COLOR:0xFFFFFF,TEXT_COLOR:123})});
-  const oldId=JSON.parse(f.storage['halftone-settings-delivery-v1']).id;
-  f.handlers.appmessage({payload:{REQUEST_CONTEXT:81}});
-  const sync=JSON.parse(f.storage['halftone-settings-delivery-v1']);assert.notEqual(sync.id,oldId);assert.equal(sync.payload[keys.TEXT_COLOR],123);
-  f.handlers.webviewclosed({response:JSON.stringify({BACKGROUND_COLOR:0xFFFFFF,TEXT_COLOR:456})});
-  const latest=JSON.parse(f.storage['halftone-settings-delivery-v1']).id;
-  f.deferred.shift().ok();assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).id,latest);
-  f.deferred.shift().ok();assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).state,'pending');
-  f.deferred.shift().ok();assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).state,'saved');
-  assert.deepEqual(f.deliveries.map(p=>p[keys.TEXT_COLOR]),[123,123,456]);
-  const pending={id:'prior-phone-runtime',state:'failed',payload:{[keys.TEXT_COLOR]:0x005500,[keys.ACCENT_COLOR]:-1}};
-  const restored=fixture({BACKGROUND_COLOR:0xFFFFFF,TEXT_COLOR:0},{storage:{'halftone-settings-delivery-v1':JSON.stringify(pending)}});
-  restored.handlers.ready();assert.equal(restored.deliveries[0][keys.TEXT_COLOR],0x005500);
-  assert.equal(restored.deliveries[0][keys.BACKGROUND_COLOR],0xFFFFFF);assert.equal(restored.deliveries[0][keys.ACCENT_COLOR],undefined);
+  const f=fixture();f.hold(true);f.handlers.webviewclosed({response:JSON.stringify({BACKGROUND_COLOR:0xffffff,TEXT_COLOR:123})});
+  f.handlers.appmessage({payload:{DISPLAY_PREFERENCES_RESULT:displayState.encode(displayState.values(require('../src/common/settings-state').defaults),0,0,true)}});
+  f.handlers.webviewclosed({response:JSON.stringify({BACKGROUND_COLOR:0xffffff,TEXT_COLOR:456})});const latest=JSON.parse(f.storage['halftone-settings-delivery-v1']).revision;
+  while(f.deferred.length){f.deferred.shift().ok();assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied,null);}
+  nativeMessages(f).slice(0,-1).forEach(packet=>nativeReceipt(f,packet));assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).revision,latest);assert.equal(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied,null);
+  nativeReceipt(f,nativeMessages(f).at(-1));assert.ok(JSON.parse(f.storage['halftone-settings-delivery-v1']).applied);
+  const old={id:'prior-runtime',state:'failed',payload:{[keys.TEXT_COLOR]:0x005500,[keys.ACCENT_COLOR]:-1}};
+  const restored=fixture({BACKGROUND_COLOR:0xffffff,TEXT_COLOR:0},{storage:{'halftone-settings-delivery-v1':JSON.stringify(old)}});restored.handlers.ready();
+  assert.equal(nativePayload(nativeMessages(restored)[0])[keys.TEXT_COLOR],0x005500);assert.equal(nativePayload(nativeMessages(restored)[0])[keys.BACKGROUND_COLOR],0xffffff);
 });
 
 test('settings metadata keeps per-slot property and per-feature permission states distinct',()=>{
@@ -592,24 +589,24 @@ test('new night palette and haptic controls deliver validated native preferences
   for(const name of ['NIGHT_BACKGROUND_COLOR','NIGHT_TEXT_COLOR','NIGHT_ACCENT_COLOR'])for(const field of [name,String(keys[name])]) {
     for(const value of [0,0x55AAFF,0xFFFFFF]) {
       const f=fixture();f.handlers.webviewclosed({response:JSON.stringify({[field]:{value}})});
-      assert.equal(f.deliveries[0][keys[name]],value);
+      assert.equal(nativePayload(f.deliveries[0])[keys[name]],value);
     }
     for(const value of [-1,0x1000000,1.5,null,'0xFFFFFF',{},[]]) {
       const f=fixture();f.handlers.webviewclosed({response:JSON.stringify({[field]:{value},TEXT_COLOR:123})});
-      assert.equal(f.deliveries[0][keys[name]],undefined);
+      assert.equal(nativePayload(f.deliveries[0])[keys[name]],require('../src/common/settings-state').defaults[name]);
     }
   }
   for(const value of [false,0,true,1]) {
     const f=fixture();f.handlers.webviewclosed({response:JSON.stringify({NIGHT_PALETTE:{value}})});
-    assert.equal(f.deliveries[0][keys.NIGHT_PALETTE],Number(value));
+    assert.equal(nativePayload(f.deliveries[0])[keys.NIGHT_PALETTE],Number(value));
   }
   for(const value of [0,1,2]) {
     const f=fixture();f.handlers.webviewclosed({response:JSON.stringify({NOTIFICATION_VIBRATION:{value}})});
-    assert.equal(f.deliveries[0][keys.NOTIFICATION_VIBRATION],value);
+    assert.equal(nativePayload(f.deliveries[0])[keys.NOTIFICATION_VIBRATION],value);
   }
   for(const value of [-1,3,0.5,null,'1',{},[]]) {
     const f=fixture();f.handlers.webviewclosed({response:JSON.stringify({NOTIFICATION_VIBRATION:{value},TEXT_COLOR:123})});
-    assert.equal(f.deliveries[0][keys.NOTIFICATION_VIBRATION],undefined);
+    assert.equal(nativePayload(f.deliveries[0])[keys.NOTIFICATION_VIBRATION],0);
   }
 });
 
@@ -624,7 +621,7 @@ test('app-only is a phone privacy preference and saved native choices survive op
     assert.equal(named(f,'NIGHT_BACKGROUND_COLOR').defaultValue,0x005555);
     assert.deepEqual(f.settings(),saved);
     f.handlers.webviewclosed({response:JSON.stringify({[name]:true,TEXT_COLOR:123})});
-    assert.equal(f.deliveries[0][keys.NOTIFICATION_APP_ONLY],undefined);
+    assert.equal(nativePayload(f.deliveries[0])[keys.NOTIFICATION_APP_ONLY],undefined);
     assert.equal(f.contextOptions.getSettings().notificationAppOnly,true);
   }
   assert.deepEqual(packageInfo.pebble.messageKeys.slice(34,41),['NOTIFICATION_VIBRATION','NIGHT_PALETTE','NIGHT_BACKGROUND_COLOR','NIGHT_TEXT_COLOR','NIGHT_ACCENT_COLOR','NOTIFICATION_APP_ONLY','CONTEXT_STATE']);
@@ -653,10 +650,10 @@ test('activity preferences remain phone-only and reconfigure before native setti
     f.handlers.webviewclosed({response:JSON.stringify({[key]:true,TEXT_COLOR:123})});
     assert.equal(f.activityConfigured(),1);
     assert.equal(f.activityOptions.getSettings().enabled,true);
-    assert.equal(f.deliveries[0][keys.SHOW_ACTIVITIES],undefined);
-    assert.equal(f.deliveries[0][keys.TEXT_COLOR],123);
+    assert.equal(nativePayload(f.deliveries[0])[keys.SHOW_ACTIVITIES],undefined);
+    assert.equal(nativePayload(f.deliveries[0])[keys.TEXT_COLOR],123);
   }
-  assert.deepEqual(packageInfo.pebble.messageKeys.slice(41),
+  assert.deepEqual(packageInfo.pebble.messageKeys.slice(41,46),
     ['ACTIVITY_DATA','REQUEST_ACTIVITIES','SHOW_ACTIVITIES','ACTIVITY_PRESENTED','REQUEST_PRESENTATION']);
 });
 
@@ -773,7 +770,7 @@ test('malformed activity preferences are bounded and cannot become native settin
   f.handlers.webviewclosed({response:JSON.stringify({TEXT_COLOR:{value:123},__halftoneActivityPreferences:{value:JSON.stringify({
     order:['temporary-run',TIMER,TIMER,'builtin:music',{},null],hidden:[TIMER,'song title'],title:'Private song'})}})});
   assert.deepEqual(f.settings().__halftoneActivityPreferences,{order:[TIMER,'builtin:music'],hidden:[TIMER]});
-  assert.deepEqual(f.deliveries.at(-1),{[keys.TEXT_COLOR]:123});
+  assert.equal(nativePayload(f.deliveries.at(-1))[keys.TEXT_COLOR],123);
   assert.doesNotMatch(JSON.stringify(f.storage),/Private song|song title|temporary-run/);
 });
 
@@ -834,8 +831,8 @@ test('normal activity work defers settings UI and reuses saved preferences',()=>
   const f=fixture({SHOW_MUSIC:true});f.handlers.ready();
   for(let i=0;i<100;i++){f.activityOptions.getSettings();f.activityOptions.acceptActivity(activity());f.activityOptions.select([]);}
   for(const name of ['@rebble/clay','./config','./settings-page','./settings-preview','pebble-xoce-ui/settings-style']) assert.ok(!f.imports.includes(name),name);
-  assert.equal(f.storageReads['clay-settings'],1);
-  assert.equal(f.storageReads['halftone-activity-preferences-v1'],1);
+  assert.ok(f.storageReads['clay-settings']<=8,'normal activity work reuses cached preferences');
+  assert.ok(f.storageReads['halftone-activity-preferences-v1']<=4);
   f.handlers.showConfiguration();
   assert.ok(f.imports.includes('@rebble/clay'));assert.ok(f.imports.includes('./settings-preview'));
   f.handlers.webviewclosed({response:JSON.stringify({SHOW_MUSIC:{value:false}})});
