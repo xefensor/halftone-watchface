@@ -3163,6 +3163,81 @@ Object.keys(PHONE_INTRO).forEach(function(language){
 });
 LITERALS.Halftone='title';
 LITERALS[PHONE_INTRO.en]='phoneIntro';
+// This choice belongs only to the current preview, never saved settings.
+var PREVIEW_WATCH = {
+  "en": [
+    "Preview watch",
+    "Preview only. Open the watchface to select your connected watch automatically."
+  ],
+  "cs": [
+    "Hodinky v náhledu",
+    "Pouze náhled. Otevřete ciferník pro automatický výběr připojených hodinek."
+  ],
+  "sk": [
+    "Hodinky v náhľade",
+    "Iba náhľad. Otvorte ciferník pre automatický výber pripojených hodiniek."
+  ],
+  "de": [
+    "Uhr in der Vorschau",
+    "Nur Vorschau. Öffne das Zifferblatt, um die verbundene Uhr automatisch auszuwählen."
+  ],
+  "fr": [
+    "Montre de l’aperçu",
+    "Aperçu uniquement. Ouvrez le cadran pour sélectionner automatiquement la montre connectée."
+  ],
+  "es": [
+    "Reloj de la vista previa",
+    "Solo vista previa. Abre la esfera para seleccionar automáticamente el reloj conectado."
+  ],
+  "it": [
+    "Orologio in anteprima",
+    "Solo anteprima. Apri il quadrante per selezionare automaticamente l’orologio connesso."
+  ],
+  "pt": [
+    "Relógio na pré-visualização",
+    "Apenas pré-visualização. Abra o mostrador para selecionar automaticamente o relógio ligado."
+  ],
+  "nl": [
+    "Horloge in voorbeeld",
+    "Alleen een voorbeeld. Open de wijzerplaat om het verbonden horloge automatisch te kiezen."
+  ],
+  "pl": [
+    "Zegarek w podglądzie",
+    "Tylko podgląd. Otwórz tarczę, aby automatycznie wybrać połączony zegarek."
+  ],
+  "da": [
+    "Ur i forhåndsvisning",
+    "Kun forhåndsvisning. Åbn urskiven for automatisk at vælge det tilsluttede ur."
+  ],
+  "sv": [
+    "Klocka i förhandsvisning",
+    "Endast förhandsvisning. Öppna urtavlan för att välja den anslutna klockan automatiskt."
+  ],
+  "no": [
+    "Klokke i forhåndsvisning",
+    "Bare forhåndsvisning. Åpne urskiven for å velge den tilkoblede klokken automatisk."
+  ],
+  "fi": [
+    "Esikatselun kello",
+    "Vain esikatselu. Avaa kellotaulu valitaksesi yhdistetyn kellon automaattisesti."
+  ],
+  "hu": [
+    "Előnézeti óra",
+    "Csak előnézet. Nyissa meg a számlapot a csatlakoztatott óra automatikus kiválasztásához."
+  ],
+  "ro": [
+    "Ceas în previzualizare",
+    "Doar previzualizare. Deschideți cadranul pentru a selecta automat ceasul conectat."
+  ],
+  "tr": [
+    "Önizleme saati",
+    "Yalnızca önizleme. Bağlı saati otomatik seçmek için saat yüzünü açın."
+  ]
+};
+Object.keys(PREVIEW_WATCH).forEach(function(language){
+  MESSAGES[language].previewWatch=PREVIEW_WATCH[language][0];
+  MESSAGES[language].previewWatchHelp=PREVIEW_WATCH[language][1];
+});
 function settingsStrings(language) {
   language = resolveLanguage(language);
   var strings = {};

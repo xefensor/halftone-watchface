@@ -43,7 +43,7 @@ function fixture(settings = {}, locales = {}) {
       if (name === './display-controller') return require('../src/pkjs/display-controller');
       if (name === './config') return require('../src/pkjs/config');
       if (name === './settings-page') return require('../src/pkjs/settings-page');
-      if (name === './settings-preview') return require('../src/pkjs/settings-preview');
+      if (name === './settings-preview-all') return require('../src/pkjs/settings-preview-all');
       if (name === './localization') return require('../src/pkjs/localization');
       if (name === './reading-label') return require('../src/pkjs/reading-label');
       if (name === './activity-presentation') return presentationModule.exports;
@@ -830,11 +830,11 @@ test('presented status confirms destination-only navigation metadata for the exa
 test('normal activity work defers settings UI and reuses saved preferences',()=>{
   const f=fixture({SHOW_MUSIC:true});f.handlers.ready();
   for(let i=0;i<100;i++){f.activityOptions.getSettings();f.activityOptions.acceptActivity(activity());f.activityOptions.select([]);}
-  for(const name of ['@rebble/clay','./config','./settings-page','./settings-preview','pebble-xoce-ui/settings-style']) assert.ok(!f.imports.includes(name),name);
+  for(const name of ['@rebble/clay','./config','./settings-page','./settings-preview-all','pebble-xoce-ui/settings-style']) assert.ok(!f.imports.includes(name),name);
   assert.ok(f.storageReads['clay-settings']<=8,'normal activity work reuses cached preferences');
   assert.ok(f.storageReads['halftone-activity-preferences-v1']<=4);
   f.handlers.showConfiguration();
-  assert.ok(f.imports.includes('@rebble/clay'));assert.ok(f.imports.includes('./settings-preview'));
+  assert.ok(f.imports.includes('@rebble/clay'));assert.ok(f.imports.includes('./settings-preview-all'));
   f.handlers.webviewclosed({response:JSON.stringify({SHOW_MUSIC:{value:false}})});
   assert.equal(f.contextOptions.getSettings().showMusic,false,'save invalidates cached privacy preferences immediately');
 });

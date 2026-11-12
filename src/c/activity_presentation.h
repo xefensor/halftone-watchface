@@ -62,7 +62,9 @@ static inline bool activity_view_needs_tick(const PavCard *card,bool support_vis
           activity_compact_datum(alternate),now,connected));
 }
 
+typedef struct {int left,width,bottom,footer_left,footer_width;} ActivityGeometry;
 typedef struct {
+  int content_left,content_width,icon_left;
   MusicLines main,support,footer;
   int main_baseline[MUSIC_MAX_LINES],support_baseline[MUSIC_MAX_LINES];
   int footer_baseline[MUSIC_MAX_LINES];
@@ -92,15 +94,16 @@ static inline void activity_footer_optional(char *caption,size_t capacity,const 
 
 /* All wrapping starts at byte zero. The last available line ellipsizes; no
  * continuation state or timer exists. A bounded plan is reused by draw/ticks. */
-static inline void activity_layout_build_type(const char *main,const char *role,
+static inline void activity_layout_build_in(const char *main,const char *role,
     const char *support,const char *footer,bool media,bool vector,bool scalar,
     bool secondary,bool image,bool meter,bool footer_symbol,int footer_point,int support_point,int top,MusicMeasure measure,
     MusicMeasure scalar_measure,void *context,ActivityLayout *out,
-    int body_point,int secondary_point,int secondary_height,int bottom,bool required_footer) {
+    int body_point,int secondary_point,int secondary_height,int bottom,bool required_footer,ActivityGeometry geometry) {
   bool dense=false,omit_footer=false;
 layout_again:
   memset(out,0,sizeof(*out));out->top=top;out->media=media;out->secondary=secondary;
-  out->vector=vector;out->scalar=scalar;out->left=24;out->width=152;
+  out->vector=vector;out->scalar=scalar;out->left=geometry.left;out->width=geometry.width;
+  out->content_left=geometry.left;out->content_width=geometry.width;out->icon_left=geometry.footer_left;
   out->secondary_height=secondary_height;
   int content_top=top+(secondary?secondary_height+6:dense?1:4);out->support_point=support_point;
   out->secondary_baseline=top+4+measure(context,"Ag",secondary_point).ascent;
@@ -109,8 +112,8 @@ layout_again:
    * merely because an image finishes loading. Keep the legacy argument. */
   (void)image;
   out->icon_size=footer_symbol?28:0;
-  out->footer_left=out->icon_size?60:24;
-  out->footer_width=176-out->footer_left;out->footer_point=footer_point;
+  out->footer_left=geometry.footer_left+(out->icon_size?36:0);
+  out->footer_width=geometry.footer_left+geometry.footer_width-out->footer_left;out->footer_point=footer_point;
   const int footer_lines=strchr(footer,'\n')?2:1;
   music_wrap(footer,out->footer_point,out->footer_width,footer_lines,false,measure,context,&out->footer);
   const int footer_height=music_line_offsets(&out->footer,out->footer_point,
@@ -126,7 +129,7 @@ layout_again:
   if(media) {
     out->point=body_point;
     for(int count=secondary&&top>=ACTIVITY_CONTENT_TOP?2:3;count>=1;--count) {
-      music_wrap(main,body_point,152,count,false,measure,context,&out->main);
+      music_wrap(main,body_point,geometry.width,count,false,measure,context,&out->main);
       const int height=music_line_offsets(&out->main,body_point,measure,context,out->main_baseline);
       if(content_top+height<=limit) {
         for(int i=0;i<out->main.count;++i)out->main_baseline[i]+=limit-height;
@@ -141,7 +144,7 @@ layout_again:
   if(role[0]){out->role_baseline=content_top+measure(context,role,secondary_point).ascent;content_top+=role_height;}
   int support_height=0;
   if(support[0]) {
-    music_wrap(support,support_point,152,secondary||vector||scalar?1:2,false,measure,context,&out->support);
+    music_wrap(support,support_point,geometry.width,secondary||vector||scalar?1:2,false,measure,context,&out->support);
     support_height=music_line_offsets(&out->support,support_point,measure,context,out->support_baseline)+4;
   }
   int main_limit=limit-support_height-(meter?8:0);
@@ -153,7 +156,7 @@ layout_again:
   const int minimum_main=vector||scalar?18:main_ink.ascent+main_ink.descent;
   if(main_limit-content_top<minimum_main&&out->support.count&&!dense) {dense=true;goto layout_again;}
   if(main_limit-content_top<minimum_main&&out->support.count>1) {
-    music_wrap(support,support_point,152,1,false,measure,context,&out->support);
+    music_wrap(support,support_point,geometry.width,1,false,measure,context,&out->support);
     support_height=music_line_offsets(&out->support,support_point,measure,context,out->support_baseline)+4;
     main_limit=limit-support_height-(meter?8:0);
   }
@@ -166,27 +169,27 @@ layout_again:
     for(unsigned pass=0;pass<2;++pass) {
       for(unsigned i=first;i<sizeof(points)/sizeof(points[0]);++i) {
         out->point=points[i];value=scalar_measure(context,main,out->point);
-        if(value.width>0&&value.width<=152&&value.ascent+value.descent<=main_limit-content_top)break;
+        if(value.width>0&&value.width<=geometry.width&&value.ascent+value.descent<=main_limit-content_top)break;
       }
-      if(value.width>0&&value.width<=152&&value.ascent+value.descent<=main_limit-content_top)break;
+      if(value.width>0&&value.width<=geometry.width&&value.ascent+value.descent<=main_limit-content_top)break;
       if(out->support.count){out->support.count=0;main_limit=limit-(meter?8:0);}
       else {if(secondary){secondary=false;goto layout_again;}out->main.count=0;out->secondary=false;return;}
     }
-    if(!value.width||value.width>152||value.ascent+value.descent>main_limit-content_top) {
+    if(!value.width||value.width>geometry.width||value.ascent+value.descent>main_limit-content_top) {
       if(secondary){secondary=false;goto layout_again;}out->main.count=0;out->secondary=false;return;
     }
-    if(secondary&&out->point<32&&scalar_measure(context,main,32).width<=152) {
+    if(secondary&&out->point<32&&scalar_measure(context,main,32).width<=geometry.width) {
       secondary=false;goto layout_again;
     }
     watch_layout_copy_utf8(main,out->main.text[0],MUSIC_TEXT_BYTES);
     out->main.count=1;out->main.complete=true;
     out->main_baseline[0]=content_top+value.ascent;
-    if(vector)out->left=24+(152-value.width)/2;
+    if(vector)out->left=geometry.left+(geometry.width-value.width)/2;
     main_bottom=out->main_baseline[0]+value.descent;
   } else {
     out->point=body_point;
     for(int count=secondary&&top>=ACTIVITY_CONTENT_TOP?2:3;count>=1;--count) {
-      music_wrap(main,body_point,152,count,false,measure,context,&out->main);
+      music_wrap(main,body_point,geometry.width,count,false,measure,context,&out->main);
       const int height=music_line_offsets(&out->main,body_point,measure,context,out->main_baseline);
       if(content_top+height<=main_limit) {
         for(int i=0;i<out->main.count;++i)out->main_baseline[i]+=content_top;
@@ -210,6 +213,15 @@ layout_again:
   for(int i=0;i<out->support.count;++i)out->support_baseline[i]+=shift;
   if(out->role_baseline)out->role_baseline+=shift;
   out->meter_top=main_bottom+4+shift;
+}
+
+static inline void activity_layout_build_type(const char *main,const char *role,
+    const char *support,const char *footer,bool media,bool vector,bool scalar,
+    bool secondary,bool image,bool meter,bool footer_symbol,int footer_point,int support_point,int top,MusicMeasure measure,
+    MusicMeasure scalar_measure,void *context,ActivityLayout *out,
+    int body_point,int secondary_point,int secondary_height,int bottom,bool required_footer) {
+  const ActivityGeometry geometry={24,152,bottom,24,152};
+  activity_layout_build_in(main,role,support,footer,media,vector,scalar,secondary,image,meter,footer_symbol,footer_point,support_point,top,measure,scalar_measure,context,out,body_point,secondary_point,secondary_height,bottom,required_footer,geometry);
 }
 
 /* Preserve the established profile for portable legacy callers. */

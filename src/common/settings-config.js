@@ -4,6 +4,10 @@ var localization = require('../pkjs/localization');
 var sourceConfig = require('../pkjs/config');
 function html(value) { return String(value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function page(settings,language,metadata,systemFormat) {
+  var platform = null;
+  try { var watch = typeof Pebble !== 'undefined' && typeof Pebble.getActiveWatchInfo === 'function' && Pebble.getActiveWatchInfo();
+    if (watch && (watch.platform === 'emery' || watch.platform === 'gabbro')) platform = watch.platform;
+  } catch (ignored) {}
   language = localization.resolveLanguage(language,'en');
   var normalized = state.normalize(settings,false);
   if (!normalized) return null;
@@ -20,6 +24,6 @@ function page(settings,language,metadata,systemFormat) {
   }); }
   visit(config);
   var values = {}; Object.keys(normalized).forEach(function(key){if(key!==state.preferencesKey)values[key]=normalized[key];});
-  return {ok:true,settings:normalized,config:config,values:values,language:language,systemFormat:systemFormat === 12 || systemFormat === 24 ? systemFormat : null};
+  return {ok:true,platform:platform,settings:normalized,config:config,values:values,language:language,systemFormat:systemFormat === 12 || systemFormat === 24 ? systemFormat : null};
 }
 module.exports = page;

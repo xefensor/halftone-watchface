@@ -54,18 +54,18 @@ typedef struct {
   bool icon,required_icon,caption;
 } ReadingNumberInput;
 
-static inline ReadingNumberLayout reading_number_at(ReadingNumberInput in,int point) {
+static inline ReadingNumberLayout reading_number_at_in(ReadingNumberInput in,int point,int width) {
   ReadingNumberLayout out={point,0,0,in.icon,false,true};
-  if(in.width_at_100<=0||in.unit_width>READING_CONTENT_WIDTH)return out;
+  if(in.width_at_100<=0||in.unit_width>width)return out;
   out.number_width=(int)(in.width_at_100*point/100+0.999f);
   for(unsigned pass=0;pass<2;++pass) {
     if(pass){if(!in.unit_width||in.caption)break;out.unit_below=true;}
     out.width=out.number_width+(!out.unit_below&&in.unit_width?in.unit_width+READING_UNIT_GAP:0)+
         (out.icon?in.icon_size+READING_ICON_GAP:0);
-    if(out.width>READING_CONTENT_WIDTH&&out.icon&&!in.required_icon){
+    if(out.width>width&&out.icon&&!in.required_icon){
       out.width-=in.icon_size+READING_ICON_GAP;out.icon=false;
     }
-    if(out.width<=READING_CONTENT_WIDTH){out.overflow=false;return out;}
+    if(out.width<=width){out.overflow=false;return out;}
   }
   out.unit_below=false;
   return out;
@@ -73,17 +73,25 @@ static inline ReadingNumberLayout reading_number_at(ReadingNumberInput in,int po
 
 /* Choose once before vertical layout and reuse these exact per-slot results
  * when painting. All numeric homes share the largest complete fitting size. */
-static inline void reading_number_pair(const ReadingNumberInput in[2],int preferred,
-    ReadingNumberLayout out[2]) {
+static inline void reading_number_pair_in(const ReadingNumberInput in[2],int preferred,
+    const int widths[2],ReadingNumberLayout out[2]) {
   if(preferred>46)preferred=46;
   if(preferred<24)preferred=24;
   preferred&=~1;
   for(int point=preferred;point>=22;point-=2){
     bool fits=true;
     for(unsigned i=0;i<2;++i){
-      out[i]=reading_number_at(in[i],point);
+      out[i]=reading_number_at_in(in[i],point,widths[i]);
       if(in[i].width_at_100>0&&out[i].overflow)fits=false;
     }
     if(fits)return;
   }
+}
+
+static inline ReadingNumberLayout reading_number_at(ReadingNumberInput in,int point) {
+  return reading_number_at_in(in,point,READING_CONTENT_WIDTH);
+}
+static inline void reading_number_pair(const ReadingNumberInput in[2],int preferred,ReadingNumberLayout out[2]) {
+  const int widths[]={READING_CONTENT_WIDTH,READING_CONTENT_WIDTH};
+  reading_number_pair_in(in,preferred,widths,out);
 }

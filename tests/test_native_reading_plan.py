@@ -7,7 +7,7 @@ root=Path(__file__).resolve().parents[1]
 face='halftone'if(root/'src/c/halftone.c').exists()else'dynamic'
 native=(root/f'src/c/{face}.c').read_text()
 name='prv_view'if face=='halftone'else'prv_reading_pose'
-a=native.index(('static HalftoneView prv_view(WatchPose pose,int height) {'if face=='halftone'else'static WatchPose prv_reading_pose(WatchPose pose,int height,int *bottom) {'))
+a=native.index(('static HalftoneView prv_view_once(WatchPose pose,int height) {'if face=='halftone'else'static WatchPose prv_reading_pose(WatchPose pose,int height,int *bottom) {'))
 b=native.index('\nstatic void prv_reading_caption',a)
 source=r'''
 #include <assert.h>
@@ -16,6 +16,7 @@ source=r'''
 #include <string.h>
 #include <time.h>
 #include "reading_layout.h"
+#define READING_WIDTH READING_CONTENT_WIDTH
 typedef struct {float clock_size,number_size,row_y,label_y,peek;} WatchPose;
 typedef struct {WatchPose pose;} HalftoneView;
 typedef struct {int width,ascent,descent;} MusicTextMetrics;

@@ -67,3 +67,22 @@ The pinned SDK retains its 65,535-byte native virtual-size limit. Compact key
 references, per-field validation and narrower constant tables preserve every
 font/clock/dot value while fitting the candidate. Keep that budget explicit when
 adding native code; do not silently change the SDK or omit glyph coverage.
+
+
+## Round 2 development layout
+
+Gabbro uses the complete 260×260 physical display. Text and artwork are fitted
+inside the chord for their vertical band; the shared UI library owns only
+geometry and drawing. Time 2 retains its established rectangular composition.
+The SDK 4.44 reference and disposable candidate evidence are in the workspace's
+`Round2-Development/` directory. This is development work; frozen release files
+and historical QA are unchanged. No physical Round 2 or Android result is implied.
+
+Clock raster buffers and activity transition distances use the display dimensions.
+Readings fit one shared numeric size before measuring their supporting lines.
+Activity plans retain their fitted endpoint geometry throughout item motion.
+Peek reads the root window's unobstructed area and keeps the physical circle's
+center fixed. Phone preview frames select the connected watch's display shape;
+an unknown watch exposes the temporary preview-watch selector.
+
+When the face is running, phone previews select the connected Time 2 / Round 2 automatically. Plugin-only settings cannot read WatchInfo; their temporary preview-watch selector affects only the current page and is never saved or sent to the watch.

@@ -9,7 +9,7 @@ vm.runInNewContext(source,box,{filename:'clay.js'});
 const state=require('../src/common/settings-state');
 const page=require('../src/common/settings-config')(state.read({getItem:()=>null}),'en');
 const settingsStyle=require('pebble-xoce-ui/settings-style');
-const preview=require('../src/pkjs/settings-preview');
+const preview=require('../src/pkjs/settings-preview-all');
 page.config.forEach(item=>{if(item.id==='halftone-preview-assets')item.defaultValue=JSON.stringify(preview);});
 const clay=new box.module.exports(page.config,require('../src/pkjs/settings-page'),{autoHandleEvents:false,userData:{settingsStyle}});
 // No Pebble ready event is emitted by this offline generator.
@@ -18,7 +18,7 @@ let html=decodeURIComponent(clay.generateUrl().split(',').slice(1).join(','));
 const start=html.lastIndexOf('<script>'),end=html.indexOf('</script>',start);
 if(start<0||end<start)throw Error('Clay bootstrap script missing');
 const client=html.slice(start+8,end).replace(/\/\/# sourceMappingURL=[^\r\n]+/g,'');
-const bootstrap="window.__halftoneStartClay=function(page){var assets;window.clayConfig.forEach(function(item){if(item.id==='halftone-preview-assets')assets=item.defaultValue;});window.clayConfig=page.config;window.clayConfig.forEach(function(item){if(item.id==='halftone-preview-assets'){var parsed=JSON.parse(assets);parsed.systemFormat=page.systemFormat;item.defaultValue=JSON.stringify(parsed);}});window.claySettings=page.values;"+client+'};';
+const bootstrap="window.__halftoneStartClay=function(page){var assets;window.clayConfig.forEach(function(item){if(item.id==='halftone-preview-assets')assets=item.defaultValue;});window.clayConfig=page.config;window.clayConfig.forEach(function(item){if(item.id==='halftone-preview-assets'){var parsed=JSON.parse(assets);parsed.systemFormat=page.systemFormat;parsed.platform=page.platform;parsed.platform=page.platform;item.defaultValue=JSON.stringify(parsed);}});window.claySettings=page.values;"+client+'};';
 const localization=require('../src/pkjs/localization'),words={};
 localization.languages.forEach(language=>{words[language]=localization.settingsStrings(language);});
 const bridge='('+require('../src/pkjs/settings-bridge').toString()+')('+JSON.stringify(words)+','+JSON.stringify(state.defaults)+','+JSON.stringify(state.preferencesKey)+');';

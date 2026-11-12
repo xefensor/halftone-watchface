@@ -67,3 +67,16 @@ test('real SDK numeric keys migrate Halftone colors and optical controls without
   assert.equal(actual.PANEL_TRANSITIONS,false);assert.equal(actual.CLOCK_FORMAT,12);
   assert.equal(state.normalize({...legacy,LARGE_TEXT:false},false).LARGE_TEXT,false);
 });
+
+
+test('settings snapshots use the connected watch shape without persisting it',()=>{
+  const before=global.Pebble;
+  try {
+    for(const platform of ['emery','gabbro']){
+      global.Pebble={getActiveWatchInfo:()=>({platform})};
+      assert.equal(page(state.read(store()),'en').platform,platform);
+    }
+    global.Pebble={getActiveWatchInfo:()=>{throw Error('Disconnected');}};
+    assert.equal(page(state.read(store()),'en').platform,null);
+  } finally {global.Pebble=before;}
+});

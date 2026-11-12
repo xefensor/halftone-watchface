@@ -21,6 +21,11 @@ function settingsPage() {
   return clay;
 }
 
+function settingsPlatform() {
+  try { var info=typeof Pebble.getActiveWatchInfo==='function' && Pebble.getActiveWatchInfo();
+    return info && info.platform==='gabbro'?'gabbro':'emery';
+  } catch (ignored) { return null; }
+}
 function settingsLanguage() {
   var watchLanguage;
   try {
@@ -263,7 +268,7 @@ Pebble.addEventListener('appmessage', function(event) {
 });
 Pebble.addEventListener('showConfiguration', function() {
   invalidateSettings();settingsPage();
-  var previewAssets=require('./settings-preview');
+  var previewAssets=require('./settings-preview-all');
   var clockQuery = {}; clockQuery[MessageKeys.CLOCK_FORMAT] = 255;
   send(clockQuery); // Native replies separately; this offline page remains a snapshot.
   var language = settingsLanguage();
@@ -292,7 +297,7 @@ Pebble.addEventListener('showConfiguration', function() {
       if (item.messageKey === 'NOTIFICATION_VIBRATION' && [0,1,2].indexOf(previous) >= 0) { item.defaultValue = previous; }
       if (item.id === 'halftone-settings-data') { item.defaultValue = escapeHtml(JSON.stringify(metadata)); return; }
       if (item.id === 'halftone-preview-assets') {
-        var assets = Object.assign({}, previewAssets, {systemFormat:systemClockFormat()});
+        var assets = Object.assign({}, previewAssets, {systemFormat:systemClockFormat(),platform:settingsPlatform()});
         item.defaultValue = escapeHtml(JSON.stringify(assets)); return;
       }
       if (item.id === 'halftone-settings-strings') {

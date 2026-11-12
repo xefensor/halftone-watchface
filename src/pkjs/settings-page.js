@@ -179,6 +179,16 @@ module.exports = function() {
     var words = transport('halftone-settings-strings');
     if (typeof data.language === 'string') { document.documentElement.lang = data.language; }
     var assets = transport('halftone-preview-assets');
+    var watchPlatform = assets.platform;
+    try {
+      var watchInfo = clay.meta && clay.meta.activeWatchInfo;
+      if (!watchInfo && typeof Pebble !== 'undefined' && typeof Pebble.getActiveWatchInfo === 'function') watchInfo = Pebble.getActiveWatchInfo();
+      if (watchInfo && watchInfo.platform) watchPlatform = watchInfo.platform;
+    } catch (ignored) {}
+    var previewAssets = assets;
+    var roundPreview = watchPlatform === 'gabbro';
+    if (roundPreview && previewAssets.round) assets = Object.assign({},previewAssets,previewAssets.round);
+    var previewWidth=roundPreview?260:200,previewHeight=roundPreview?260:228;
     var intro=node(item('halftone-intro'));if(intro)intro.className+=' halftone-intro';
     function t(key,params) {
       var text = typeof words[key] === 'string' ? words[key] : key;
@@ -774,7 +784,25 @@ module.exports = function() {
       var paletteHelp = make('span',t('previewPaletteHelp'),'description'); paletteHelp.id = 'halftone-preview-palette-help';
       paletteChoice.appendChild(paletteHelp); paletteChoice.hidden = !night.get();
       previewHost.appendChild(paletteChoice); previewPalette.addEventListener('change',renderPreview);
-      canvas = make('canvas'); canvas.id = 'halftone-preview-canvas'; canvas.width = 200; canvas.height = 228; canvas.setAttribute('role','img');
+      if (watchPlatform !== 'gabbro' && watchPlatform !== 'emery') {
+        var watchChoice = make('label',null,'halftone-choice halftone-preview-palette');
+        watchChoice.setAttribute('for','halftone-preview-watch');watchChoice.appendChild(make('span',t('previewWatch')));
+        var watchSelect = make('select');watchSelect.id='halftone-preview-watch';
+        [['emery','Time 2'],['gabbro','Round 2']].forEach(function(pair){var option=make('option',pair[1]);option.value=pair[0];watchSelect.appendChild(option);});
+        watchChoice.appendChild(watchSelect);
+        var watchHelp=make('span',t('previewWatchHelp'),'description');watchHelp.id='halftone-preview-watch-help';watchChoice.appendChild(watchHelp);
+        watchSelect.setAttribute('aria-describedby',watchHelp.id);previewHost.appendChild(watchChoice);
+        watchSelect.addEventListener('change',function(){
+          roundPreview=watchSelect.value==='gabbro';assets=roundPreview?Object.assign({},previewAssets,previewAssets.round):previewAssets;
+          previewWidth=roundPreview?260:200;previewHeight=roundPreview?260:228;
+          canvas.width=previewWidth;canvas.height=previewHeight;canvas.style.width=previewWidth+'px';canvas.style.aspectRatio=previewWidth+'/'+previewHeight;
+          stage.style.width=(previewWidth+12)+'px';stage.style.borderRadius=roundPreview?'50%':'';imageCache={};renderPreview();
+        });
+      }
+      canvas = make('canvas'); canvas.id = 'halftone-preview-canvas'; canvas.width = previewWidth; canvas.height = previewHeight;
+      canvas.style.width=previewWidth+'px';canvas.style.height='auto';canvas.style.aspectRatio=previewWidth+'/'+previewHeight;
+      stage.style.width=(previewWidth+12)+'px';
+      if(roundPreview)stage.style.borderRadius='50%'; canvas.setAttribute('role','img');
       stage.appendChild(canvas); previewHost.appendChild(stage);
       previewHost.appendChild(make('p',t('sampleHelp')));
       previewHost.appendChild(make('p',t('previewSafeHelp'),'halftone-preview-note'));
@@ -783,7 +811,8 @@ module.exports = function() {
       previewCaption = make('p',t('previewSettingsNote'),'halftone-preview-note'); previewHost.appendChild(previewCaption);
       timelineCaption = make('p',t('previewTimelineHelp'),'halftone-preview-note'); timelineCaption.hidden = true; previewHost.appendChild(timelineCaption);
     }
-    function recolorPreview(pixels,keep,foreground,background,highlight,timeline) {
+    function recolorPreview(pixels,keep,foreground,background,highlight,timeline,width,height,round) {
+      width=width||200;height=height||228;round=!!round;
       var contentMap={},bezelMap={};
       // Match the native accent contrast fallback on Pebble's quantized palette.
       function luminance(color) {
@@ -809,17 +838,17 @@ module.exports = function() {
         return result;
       }
       var edge=timeline?171:228;
-      for(var y=0;y<228;y++)for(var x=0;x<200;x++) {
+      for(var y=0;y<height;y++)for(var x=0;x<width;x++) {
         var preserve=false;
         for(var rectangle=0;rectangle<keep.length;rectangle++) {
           var rect=keep[rectangle];
           if(x>=rect.x&&x<rect.x+rect.width&&y>=rect.y&&y<rect.y+rect.height){preserve=true;break;}
         }
         if(preserve)continue;
-        var i=(y*200+x)*4,r=pixels.data[i]/85,g=pixels.data[i+1]/85,b=pixels.data[i+2]/85;
+        var i=(y*width+x)*4,r=pixels.data[i]/85,g=pixels.data[i+1]/85,b=pixels.data[i+2]/85;
         // The bezel is black ink on the selected background. Preserve its ink,
         // while recolouring the background between dots and their edge coverage.
-        var bezel=x<24||x>=176||y<16||y>=edge-16;
+        var bezel=round?Math.pow(x-width/2,2)+Math.pow(y-height/2,2)>Math.pow(width/2-24,2):x<24||x>=176||y<16||y>=edge-16;
         var colorMap=bezel?bezelMap:contentMap;
         var source=(pixels.data[i]<<16)|(pixels.data[i+1]<<8)|pixels.data[i+2];
         var mapped=colorMap[source];
@@ -866,20 +895,20 @@ module.exports = function() {
         previewState === 'timer' && (!field('SHOW_ACTIVITIES').get() || !field('SHOW_MUSIC').get()) ||
         previewState === 'notification' && (!notification.get() || noticeMode.value !== 'preview') || previewState === 'notification-summary' && (!notification.get() || noticeMode.value === 'app'));
       formatCaption.hidden = Number(field('CLOCK_FORMAT').get()) !== 0 || Number(assets.systemFormat) === 12 || Number(assets.systemFormat) === 24;
-      ctx.fillStyle = css(background); ctx.fillRect(0,0,200,228);
+      ctx.fillStyle = css(background); ctx.fillRect(0,0,previewWidth,previewHeight);
       if (!frame) { previewCaption.textContent = t('noExample'); return; }
       if (typeof frame === 'string') { frame = {src:frame}; }
       function draw(image) {
         if (serial !== request) { return; }
-        if (image.naturalWidth !== 200 || image.naturalHeight !== 228) { previewCaption.textContent = t('noExample'); return; }
-        ctx.drawImage(image,0,0,200,228);
+        if (image.naturalWidth !== previewWidth || image.naturalHeight !== previewHeight) { previewCaption.textContent = t('noExample'); return; }
+        ctx.drawImage(image,0,0,previewWidth,previewHeight);
         if (exactTheme) { return; }
         // Custom colours reuse the actual native geometry. Reverse-mapping a
         // quantised capture cannot recover every coverage sample: the page
         // explicitly identifies these colours as approximate. Provider images
         // and the OS-owned Timeline card retain their captured pixels.
-        var pixels=ctx.getImageData(0,0,200,228);
-        recolorPreview(pixels,frame.preserve||[],foreground,background,highlight,previewState==='timeline');
+        var pixels=ctx.getImageData(0,0,previewWidth,previewHeight);
+        recolorPreview(pixels,frame.preserve||[],foreground,background,highlight,previewState==='timeline',previewWidth,previewHeight,roundPreview);
         ctx.putImageData(pixels,0,0);
       }
       if (imageCache[key] && imageCache[key].complete) { draw(imageCache[key]); return; }

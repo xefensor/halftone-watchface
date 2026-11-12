@@ -10,7 +10,7 @@ def main():
     ui=json.loads((root/'vendor/UI.json').read_text())
     raw=(root/'vendor'/ui['archive']).read_bytes()
     package=json.loads((root/'package.json').read_text());lock=json.loads((root/'package-lock.json').read_text())
-    assert ui['version']=='0.1.2' and hashlib.sha256(raw).hexdigest()==ui['sha256']
+    assert ui['version']=='0.1.3' and hashlib.sha256(raw).hexdigest()==ui['sha256']
     assert 'sha512-'+base64.b64encode(hashlib.sha512(raw).digest()).decode()==ui['integrity']
     assert package['dependencies']['pebble-xoce-ui']=='file:vendor/'+ui['archive']
     assert lock['packages']['node_modules/pebble-xoce-ui']['integrity']==ui['integrity']
@@ -19,7 +19,7 @@ def main():
             if member.isfile():
                 relative=member.name.removeprefix('package/')
                 assert (root/'node_modules/pebble-xoce-ui'/relative).read_bytes()==archive.extractfile(member).read(),relative
-    print('Pinned pebble-xoce-ui 0.1.2: verified')
+    print('Pinned pebble-xoce-ui 0.1.3: verified')
     for specification in DEPENDENCIES:
         pin, files = verify_dependency(root, specification)
         for relative,data in files.items():
