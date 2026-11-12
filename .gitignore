@@ -4,6 +4,7 @@ node_modules/
 .waf-*
 *.pbw
 !dist/*.pbw
+!/releases/Halftone-*.pbw
 
 # Local emulator and visual-QA captures
 qa/
