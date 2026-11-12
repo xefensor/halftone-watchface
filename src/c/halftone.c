@@ -1338,6 +1338,47 @@ static int prv_activity_top(void) {
   const int minimum=ACTIVITY_EXPANDED_TOP-18;
   return view.reading_bottom+3>minimum?view.reading_bottom+3:minimum;
 }
+#ifdef PBL_ROUND
+/* Required data is fitted before optional identity is appended. Keep this
+ * pure fitting step separate so narrow circular bands can be regression-tested. */
+static int prv_fit_round_footer(char *caption,size_t capacity,const char *paused,const char *support,
+    bool folded,int top,int *bottom,int *point,bool *symbol) {
+  int footer_bottom=*bottom,footer_point=*point;bool footer_symbol=*symbol;
+  const int footer_inset=s_depth_effect_enabled?23:16;
+  const GRect footer_surface=GRect(0,0,FACE_WIDTH,FULL_LAYOUT_HEIGHT);
+  int width=xoce_ui_circle_band(footer_surface,GRect(0,footer_bottom-40,FACE_WIDTH,40),footer_inset).size.w;
+  if(prv_measure(caption,footer_point).w>width-36)footer_symbol=false;
+  if(prv_measure(caption,footer_point).w>width)footer_point=s_type.secondary;
+  if(paused[0]&&folded&&prv_measure(caption,footer_point).w>width) {
+    if(strlen(paused)+strlen(support)+2>capacity) {
+      snprintf(caption,capacity,"%s\n%s",paused,reading_overflow_label(i18n_get_system_locale()));
+    } else {
+      watch_layout_copy_utf8(paused,caption,capacity);size_t at=strlen(caption);caption[at++]='\n';
+      watch_layout_copy_utf8(support,caption+at,capacity-at);
+    }
+  }
+  const char *last=strrchr(caption,'\n');last=last?last+1:caption;
+  int required=prv_measure(last,footer_point).w;
+  if(paused[0]&&folded&&prv_measure(paused,footer_point).w>required)required=prv_measure(paused,footer_point).w;
+  while(required>width&&footer_point>16) {
+    footer_point=prv_point(footer_point-2);required=prv_measure(last,footer_point).w;
+    if(paused[0]&&folded&&prv_measure(paused,footer_point).w>required)required=prv_measure(paused,footer_point).w;
+  }
+  while(required>width&&footer_bottom>top+64) {
+    --footer_bottom;
+    width=xoce_ui_circle_band(footer_surface,GRect(0,footer_bottom-40,FACE_WIDTH,40),footer_inset).size.w;
+  }
+  if(required>width) {
+    const char *overflow=reading_overflow_label(i18n_get_system_locale());
+    if(paused[0]&&folded)snprintf(caption,capacity,"%s\n%s",paused,overflow);
+    else watch_layout_copy_utf8(overflow,caption,capacity);
+    footer_symbol=false;
+  }
+
+  *bottom=footer_bottom;*point=footer_point;*symbol=footer_symbol;
+  return width-(footer_symbol?36:0);
+}
+#endif
 /* The reading planner and the card formatter each have bounded scratch.
  * Keep their lifetimes separate on Pebble's 2 KiB app stack, including LTO. */
 static void __attribute__((noinline)) prv_prepare_activity_at(const PavCard *card,uint32_t now,ActivityPlan *out,int top) {
@@ -1346,6 +1387,10 @@ static void __attribute__((noinline)) prv_prepare_activity_at(const PavCard *car
   memset(out,0,sizeof(*out));out->card=card;
   pav_format_item(card,&card->main,now,s_phone_connected,out->main,sizeof(out->main));
   const bool media=card->presentation==PAV_PRESENTATION_MEDIA;
+#ifdef PBL_ROUND
+  int footer_bottom=s_depth_effect_enabled?218:224;
+  const int footer_inset=s_depth_effect_enabled?23:16;
+#endif
   if(!media) {
     if(card->source_state==PAV_PAUSED) {
       watch_layout_copy_utf8(reading_language(i18n_get_system_locale())->paused,out->role,sizeof(out->role));
@@ -1353,7 +1398,7 @@ static void __attribute__((noinline)) prv_prepare_activity_at(const PavCard *car
     } else watch_layout_copy_utf8(activity_role(card,&card->main),out->role,sizeof(out->role));
     prv_ellipsize(out->role,sizeof(out->role),s_type.secondary,152);
     if(pav_datum_visible(card,&card->support,now,s_phone_connected)&&
-        !prv_activity_line(card,&card->support,now,card->support.type==PAV_TEXT?2048:152,true,
+        !prv_activity_line(card,&card->support,now,card->support.type==PAV_TEXT?2048:WATCH_ROUND_ELSE(2048,152),true,
             NULL,NULL,out->support,sizeof(out->support)))out->support[0]=0;
   }
   int secondary_width=152;
@@ -1403,7 +1448,11 @@ static void __attribute__((noinline)) prv_prepare_activity_at(const PavCard *car
       if(caption[0])prv_activity_append(caption,sizeof(caption),out->support);
       else watch_layout_copy_utf8(out->support,caption,sizeof(caption));
     }
-    /* Required state/datum goes first. Optional identity is what ellipsizes. */
+    /* Fit required state/data in its final circular band before admitting
+     * optional identity. A value and its unit are one atomic line. */
+#ifdef PBL_ROUND
+    const int optional_width=prv_fit_round_footer(caption,sizeof(caption),paused,out->support,fold_support,top,&footer_bottom,&footer_point,&footer_symbol);
+#else
     if(prv_measure(caption,footer_point).w>116)footer_symbol=false;
     if(prv_measure(caption,footer_point).w>152&&paused[0]&&fold_support) {
       /* Preserve the fitted detail when paused state needs a separate
@@ -1416,9 +1465,11 @@ static void __attribute__((noinline)) prv_prepare_activity_at(const PavCard *car
     } else if(prv_measure(caption,footer_point).w>152&&prv_measure(caption,s_type.secondary).w<=152) {
       footer_point=s_type.secondary;footer_symbol=false;
     }
+    const int optional_width=footer_symbol?116:152;
+#endif
     const char *label=activity_role(card,&card->main);
-    activity_footer_optional(caption,sizeof(caption),label,footer_point,footer_symbol?116:152,prv_music_measure,NULL);
-    activity_footer_optional(caption,sizeof(caption),activity_identity(card),footer_point,footer_symbol?116:152,prv_music_measure,NULL);
+    activity_footer_optional(caption,sizeof(caption),label,footer_point,optional_width,prv_music_measure,NULL);
+    activity_footer_optional(caption,sizeof(caption),activity_identity(card),footer_point,optional_width,prv_music_measure,NULL);
     if(fold_support||!out->support[0]) {
       watch_layout_copy_utf8(caption,out->support,sizeof(out->support));footer=out->support;layout_support="";
     } else {
@@ -1429,8 +1480,8 @@ static void __attribute__((noinline)) prv_prepare_activity_at(const PavCard *car
   const int secondary_height=prv_music_measure(NULL,out->secondary,s_type.secondary).ascent+
       prv_music_measure(NULL,out->secondary,s_type.secondary).descent+4;
 #ifdef PBL_ROUND
-  const int bottom=s_depth_effect_enabled?218:224;
-  const int inset=(s_depth_effect_enabled?23:16);
+  const int bottom=footer_bottom;
+  const int inset=footer_inset;
   const GRect surface=GRect(0,0,FACE_WIDTH,FULL_LAYOUT_HEIGHT);
   const GRect main_band=xoce_ui_circle_band(surface,GRect(0,top,FACE_WIDTH,bottom-50-top>1?bottom-50-top:1),inset);
   const GRect footer_band=xoce_ui_circle_band(surface,GRect(0,bottom-40,FACE_WIDTH,40),inset);

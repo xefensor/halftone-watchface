@@ -86,3 +86,5 @@ center fixed. Phone preview frames select the connected watch's display shape;
 an unknown watch exposes the temporary preview-watch selector.
 
 When the face is running, phone previews select the connected Time 2 / Round 2 automatically. Plugin-only settings cannot read WatchInfo; their temporary preview-watch selector affects only the current page and is never saved or sent to the watch.
+
+Required round activity footer data is fitted against its final circular band before optional labels and symbols. The existing utility outlines may yield down to 16px for an atomic value and unit; an unrepresentable datum uses the localized overflow label. Optional identity may ellipsize. Secondary content yields before the required primary block.
