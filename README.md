@@ -14,13 +14,13 @@ is a **prerelease** for sideloading:
 - [Checksums](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/SHA256SUMS.txt)
 
 The numeric SDK label is 1.9.0. Development in this checkout is a separate local
-candidate using Core 0.5.2, Activities 0.4.4 and shared UI 0.1.1, with activity
+1.10.0 candidate using Core 0.6.0, Activities 0.4.5 and shared UI 0.1.2, with activity
 navigation and current settings/privacy handling. It does not replace rc.6 or
 its original evidence. See [candidate validation](docs/DEVELOPMENT-VALIDATION.md).
 
 ## Compatibility
 
-Target: **Pebble Time 2 / Emery**, built with **Pebble SDK 4.33.1**. The phone
+Candidate targets: **Pebble Time 2 / Emery** and **Round 2 / Gabbro**, built with **Pebble SDK 4.44**. Duo is deferred. The phone
 needs Pebble's plugin and complication APIs; enable the plugin preview if your
 phone version requires it. A library is bundled in the PBW and needs no separate
 watch installation. Readings use their providers' permissions and units.
@@ -56,7 +56,7 @@ for candidate evidence and limits; published downloads retain their original UI.
 ## Development
 
 Use the runtimes and tools in [CONTRIBUTING](CONTRIBUTING.md): Node 22, Python
-3.12, a C99 compiler and Pebble SDK 4.33.1. Ordinary builds use committed font
+3.12, a C99 compiler and Pebble SDK 4.44. Ordinary builds use committed font
 geometry; regeneration has additional documented prerequisites.
 
 ```sh
@@ -74,7 +74,7 @@ audits bind screenshots to the actual native renderer; refresh development
 previews when that renderer changes.
 
 Read [maintenance contracts](docs/MAINTENANCE.md), [shared-core notes](docs/SHARED-CORE.md)
-and [release preparation](docs/GITHUB-RELEASES.md). A push to main can publish;
+and [release preparation](docs/GITHUB-RELEASES.md). Publication requires a manual GitHub workflow dispatch;
 local verification does not authorize it. Earlier release details and commands
 are preserved in the [earlier README](docs/history/readme-before-native-ui.md)
 and [changelog](CHANGELOG.md).

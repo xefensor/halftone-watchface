@@ -5,14 +5,15 @@
   "tag_prefix": "v",
   "prerelease": true,
   "assets": [
-    "dist/Halftone-{release_id}.pbw",
-    "dist/Halftone-{release_id}-source.zip",
-    "dist/Halftone-{release_id}-store-package.zip"
+    "releases/Halftone-{version}.pbw",
+    "releases/Halftone-{version}-source.zip",
+    "releases/Halftone-{version}-store-package.zip",
+    "releases/Halftone-{version}-debug.zip"
   ],
-  "checksums_file": "dist/SHA256SUMS.txt",
+  "checksums_file": "releases/SHA256SUMS-{version}.txt",
   "app_uuid": "d4dd5046-53be-4624-99e8-46e0b377fe66",
   "source_archive": {
-    "path": "dist/Halftone-{release_id}-source.zip",
+    "path": "releases/Halftone-{version}-source.zip",
     "prefix": ""
   },
   "notes": {
@@ -21,5 +22,6 @@
   "bootstrap": {
     "version": "1.9.0-rc.6",
     "source_commit": "dca19138bae62455609d359065324acffedbf041"
-  }
+  },
+  "javascript_debug_archive": "releases/Halftone-{version}-debug.zip"
 }

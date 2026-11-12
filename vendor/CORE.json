@@ -1,13 +1,16 @@
 {
   "package": "pebble-watchface-core",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "repository": "https://github.com/xefensor/pebble-lib-core",
-  "artifact": "pebble-watchface-core-0.5.2.tgz",
-  "sha256": "0d01d6daa50bed274f613c0bc4c476ab841e4a48b5d90b6b7b246867d7ca4d82",
-  "integrity": "sha512-66dxmgweDnOX0YA6dYEzAd63fHTwrjyEu2bt6ArTH0utXQmLOP+gyD2dn53cd4ssID++SfLd9oMYnng1tDsaEA==",
-  "sdk": "4.33.1",
+  "artifact": "pebble-watchface-core-0.6.0.tgz",
+  "archive": "pebble-watchface-core-0.6.0.tgz",
+  "sha256": "bfa89e7d8691afcc5b11b504d2587d5aa0d26b4e02097fd3252e003cb3931f0c",
+  "integrity": "sha512-+EqhrCDFmqy0Zdeg2ujckbJBPAd7dQL0PCov8mJmeVtpcbe0B22uvquU4Jy7EwuNXscI2KYS3ExhpJcPG6LDJg==",
+  "sdk": "4.44",
   "platforms": [
-    "emery"
+    "emery",
+    "gabbro"
   ],
-  "source_commit": "062dd4ccbd8802c2a3a46591485ec98d66e9ba52"
+  "source_commit": "3a28389333281cd96f7891c409695124f88643c2",
+  "status": "Local SDK 4.44 candidate; source tests and all-target library build passed; not published"
 }

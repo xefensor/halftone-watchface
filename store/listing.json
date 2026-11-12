@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "name": "Halftone",
+  "author": "Xef",
+  "version": "1.10.0",
+  "uuid": "d4dd5046-53be-4624-99e8-46e0b377fe66",
+  "type": "watchface",
+  "price": "free",
+  "target_platforms": [
+    "emery",
+    "gabbro"
+  ],
+  "description_file": "description.txt",
+  "release_notes_file": "release-notes.txt",
+  "source_url": "https://github.com/xefensor/halftone-watchface",
+  "support_url": "https://github.com/xefensor/halftone-watchface/issues",
+  "privacy_url": "https://github.com/xefensor/halftone-watchface/blob/main/PRIVACY.md",
+  "publication_status": "preparation",
+  "store_submission_allowed": false,
+  "publication_rule_url": "https://developer.repebble.com/guides/plugins/publishing-plugins/",
+  "publication_rule_checked_on": "2026-11-12",
+  "requirements": [
+    "Pebble Time 2 or Round 2; current PebbleOS",
+    "Current Pebble mobile app with Plugins / permissions preview enabled",
+    "Android for music and notification integration",
+    "Selected providers and their permissions"
+  ],
+  "screenshots": {
+    "emery": [
+      "emery-idle.png",
+      "emery-music.png",
+      "emery-notification.png",
+      "emery-dark.png",
+      "emery-peek.png"
+    ],
+    "gabbro": [
+      "gabbro-idle.png",
+      "gabbro-music.png",
+      "gabbro-notification.png",
+      "gabbro-dark.png",
+      "gabbro-peek.png"
+    ]
+  },
+  "remaining_publication_gates": [
+    "Physical Time 2 and current Android Pebble app checks (Round 2 is emulator-only)",
+    "Verify Developer Dashboard listing ownership, UUID and unused version",
+    "Publish and verify proposed privacy/support URLs",
+    "Explicit final publication approval"
+  ]
+}

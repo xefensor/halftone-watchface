@@ -310,6 +310,21 @@ class ReleaseTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 release.validate_artifacts(self.root, config, commit, package, assets)
 
+    def test_watchface_uses_checked_separate_debug_map(self):
+        package={"version":"1.10.0","pebble":{"uuid":"face-id"}}
+        config={"kind":"watchface","app_uuid":"face-id","source_archive":{"path":"source.zip"},"javascript_debug_archive":"debug.zip"}
+        code="var sample=1;"
+        source={"package.json":json.dumps(package).encode(),"src/pkjs/index.js":code.encode()}
+        pbw={"appinfo.json":json.dumps({"uuid":"face-id","versionLabel":"1.10.0","watchapp":{"watchface":True}}).encode(),"pebble-js-app.js":b"optimized","plugin.js":b"plugin"}
+        mapping={"sources":["./src/pkjs/index.js"],"sourcesContent":[code]}
+        assets={"source.zip":zip_bytes(source),"face.pbw":zip_bytes(pbw),"debug.zip":zip_bytes({"sdk/pebble-js-app.js.map":json.dumps(mapping).encode()})}
+        with patch.object(release,"validate_source",return_value=source),patch("release_js.audit_js") as audit:
+            release.validate_artifacts(self.root,config,self.original,package,assets)
+            audit.assert_called_once()
+            pbw["pebble-js-app.js.map"]=json.dumps(mapping).encode();assets["face.pbw"]=zip_bytes(pbw)
+            with self.assertRaisesRegex(ValueError,"still contains a debug map"):
+                release.validate_artifacts(self.root,config,self.original,package,assets)
+
 
 if __name__ == "__main__":
     unittest.main()

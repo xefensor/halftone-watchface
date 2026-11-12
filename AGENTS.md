@@ -1,6 +1,6 @@
 # Working on Halftone
 
-Halftone targets stock PebbleOS, Pebble Time 2 / Emery (200 × 228).
+Halftone targets stock PebbleOS on Time 2 / Emery (200 × 228) and Round 2 / Gabbro (260 × 260). Duo is deferred.
 Read CONTRIBUTING.md and docs/MAINTENANCE.md for the current development contract.
 The v1.9.0-rc.6 release and its docs/VALIDATION.md evidence remain frozen.
 
@@ -11,8 +11,8 @@ The v1.9.0-rc.6 release and its docs/VALIDATION.md evidence remain frozen.
   Keep the two left/right reading homes above activities and native Peek. Small
   measured vertical shifts may keep supporting text clear of the dot border;
   retain Fira shapes, clock sizes, Bigger Text, colours and border design.
-- Core 0.5.2 owns public readings/cache/transport. Activities 0.4.4 owns ACT3
-  sources, roles and private context. UI 0.1.1 supplies utility roles and symbols.
+- Core 0.6.0 owns public readings/cache/transport. Activities 0.4.5 owns ACT3
+  sources, roles and private context. UI 0.1.2 supplies utility roles and symbols.
   Exact archives and provenance live in vendor/. Never fix installed node_modules.
 - Preserve UUID d4dd5046-53be-4624-99e8-46e0b377fe66, the original 31 AppMessage
   key numbers, persistent key ranges, session token and halftone-complications-v1
@@ -32,7 +32,7 @@ The v1.9.0-rc.6 release and its docs/VALIDATION.md evidence remain frozen.
 ## Development and release
 
 Run npm test, npm run build, npm run check:artifact and npm run check:config.
-Use Node 22, Python 3.12, a C99 compiler and SDK 4.33.1 for native builds.
+Use Node 22, Python 3.12, a C99 compiler and SDK 4.44 for native builds.
 Ordinary candidates and QA belong in ignored build/. Never overwrite dist/,
 releases/ or historical evidence. Check actual emulator renders for UI changes;
 portable, simulated phone, emulator and physical-device evidence stay separate.

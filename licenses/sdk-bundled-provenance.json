@@ -1,5 +1,5 @@
 {
-  "sdkVersion": "4.33.1",
+  "sdkVersion": "4.44",
   "sourceMapSource": "_pkjs_shared_additions.js",
   "sdkSourceFile": "sdk-core/pebble/common/include/_pkjs_shared_additions.js",
   "sourceBytes": 1124,

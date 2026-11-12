@@ -34,11 +34,13 @@ subprocess.run(["python3", str(root / "scripts/generate-config.py")], check=True
 licenses = license_payloads(root)
 with zipfile.ZipFile(source) as sdk:
     assert sdk.testzip() is None
-    assert len(sdk.namelist()) == len(set(sdk.namelist())) == 6
+    assert len(sdk.namelist()) == len(set(sdk.namelist()))
+    expected_native={f"{platform}/{file}" for platform in pkg["pebble"]["targetPlatforms"] for file in ("pebble-app.bin","app_resources.pbpack","manifest.json")}
+    assert expected_native <= set(sdk.namelist())
     info = json.loads(sdk.read("appinfo.json"))
     assert info["uuid"] == pkg["pebble"]["uuid"]
     assert info["versionLabel"] == pkg["version"]
-    assert info["targetPlatforms"] == ["emery"]
+    assert info["targetPlatforms"] == pkg["pebble"]["targetPlatforms"]
     assert info["watchapp"]["watchface"] is True
     info["manifestVersion"] = 2
     info["usesPermissions"] = pkg["pebble"]["usesPermissions"]
@@ -68,7 +70,7 @@ with zipfile.ZipFile(source) as sdk:
             licenses
         ) | {"plugin.js", "config.html"}
         for name in sdk.namelist():
-            if name not in ("appinfo.json", "pebble-js-app.js", "pebble-js-app.js.map"):
+            if name not in ("appinfo.json", "pebble-js-app.js", "pebble-js-app.js.map", "plugin.js", "config.html"):
                 assert sdk.read(name) == result.read(name)
         for name, data in licenses.items():
             assert result.read(name) == data

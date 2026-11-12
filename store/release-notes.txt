@@ -1,16 +1,5 @@
-Halftone 1.9.0 rc.6 adopts the shared Pebble Watchface Core used by Dynamic.
+Halftone 1.10.0
 
-- Preserves the existing appearance, colors, source choices, saved settings and complication cache
-- Preserves transient music and notification privacy, expiry and reconnect handling
-- Keeps bottom-aligned artwork, both readings during Timeline Peek and the existing text sizing
+SDK 4.44 builds for Time 2 and Round 2. Keeps the existing identity, saved settings, provider protocols, expiry rules and typography. Both numeric readings share a measured size; phone text-size choices apply immediately and survive reopening. Music retains its artwork position while loading. Round 2 uses a circular halftone border with the existing dot depth and radius sequence.
 
-- Aligns artwork/icons with the actual fitted foreground text, including an ellipsis when needed and excluding the text shadow
-- Uses compiled-font glyph measurements and accounts for transparent icon padding and empty space around fitted icons
-- Replaces the previous centered-plus-offset placement without moving the clock or text
-- Retains compact artwork/icon boxes: 32 pixels normally or 40 with Big text for two-line panels, and 28 pixels for a single line
-- Preserves center-cropped music images, fully contained notification icons, the title inset and long-title artwork hiding
-- Keeps both complications above Timeline Peek, existing source choices, the halftone dot border and notification privacy defaults
-
-Incoming source artwork remains capped at 24 pixels. Notification summaries and message text remain off by default.
-
-This build requires Pebble's plugin preview and is prepared for sideloaded testing. Do not submit it to the public appstore while Pebble's plugin-preview publishing restriction remains in place. Weather, units and updates come from the source selected in Pebble; Halftone has no independent weather HTTP fallback or local temperature conversion. Music and notification sources are currently available on Android.
+Prepared locally; not published. Real-device checks and final approval remain required.

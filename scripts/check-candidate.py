@@ -17,11 +17,11 @@ with zipfile.ZipFile(pbw) as built,zipfile.ZipFile(root/'build'/(root.name+'.pbw
     info=json.loads(built.read('appinfo.json'))
     require(info['uuid']=='d4dd5046-53be-4624-99e8-46e0b377fe66','Halftone UUID changed')
     require(info['versionLabel']==package['version'] and info['displayName']=='Halftone','Wrong app identity')
-    require(info['manifestVersion']==2 and info['usesPermissions']==['ReadMusic'],'Permission manifest differs')
+    require(info['manifestVersion']==2 and info['usesPermissions']==package['pebble']['usesPermissions'] and [p['name'] for p in info['usesPermissions']]==['ReadMusic','Notifications','Location','ReadWatchSettings'] and all(p['reason'] and p['required'] is False for p in info['usesPermissions']),'Permission manifest differs')
     require(info['messageKeys']==dict(zip(package['pebble']['messageKeys'],range(10000,10000+len(package['pebble']['messageKeys'])))),'Wire keys differ')
     require(info['plugin']==package['pebble']['plugin'],'Navigation plugin missing')
     require(built.read('config.html')==(root/'config.html').read_bytes(),'Stale packaged settings')
-    for name in ['emery/pebble-app.bin','emery/app_resources.pbpack','emery/manifest.json']:
+    for name in [p+'/'+n for p in package['pebble']['targetPlatforms'] for n in ('pebble-app.bin','app_resources.pbpack','manifest.json')]:
         require(built.read(name)==sdk.read(name),'Packaging altered SDK payload '+name)
     binary=built.read('emery/pebble-app.bin')
     header=(root/'src/c/generated_clock_glyphs.h').read_text()
@@ -42,11 +42,20 @@ with zipfile.ZipFile(pbw) as built,zipfile.ZipFile(root/'build'/(root.name+'.pbw
     preview=json.loads((root/'src/pkjs/settings-preview.js').read_text().split('module.exports = ',1)[1].strip().removesuffix(';'))
     require(preview['version']==package['version'],'Wrong native preview version')
     source=preview['source'];native=source['nativePayloadSha256']
-    require(sha(built.read('emery/app_resources.pbpack'))==native['emery/app_resources.pbpack'],'Native preview resources differ')
-    require(sha(binary)==native['emery/pebble-app.bin'] or
+    from native_identity import renderer_identity
+    renderer=source.get('nativeRendererIdentity')
+    if renderer:require(renderer==renderer_identity(binary,built.read('emery/app_resources.pbpack')),'Native preview renderer/resources differ')
+    else:
+        require(sha(built.read('emery/app_resources.pbpack'))==native['emery/app_resources.pbpack'],'Native preview resources differ')
+    if not renderer:require(sha(binary)==native['emery/pebble-app.bin'] or
         sha(binary[:124]+b'\0'*4+binary[128:])==source['normalizedNativeBinarySha256'],
         'Native previews describe a different renderer')
     body_fonts=audit_body_fonts(root,built.read('emery/app_resources.pbpack'),binary)
     report={'bodyFonts':body_fonts,'pbw':str(pbw),'sha256':sha(pbw.read_bytes()),'nativeBytes':len(binary),'nativePayloadsUnchanged':True,'firaGeometryMatches':True,'nativePreviewCodeAndResourcesMatch':True,'checks':'source fingerprints, package identity, keys, permissions, navigation, settings, native payloads, linked Fira tables'}
 output=root/'build/qa/artifact.json';output.parent.mkdir(parents=True,exist_ok=True);output.write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report,indent=2))
+
+from platform_audit import audit_platforms
+from native_assets_audit import audit_assets
+print(audit_platforms(root,pbw))
+print(audit_assets(root,pbw))

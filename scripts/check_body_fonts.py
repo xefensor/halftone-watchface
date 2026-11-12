@@ -122,7 +122,7 @@ def audit_body_fonts(root,packed,binary):
                 pools['descent'][maps['descent'][index]][column]==descent,
                 'Packaged glyph metrics differ: %dpx U+%04X'%(size,point))
             checks+=1
-    media=json.loads((root/'package.json').read_text())['pebble']['resources']['media']
+    media=[m for m in json.loads((root/'package.json').read_text())['pebble']['resources']['media'] if 'emery' in m.get('targetPlatforms',['emery'])]
     require([entry['name'] for entry in media]==['FONT_BODY_'+str(size) for size in sizes] and
         all(entry['type']=='font' and entry['file']=='fonts/RobotoCondensed-Bold.ttf' and
             entry.get('extended') is True for entry in media),'Body resource definitions differ')

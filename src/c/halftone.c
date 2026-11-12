@@ -239,6 +239,10 @@ static void prv_draw_rounded_dot_ring(GContext *ctx, GRect bounds, int depth,
 
 static Window *s_window;
 static Layer *s_window_layer, *s_background_layer, *s_context_layer;
+#ifdef PBL_ROUND
+static Layer *s_face_container;
+static Layer *s_border_layer;
+#endif
 static GColor s_background_color, s_text_color, s_accent_color;
 static GColor s_day_colors[3],s_night_colors[3];
 static bool s_large_text_enabled,s_depth_effect_enabled,s_text_shadow_enabled,s_panel_transitions=true;
@@ -248,9 +252,9 @@ static bool s_use_12_hour,s_app_focused=true;
 static uint8_t s_clock_format;
 static bool s_show_status, s_animations_enabled;
 static BatteryChargeState s_battery;
-// Allocate this bounded block once. Keeping the shared engine, transient
-// snapshots and raster scratch off BSS leaves the app's load image below the
-// SDK's16-bit virtual-size limit without adding any per-frame allocation.
+// Allocate the shared engine, transient snapshots and raster scratch once.
+// Keeping this bounded block off BSS avoids per-frame allocations and gives
+// every owned resource one lifetime with explicit cleanup.
 typedef struct {
   WfcReadings core;
   WfcPhoneStatus legacy_context;
@@ -334,7 +338,12 @@ static void prv_note_presentation(const PavCard *card,bool stable);
 // own paint invalidations until the face is visible again. The OS can still
 // request a background paint; the draw callbacks remain available for that.
 static void prv_dirty(Layer *layer) {
-  if(s_app_focused&&layer)layer_mark_dirty(layer);
+  if(s_app_focused&&layer){
+    layer_mark_dirty(layer);
+#ifdef PBL_ROUND
+    if(layer==s_background_layer&&s_border_layer)layer_mark_dirty(s_border_layer);
+#endif
+  }
 }
 
 
@@ -1098,8 +1107,33 @@ static void prv_draw_date(GContext *ctx,HalftoneView view) {
 
   prv_text(ctx,fitted,point,24,prv_round(p.date_y),152,prv_faded_text(alpha),GTextAlignmentCenter);
 }
+#ifdef PBL_ROUND
+/* The original halftone depth/radius sequence follows the circular display. */
+static void prv_draw_round_border(Layer *layer,GContext *ctx) {
+  const GRect bounds=layer_get_bounds(layer);
+  graphics_context_set_fill_color(ctx,s_background_color);
+  graphics_fill_rect(ctx,bounds,0,GCornerNone);
+  graphics_context_set_antialiased(ctx,true);
+  graphics_context_set_fill_color(ctx,GColorBlack);
+  const int8_t *depths=s_depth_effect_enabled?s_depth_dot_depths:s_classic_dot_depths;
+  const int8_t *radii=s_depth_effect_enabled?s_depth_dot_radii:s_classic_dot_radii;
+  const int steps=s_depth_effect_enabled?DEPTH_DOT_TRANSITION_STEPS:CLASSIC_DOT_TRANSITION_STEPS;
+  const GPoint center=GPoint(bounds.size.w/2,bounds.size.h/2);
+  for(int ring=0;ring<steps;++ring) {
+    const int radius=bounds.size.w/2-1-depths[ring];
+    const int count=((radius*628+DOT_SPACING*50)/(DOT_SPACING*100)+2)/4*4;
+    for(int i=0;i<count;++i) {
+      const int angle=TRIG_MAX_ANGLE*i/count+(ring%2?TRIG_MAX_ANGLE/(2*count):0);
+      const GPoint point=GPoint(center.x+radius*sin_lookup(angle)/TRIG_MAX_RATIO,
+          center.y-radius*cos_lookup(angle)/TRIG_MAX_RATIO);
+      graphics_fill_circle(ctx,point,radii[ring]);
+    }
+  }
+}
+#endif
 static void prv_draw_background(Layer *layer,GContext *ctx) {
   const GRect bounds=layer_get_unobstructed_bounds(s_window_layer);
+#ifndef PBL_ROUND
   graphics_context_set_fill_color(ctx,GColorBlack);
   graphics_fill_rect(ctx,layer_get_bounds(layer),0,GCornerNone);
   graphics_context_set_fill_color(ctx,s_background_color);
@@ -1110,6 +1144,9 @@ static void prv_draw_background(Layer *layer,GContext *ctx) {
   const int8_t *radii=s_depth_effect_enabled?s_depth_dot_radii:s_classic_dot_radii;
   const int steps=s_depth_effect_enabled?DEPTH_DOT_TRANSITION_STEPS:CLASSIC_DOT_TRANSITION_STEPS;
   for(int i=0;i<steps;++i)prv_draw_rounded_dot_ring(ctx,bounds,depths[i],radii[i],i);
+#else
+  (void)layer;
+#endif
   const HalftoneView view=prv_view(halftone_pose_at_height(s_pose,bounds.size.h,s_large_text_enabled),bounds.size.h);
   const WatchPose p=view.pose;
   float point=p.clock_size,width=prv_vector_width(s_time_buffer,point);
@@ -1853,6 +1890,16 @@ static void prv_outbox_sent(DictionaryIterator *iterator, void *context) {
 static void prv_window_load(Window *window) {
   window_set_background_color(window,s_background_color);
   s_window_layer=window_get_root_layer(window);
+#ifdef PBL_ROUND
+  Layer *root=s_window_layer;
+  const GRect screen=layer_get_bounds(root);
+  s_border_layer=layer_create(screen);
+  layer_set_update_proc(s_border_layer,prv_draw_round_border);
+  layer_add_child(root,s_border_layer);
+  s_face_container=layer_create(GRect((screen.size.w-200)/2,(screen.size.h-FULL_LAYOUT_HEIGHT)/2,200,FULL_LAYOUT_HEIGHT));
+  layer_add_child(root,s_face_container);
+  s_window_layer=s_face_container;
+#endif
   const GRect bounds=layer_get_bounds(s_window_layer);
   for(size_t i=0;i<BODY_FONT_COUNT;++i) {
     s_body_fonts[i]=fonts_load_custom_font(resource_get_handle(s_body_resources[i]));
@@ -1875,11 +1922,17 @@ static void prv_window_unload(Window *window) {
   (void)window;unobstructed_area_service_unsubscribe();prv_cancel_motion();prv_private_clear();
   layer_destroy(s_context_layer);layer_destroy(s_background_layer);
   s_context_layer=NULL;s_background_layer=NULL;s_window_layer=NULL;
+#ifdef PBL_ROUND
+  layer_destroy(s_face_container);s_face_container=NULL;
+  layer_destroy(s_border_layer);s_border_layer=NULL;
+#endif
   for(size_t i=0;i<BODY_FONT_COUNT;++i) {
     if(s_body_loaded[i])fonts_unload_custom_font(s_body_fonts[i]);
     s_body_fonts[i]=NULL;s_body_loaded[i]=false;
   }
 }
+/* Keep initialization scratch off the event-loop stack. */
+__attribute__((noinline))
 static bool prv_init(void) {
   const unsigned preferred=preferred_content_size();s_system_text_size=preferred;
   s_type=halftone_type(xoce_ui_effective_text_size(0,preferred));

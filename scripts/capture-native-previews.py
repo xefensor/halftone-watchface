@@ -27,6 +27,7 @@ import time
 import uuid
 import zipfile
 
+from native_identity import renderer_identity
 ROOT=Path(__file__).resolve().parents[1]
 NATIVE_FILES=('emery/pebble-app.bin','emery/app_resources.pbpack','emery/manifest.json')
 SAMPLE_TIME=int(datetime.datetime(2026,11,1,13,5,tzinfo=datetime.timezone.utc).timestamp())
@@ -98,6 +99,8 @@ def capture(pebble,pbw,output,preview=None,appmessage=None):
     # other byte and the binary length in an independently reproducible hash.
     if len(captured_binary)<128:raise ValueError('Truncated captured native binary')
     normalized_binary_sha256=sha256(captured_binary[:124]+b'\0'*4+captured_binary[128:])
+    with zipfile.ZipFile(native_pbw) as captured:
+        renderer=renderer_identity(captured_binary,captured.read('emery/app_resources.pbpack'))
     target=uuid.UUID(appinfo['uuid']);keys=appinfo['messageKeys']
     package=json.loads((ROOT/'package.json').read_text());version=package['version']
     if appinfo.get('versionLabel')!=version or appinfo['uuid']!=package['pebble']['uuid']:
@@ -181,7 +184,7 @@ def capture(pebble,pbw,output,preview=None,appmessage=None):
         (output/'fixtures.json').write_text(json.dumps(plan,indent=2)+'\n')
         result={'version':version,'source':{'capturedFromCandidatePbwSha256':sha256(native_pbw.read_bytes()),
             'candidateSourcePbwSha256':sha256(pbw.read_bytes()),'nativePayloadSha256':native_hashes,
-            'normalizedNativeBinarySha256':normalized_binary_sha256,
+            'normalizedNativeBinarySha256':normalized_binary_sha256,'nativeRendererIdentity':renderer,
             'timelineSample':'Actual native unobstructed geometry; reserved OS panel, no event payload.'},'frames':frames}
         report={'version':version,'pbw_sha256':sha256(native_pbw.read_bytes()),
             'candidate_source_pbw_sha256':sha256(pbw.read_bytes()),'native_payload_sha256':native_hashes,

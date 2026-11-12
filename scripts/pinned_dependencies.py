@@ -9,8 +9,8 @@ import tarfile
 
 
 DEPENDENCIES = (
-    ("CORE.json", "pebble-watchface-core", "0.5.2"),
-    ("ACTIVITIES.json", "pebble-activities", "0.4.4"),
+    ("CORE.json", "pebble-watchface-core", "0.6.0"),
+    ("ACTIVITIES.json", "pebble-activities", "0.4.5"),
 )
 
 # Repository locations are independent of the stable npm/SDK package names.
@@ -48,7 +48,7 @@ def verify_dependency(root, specification):
             pin["source_commit"] != "0" * 40 and
             re.fullmatch(r"[0-9a-f]{64}", pin["sha256"]),
             "Invalid dependency provenance: " + label)
-    require(pin["sdk"] == "4.33.1" and pin["platforms"] == ["emery"],
+    require(pin["sdk"] == "4.44" and pin["platforms"] == ["emery", "gabbro"],
             "Unexpected dependency SDK/platforms: " + label)
     reference = "file:vendor/" + artifact
     package = json.loads((root / "package.json").read_text(encoding="utf-8"))

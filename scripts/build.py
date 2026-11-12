@@ -9,9 +9,11 @@ root = Path(__file__).resolve().parents[1]
 from repo_workflow import build_output
 
 output_directory = build_output(root, "Halftone")
+subprocess.run(["pebble", "clean"], cwd=root, check=True)
+subprocess.run(["python3", "scripts/bundle-js.py", "src/plugin/index.js", "build/plugin.js"], cwd=root, check=True)
+(root / "plugin.js").write_bytes((root / "build/plugin.js").read_bytes())
 for command in (
     ["python3", "scripts/generate-config.py"],
-    ["pebble", "clean"],
     ["pebble", "build"],
     ["python3", "scripts/package-release.py"],
 ):

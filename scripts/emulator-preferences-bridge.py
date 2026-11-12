@@ -15,14 +15,16 @@ from libpebble2.protocol.system import TimeMessage,SetUTC
 from libpebble2.services.appmessage import AppMessageService,ByteArray,Uint32,CString
 parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--optics',type=int,choices=(0,1),default=0);args=parser.parse_args()
 ROOT=Path(__file__).resolve().parents[1];PBW=candidate(ROOT,'Halftone');check_build(ROOT,PBW)
-OUT=ROOT/'build/qa/preferences-bridge'/str(time.time_ns());OUT.mkdir(parents=True)
+PLATFORM=os.environ.get('PEBBLE_QA_PLATFORM','emery');assert PLATFORM in ('emery','gabbro')
+W,H=(260,260) if PLATFORM=='gabbro' else (200,228);X,Y=(30,16) if PLATFORM=='gabbro' else (0,0)
+OUT=ROOT.parent/'recovery-validation/release-qa'/ROOT.name.removeprefix('pebble-watchface-')/PLATFORM/'preferences-bridge'/str(time.time_ns());OUT.mkdir(parents=True)
 os.environ['PEBBLE_QA_STATE']=str(OUT/'emulator');sys.path.insert(0,str(ROOT.parent/'recovery-validation'))
 from pipe_emulator import connect
 with zipfile.ZipFile(PBW) as source,zipfile.ZipFile(OUT/'native.pbw','w') as native:
     info=json.loads(source.read('appinfo.json'))
     for name in ('plugin.js','pebble-js-app.js'):(OUT/name).write_bytes(source.read(name))
     for name in source.namelist():
-        if name=='appinfo.json' or name.startswith('emery/'):native.writestr(name,source.read(name))
+        if name=='appinfo.json' or name.startswith(PLATFORM+'/'):native.writestr(name,source.read(name))
 keys=info['messageKeys'];inverse={value:key for key,value in keys.items()};target=uuid.UUID(info['uuid'])
 p=connect();service=AppMessageService(p);lines=queue.Queue();lock=threading.Lock();closing=threading.Event();transactions={};transport_lock=threading.Lock();transport_trace=[];acknowledged=set();replies=[];sessions=[];activity_fixtures=[];commands=0;responses={}
 phone=subprocess.Popen(['node',str(ROOT/'scripts/emulator-preferences-phone.cjs'),str(OUT)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
@@ -119,7 +121,7 @@ try:
         assert sessions and sessions[-1]!=previous,'Relaunch did not establish a new activity epoch'
         inject_activity()
     def capture(name):
-        image=Image.frombytes('RGB',(200,228),b''.join(Screenshot(p).grab_image()));image.save(OUT/(name+'.png'));return image
+        image=Image.frombytes('RGB',(W,H),b''.join(Screenshot(p).grab_image()));image.save(OUT/(name+'.png'));return image
     for index in range(1,4):
         chosen.update({'TEXT_SIZE':0,'APPEARANCE_MODE':2 if index<3 else 0,'MANUAL_APPEARANCE':0 if index==1 else 1,'NIGHT_PALETTE':False})
         saved=request({'type':'save_settings','settings':chosen})
@@ -131,7 +133,7 @@ try:
         wait_applied();replies.clear();restart(index);baseline=capture('follow-size-'+str(index))
         chosen['TEXT_SIZE']=3 if index==1 else 1
         request({'type':'save_settings','settings':chosen});wait_applied();time.sleep(.2);other=capture('other-profile-before-'+str(index))
-        date_box=(24,16,176,60)
+        date_box=(X+24,Y+16,X+176,Y+60)
         assert ImageChops.difference(baseline.crop(date_box),other.crop(date_box)).getbbox() is not None,'Saved text size did not repaint date/readings immediately'
         chosen['TEXT_SIZE']=index
         saved=request({'type':'save_settings','settings':chosen});assert saved['ok'] and saved['delivery']['pending'],saved
@@ -140,7 +142,7 @@ try:
         replies.clear();restart(3 if index==1 else 1);restored=capture('manual-restored-'+str(index))
         assert ImageChops.difference(manual,restored).getbbox() is None,'Manual override did not survive conflicting OS size/relaunch'
         expected=0x005555 if index==1 else 0x550000
-        assert restored.getpixel((100,210))==((expected>>16)&255,(expected>>8)&255,expected&255)
+        assert restored.getpixel((X+100,Y+210))==((expected>>16)&255,(expected>>8)&255,expected&255)
         cases.append({'size':index,'appearanceMode':chosen['APPEARANCE_MODE'],'manualAppearance':chosen['MANUAL_APPEARANCE'],'pendingBeforeReceipt':saved,'appliedAfterNativeReceipt':applied,'matchingOsPixels':True,'survivesConflictingOsSizeAndRelaunch':True})
     chosen.update({'BACKGROUND_COLOR':0x123456,'NIGHT_BACKGROUND_COLOR':0xabcdef,'APPEARANCE_MODE':1,'NIGHT_PALETTE':True})
     saved=request({'type':'save_settings','settings':chosen});assert saved['ok'];wait_applied();replies.clear();restart(2)
@@ -149,7 +151,7 @@ try:
     for word in words:expected+=list(int(word).to_bytes(4,'little'))
     assert any(frame[3]==1 and frame[8:]==expected for frame in replies),'Relaunch lost original RGB/mode values'
     check_build(ROOT,PBW)
-    report={'result':'PASS','pbwSha256':hashlib.sha256(PBW.read_bytes()).hexdigest(),'cases':cases,'optics':args.optics,'activityFixtures':activity_fixtures,'firmware':str(p.watch_info.running),'scope':'Exact optimized PBW plugin and PKJS, actual Emery AppMessage transport ACKs and native save/readback/application receipts. All three manual sizes match actual OS-size pixels and survive a conflicting OS size/relaunch. Both palettes, unsupported Follow Appearance fallback and raw RGB Quiet Time migration survive relaunch. Phone SDK/storage simulated;not a physical phone/watch test.'}
+    report={'result':'PASS','platform':PLATFORM,'pbwSha256':hashlib.sha256(PBW.read_bytes()).hexdigest(),'cases':cases,'optics':args.optics,'activityFixtures':activity_fixtures,'firmware':str(p.watch_info.running),'scope':'Exact optimized PBW plugin and PKJS, actual native AppMessage transport ACKs and native save/readback/application receipts. All three manual sizes match actual OS-size pixels and survive a conflicting OS size/relaunch. Both palettes, unsupported Follow Appearance fallback and raw RGB Quiet Time migration survive relaunch. Phone SDK/storage simulated;not a physical phone/watch test.'}
     (OUT/'report.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({'result':'PASS','path':str(OUT/'report.json')}),flush=True)
 
 finally:
