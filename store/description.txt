@@ -6,4 +6,4 @@ Choose Small, Medium, Large or Follow Pebble text, your clock format and palette
 
 Requires the current Pebble mobile app with Plugins / permissions preview enabled and the permissions of your selected sources. Music and notification integration require Android. Providers control availability, units and original expiry. No developer weather server, account, advertisements or analytics.
 
-Free. For Pebble Time 2 and Round 2. Round 2 validation uses the emulator; physical Time 2 and Android checks are pending before publication.
+Free. For Pebble Time 2 and Round 2. Round 2 has been validated in the emulator.

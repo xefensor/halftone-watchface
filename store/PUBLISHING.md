@@ -1,6 +1,6 @@
 # Store review kit
 
-This directory prepares Halftone 1.10.0 for Time 2 and Round 2. Duo is deferred.
+This directory prepares Halftone 1.10.1 for Time 2 and Round 2. Duo is deferred.
 The kit is local and has not been submitted or published.
 
 Run `npm run store:prepare`, then `npm run store:check`. Both use the exact
@@ -16,9 +16,10 @@ still require enabling Plugins / permissions preview as described in the
 [preview guide](https://developer.repebble.com/guides/plugins/preview/).
 Music and notification integration requires Android.
 
-Before publication, complete physical Time 2 and Android checks, verify listing
-ownership and that the version is unused, publish the proposed privacy/support
-URLs, and obtain the final approval. Round 2 evidence is emulator-only.
+Xef accepted this reviewed implementation for stable release preparation on
+2026-11-13. Physical coverage remains recorded separately. Before publication,
+verify Dashboard ownership, an unused version and live app-owned GitHub
+support/privacy URLs. Upload the exact frozen PBW after GitHub publication.
 A successful local kit check establishes package consistency only.
 
 Files with the old `emery_` naming and the old asset manifest/provenance belong

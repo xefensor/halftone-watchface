@@ -14,7 +14,7 @@ is a **prerelease** for sideloading:
 - [Checksums](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/SHA256SUMS.txt)
 
 The numeric SDK label is 1.9.0. Development in this checkout is a separate local
-1.10.0 candidate using Core 0.6.0, Activities 0.4.5 and shared UI 0.1.2, with activity
+1.10.1 stable release preparation using Core 0.6.0, Activities 0.4.5 and shared UI 0.1.3, with activity
 navigation and current settings/privacy handling. It does not replace rc.6 or
 its original evidence. See [candidate validation](docs/DEVELOPMENT-VALIDATION.md).
 
@@ -25,7 +25,7 @@ needs Pebble's plugin and complication APIs; enable the plugin preview if your
 phone version requires it. A library is bundled in the PBW and needs no separate
 watch installation. Readings use their providers' permissions and units.
 
-GitHub prerelease availability and Pebble appstore eligibility are separate.
+The reviewed implementation is accepted for stable release preparation. GitHub and Pebble Store publication remain separate steps.
 Check the [publishing checklist](store/PUBLISHING.md) before any submission.
 [Version-specific validation](docs/VALIDATION.md) records phone/watch gaps.
 

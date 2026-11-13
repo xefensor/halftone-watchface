@@ -1,5 +1,7 @@
-Halftone 1.10.0
+Halftone 1.10.1
 
 SDK 4.44 builds for Time 2 and Round 2. Keeps the existing identity, saved settings, provider protocols, expiry rules and typography. Both numeric readings share a measured size; phone text-size choices apply immediately and survive reopening. Music retains its artwork position while loading. Round 2 uses a circular halftone border with the existing dot depth and radius sequence.
 
-Prepared locally; not published. Real-device checks and final approval remain required.
+Stable release preparation of the reviewed Round 2 implementation. Existing frozen releases remain unchanged; publication is a separate step.
+
+Fit required activity state, value and unit before optional identity. Preserve the Fira clock, dot-border clearance, Bigger Text, shadow, dissolve and native Peek. Time 2 retains its established composition.

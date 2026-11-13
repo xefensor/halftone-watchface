@@ -3,7 +3,7 @@
   "kind": "watchface",
   "display_name": "Halftone",
   "tag_prefix": "v",
-  "prerelease": true,
+  "prerelease": false,
   "assets": [
     "releases/Halftone-{version}.pbw",
     "releases/Halftone-{version}-source.zip",

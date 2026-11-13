@@ -12,7 +12,7 @@ The v1.9.0-rc.6 release and its docs/VALIDATION.md evidence remain frozen.
   measured vertical shifts may keep supporting text clear of the dot border;
   retain Fira shapes, clock sizes, Bigger Text, colours and border design.
 - Core 0.6.0 owns public readings/cache/transport. Activities 0.4.5 owns ACT3
-  sources, roles and private context. UI 0.1.2 supplies utility roles and symbols.
+  sources, roles and private context. UI 0.1.3 supplies utility roles and symbols.
   Exact archives and provenance live in vendor/. Never fix installed node_modules.
 - Preserve UUID d4dd5046-53be-4624-99e8-46e0b377fe66, the original 31 AppMessage
   key numbers, persistent key ranges, session token and halftone-complications-v1
