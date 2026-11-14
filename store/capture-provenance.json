@@ -1,8 +1,8 @@
 {
   "version": "1.10.1",
   "nativePixelsModified": false,
-  "scope": "Raw emulator screenshots from the exact stable candidate; synthetic example data. No physical phone/watch claim.",
-  "candidateSha256": "029dccc901c0df0a071f4253fe911d45af1a2491def4e53b66957c5544e746ec",
+  "scope": "Previously captured raw native PNGs reused after current PBW renderer identity equality was verified. Synthetic example data; no physical-device claim.",
+  "candidateSha256": "b568c2d6d559833863d3487d387d94cdd6e945ab674ba0b45949f1fa7aa2b8c3",
   "renderer": {
     "emery": {
       "nativeRendererSha256": "32fd6e8a859cd6958c0a81b548bea01aa9fea380634ed3c3c9291ab4de0f86ce",
@@ -84,5 +84,6 @@
       "sourceReport": "Round2-Development/qa/halftone/gabbro/1794531527530152762/report.json",
       "rendererProof": "Exact stable PBW captured in native emulator; original PNG bytes unchanged."
     }
-  }
+  },
+  "sourceCaptureCandidateSha256": "029dccc901c0df0a071f4253fe911d45af1a2491def4e53b66957c5544e746ec"
 }

@@ -1,15 +1,15 @@
-A bold clock, two Pebble readings and a halftone border.
+A Pebble watchface with a bold Fira clock, a halftone dot border and room for your everyday information.
 
-Activities are live updates shown by compatible XOCE apps and watchfaces, such as a countdown, music or a new notification.
+Halftone pairs distinctive typography with two readings beneath the time. Choose weather, battery or another compatible Pebble reading, then make the clock your own with colour, depth and shadow settings.
 
-Start a countdown in Timer, then return to Halftone to see the time remaining on your watchface. Enable activity plugins and show Timer in Halftone’s activity list, then save. Timer keeps running the countdown and alarm. Open Timer to pause, resume or finish it.
+- Keep two readings together with complete values and units.
+- Customize colours, Bigger Text, depth and shadow.
+- Choose Small, Medium, Large or Follow Pebble text.
+- Show one main activity and an optional smaller summary below the readings.
+- Follow music with the song, artist and available artwork, and use Timeline Peek.
 
-Sharing activities between apps needs plugin support in the Pebble phone app, the required permissions and a connected phone.
+A countdown can stay in view when you leave Timer. Start it there, then return to Halftone to see the time remaining. These ongoing updates are called Activities. Timer still runs the countdown and handles the alarm. Open Timer to change it, or add Open Activity as an optional button shortcut back to the app.
 
-See your chosen readings together, with matching numeric sizes that keep complete values and units. Compatible activities can show a primary item and an optional secondary summary. Music shows track, artist and available artwork; a loading symbol keeps the artwork position stable. Notifications are optional.
+Shared readings and activities need the official Pebble phone app's plugin support, source permissions and a connected phone. Music and notification integration requires Android. Notifications are optional; message text is opt-in.
 
-Choose Small, Medium, Large or Follow Pebble text, your clock format and palettes. Bigger Text, depth and shadow retain Halftone’s own typography. The face responds to Timeline Peek.
-
-Requires the current Pebble mobile app with Plugins / permissions preview enabled and the permissions of your selected sources. Music and notification integration require Android. Providers control availability, units and original expiry. No developer weather server, account, advertisements or analytics.
-
-Free. For Pebble Time 2 and Round 2. Round 2 has been validated in the emulator.
+Free. For Pebble Time 2 and Round 2. No account, advertisements or analytics.

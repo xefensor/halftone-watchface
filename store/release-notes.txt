@@ -1,7 +1,7 @@
 Halftone 1.10.1
 
-SDK 4.44 builds for Time 2 and Round 2. Keeps the existing identity, saved settings, provider protocols, expiry rules and typography. Both numeric readings share a measured size; phone text-size choices apply immediately and survive reopening. Music retains its artwork position while loading. Round 2 uses a circular halftone border with the existing dot depth and radius sequence.
+Pebble Time 2 and Round 2 support, with the Fira clock, halftone dot border, adjustable colours, depth, shadow and readable text choices.
 
-Stable release preparation of the reviewed Round 2 implementation. Existing frozen releases remain unchanged; publication is a separate step.
+Keep two readings above music, optional notifications and compatible Activities. Start a countdown in Timer and return to Halftone to see its remaining time; Timer continues to own its controls and alarm.
 
-Fit required activity state, value and unit before optional identity. Preserve the Fira clock, dot-border clearance, Bigger Text, shadow, dissolve and native Peek. Time 2 retains its established composition.
+Round 2 uses a circular border and layouts fitted to its display. Native Timeline Peek and the Time 2 composition remain supported.
