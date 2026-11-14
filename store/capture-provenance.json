@@ -1,7 +1,7 @@
 {
   "version": "1.10.2",
   "nativePixelsModified": false,
-  "scope": "Original native PNGs reused for the new patch after strict renderer/resource equality with the reviewed package was verified. Synthetic example data; no fresh capture or physical-device claim.",
+  "scope": "Existing raw captures retain their verified renderer identity. The selected orange images are fresh captures of this exact PBW; individual records preserve capture/version/source details. No physical-device claim.",
   "candidateSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
   "renderer": {
     "emery": {
@@ -93,6 +93,24 @@
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/gabbro/report.json",
       "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
       "settings": "Small text; idle Halftone has two weather locations."
+    },
+    "emery-store-20261114-orange.png": {
+      "platform": "emery",
+      "sha256": "ae37f5142814dd105564163924349ece337c06f23f800730266fe834f18f04f6",
+      "captureVersion": "1.10.2",
+      "source": "Watch/Pebble-Store-Artwork-2026-11-14/verification/native/halftone/emery/orange.png",
+      "sourceReport": "store/orange-capture-provenance.json",
+      "rendererProof": "Fresh Screenshot-service capture from exact Halftone 1.10.2 native PBW in SDK 4.44 QEMU; supported orange palette, synthetic weather data; no pixel edits.",
+      "settings": "Orange #ff5500, white text/accent, two weather locations, small text."
+    },
+    "gabbro-store-20261114-orange.png": {
+      "platform": "gabbro",
+      "sha256": "fbd6e73222a8bc1897e2076f7ad4adbc8784e2a341f86d8cbb790ad1d702e0e6",
+      "captureVersion": "1.10.2",
+      "source": "Watch/Pebble-Store-Artwork-2026-11-14/verification/native/halftone/gabbro/orange.png",
+      "sourceReport": "store/orange-capture-provenance.json",
+      "rendererProof": "Fresh Screenshot-service capture from exact Halftone 1.10.2 native PBW in SDK 4.44 QEMU; supported orange palette, synthetic weather data; no pixel edits.",
+      "settings": "Orange #ff5500, white text/accent, two weather locations, small text."
     }
   },
   "originalCaptureVersion": "1.10.1",

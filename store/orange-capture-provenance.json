@@ -1,0 +1,63 @@
+{
+  "reference": "Original Halftone orange banner",
+  "reports": [
+    {
+      "result": "PASS",
+      "platform": "emery",
+      "version": "1.10.2",
+      "candidateSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "nativeRendererIdentity": {
+        "nativeRendererSha256": "32fd6e8a859cd6958c0a81b548bea01aa9fea380634ed3c3c9291ab4de0f86ce",
+        "resourceRendererSha256": "db9ae1bc039026afe77bb1f0a775319c0aa00b5a46de706a9d410deaa209d520"
+      },
+      "captures": [
+        {
+          "file": "orange.png",
+          "sha256": "ae37f5142814dd105564163924349ece337c06f23f800730266fe834f18f04f6",
+          "width": 200,
+          "height": 228
+        }
+      ],
+      "colourSettings": {
+        "background": "#ff5500",
+        "text": "#ffffff",
+        "accent": "#ffffff"
+      },
+      "scope": "Fresh Screenshot-service image from the exact current native PBW in SDK 4.44 QEMU. Supported colour settings and synthetic two-location weather data; no phone or physical-device claim.",
+      "logs": [
+        "AppLogMessage(uuid=d4dd5046-53be-4624-99e8-46e0b377fe66, timestamp=1793484841, level=100, message_length=38, line_number=2068, filename=halftone.c, message=Text OS=1 date=22 body=22 secondary=20)",
+        "AppLogMessage(uuid=d4dd5046-53be-4624-99e8-46e0b377fe66, timestamp=1793484841, level=100, message_length=41, line_number=2100, filename=halftone.c, message=Native state 15360 bytes; free heap 43644)",
+        "AppLogMessage(uuid=d4dd5046-53be-4624-99e8-46e0b377fe66, timestamp=1793484842, level=50, message_length=40, line_number=1761, filename=halftone.c, message=Could not begin complication request: 64)"
+      ]
+    },
+    {
+      "result": "PASS",
+      "platform": "gabbro",
+      "version": "1.10.2",
+      "candidateSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "nativeRendererIdentity": {
+        "nativeRendererSha256": "0eed085103611ee3852fb06bfba2abe4145eed666e85118f5424a4a93a0e7ba2",
+        "resourceRendererSha256": "db9ae1bc039026afe77bb1f0a775319c0aa00b5a46de706a9d410deaa209d520"
+      },
+      "captures": [
+        {
+          "file": "orange.png",
+          "sha256": "fbd6e73222a8bc1897e2076f7ad4adbc8784e2a341f86d8cbb790ad1d702e0e6",
+          "width": 260,
+          "height": 260
+        }
+      ],
+      "colourSettings": {
+        "background": "#ff5500",
+        "text": "#ffffff",
+        "accent": "#ffffff"
+      },
+      "scope": "Fresh Screenshot-service image from the exact current native PBW in SDK 4.44 QEMU. Supported colour settings and synthetic two-location weather data; no phone or physical-device claim.",
+      "logs": [
+        "AppLogMessage(uuid=d4dd5046-53be-4624-99e8-46e0b377fe66, timestamp=1793484841, level=100, message_length=38, line_number=2068, filename=halftone.c, message=Text OS=1 date=22 body=22 secondary=20)",
+        "AppLogMessage(uuid=d4dd5046-53be-4624-99e8-46e0b377fe66, timestamp=1793484842, level=100, message_length=41, line_number=2100, filename=halftone.c, message=Native state 15424 bytes; free heap 42924)",
+        "AppLogMessage(uuid=d4dd5046-53be-4624-99e8-46e0b377fe66, timestamp=1793484842, level=50, message_length=40, line_number=1761, filename=halftone.c, message=Could not begin complication request: 64)"
+      ]
+    }
+  ]
+}
