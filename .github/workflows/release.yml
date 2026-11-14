@@ -22,6 +22,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --ignore-scripts
+      - name: Install pinned image audit dependency
+        run: python3 -m pip install pillow==13.0.0
       - run: npm test
       - run: python3 -m unittest discover -s tests -p test_github_release.py
       - id: prepare
