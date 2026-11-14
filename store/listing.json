@@ -27,18 +27,18 @@
   ],
   "screenshots": {
     "emery": [
-      "emery-idle.png",
-      "emery-music.png",
-      "emery-notification.png",
-      "emery-dark.png",
-      "emery-peek.png"
+      "emery-store-20261114-idle.png",
+      "emery-store-20261114-music.png",
+      "emery-store-20261114-notification.png",
+      "emery-store-20261114-dark.png",
+      "emery-store-20261114-peek.png"
     ],
     "gabbro": [
-      "gabbro-idle.png",
-      "gabbro-music.png",
-      "gabbro-notification.png",
-      "gabbro-dark.png",
-      "gabbro-peek.png"
+      "gabbro-store-20261114-idle.png",
+      "gabbro-store-20261114-music.png",
+      "gabbro-store-20261114-notification.png",
+      "gabbro-store-20261114-dark.png",
+      "gabbro-store-20261114-peek.png"
     ]
   },
   "remaining_publication_gates": [
