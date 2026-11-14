@@ -1,34 +1,43 @@
 {
   "schemaVersion": 1,
   "originalArtwork": true,
-  "family": "XOCE 2026-11-14",
-  "scope": "Original product marketing artwork; banners composite unmodified native capture bytes. Standalone screenshots remain native and unframed.",
+  "family": "XOCE tactile 2026-11-14",
+  "scope": "Original composition, outlined type and product symbols. Marketing embeds unchanged native screenshots and unchanged official frame bytes. Standalone Store screenshots remain raw and unframed.",
   "font": {
-    "name": "Inter",
-    "sourceSha256": "ea4e3d9970b9b6b566110a1b0e13635fe235280b83dd2443dcb3faca1e2456ef",
-    "licence": "SIL Open Font License 1.1",
-    "treatment": "Text outlined in SVG; no font dependency when rendering."
+    "name": "Fira Sans / Fira Sans Condensed",
+    "licence": "SIL OFL 1.1",
+    "treatment": "Outlined text; full pinned inputs in the identity review folder."
   },
   "files": {
-    "product-mark.svg": "563b1235401c434cd3da093a5516a98e84df7a946557174b5cae5c1bb37d27c8",
-    "product-mark-144.png": "c16c8d973619c9ab59a8b357e5a03a20e80760c63dc9913331845dd78abb6a26",
-    "emery-family-banner.svg": "900afbe7474dfbdc3b71a83a4f9a2183ed05f6ea972f50cf7d1049a28528e373",
-    "emery-family-banner.png": "656ece12094014c3ef50b6d836b3113c87a6d04680dbf657c1a609ce07dc1159",
-    "gabbro-family-banner.svg": "11159620aa818d68d3a312ecd52c83dec5184a725ff82ef9f68a3c4e2bcd1e89",
-    "gabbro-family-banner.png": "9075053131b7461a3a885095233405ef01e2698122e6a83d2cc4e65d618ad5ce"
+    "product-mark.svg": "c26b4cb3842af62beaf25e3a1eeb46a765de7755c7f16a2ccb8fb1d2b1ad22df",
+    "product-mark-144.png": "b63882665a9187e735281bac03fc7663c19f7a740e712211234b65c171e17311",
+    "emery-family-banner.svg": "42d1f4f206097fd03cb20fe48fa1af7bd5d3385983f52ce8d6674bf78343500a",
+    "emery-family-banner.png": "4ebf63224283a4bc8d5177f9b58474e4ad6e3858c1fba457a834f8b561d2c45b",
+    "gabbro-family-banner.svg": "e10071f7fd652a66016a5cdcd23593392240422eb289048e2d3cbca2cb15893b",
+    "gabbro-family-banner.png": "33d8a2faf80b31a83bef501d332bad513c9aafabb591c8b01da47d367223e441"
   },
   "banners": {
     "emery": {
       "file": "emery-family-banner.png",
       "platform": "emery",
       "screenshot": "emery-store-20261114-idle.png",
-      "screenshotSha256": "6a4b2580237767602c45a239c15197ffd603115d976e34f76a156e36c25b8228"
+      "screenshotSha256": "6a4b2580237767602c45a239c15197ffd603115d976e34f76a156e36c25b8228",
+      "frame": "pebble-time-2.png",
+      "frameSha256": "ec5f810dda6cfa769df5421c3fcbebb5bd45a36839029a6c396ea4acc7609c54",
+      "frameSource": "https://apps.repebble.com/images/screenshot_slider_background_emery_v2.png",
+      "frameCredit": "Core Devices",
+      "composition": "Front view with strap cropping; complete native screen retained at original aspect ratio."
     },
     "gabbro": {
       "file": "gabbro-family-banner.png",
       "platform": "gabbro",
       "screenshot": "gabbro-store-20261114-idle.png",
-      "screenshotSha256": "84a776dc8fdd3157521950ad1d35529806a8dfcef9cae31a646f303aa69bf687"
+      "screenshotSha256": "84a776dc8fdd3157521950ad1d35529806a8dfcef9cae31a646f303aa69bf687",
+      "frame": "pebble-round-2.png",
+      "frameSha256": "d71fd23c4abfccff64415bb3fd5c22a9920c44f0a479544fab1529b79300ce50",
+      "frameSource": "https://apps.repebble.com/images/screenshot_slider_background_gabbro.png",
+      "frameCredit": "Core Devices",
+      "composition": "Front view with strap cropping; complete native screen retained at original aspect ratio."
     }
   }
 }
