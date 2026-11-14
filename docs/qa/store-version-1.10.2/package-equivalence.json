@@ -17,5 +17,9 @@
   "uuidUnchanged": true,
   "nativeRendererResourcesUnchanged": true,
   "pluginRuntimeAndSettingsUnchanged": false,
-  "scope": "Fresh SDK/public builds. Existing strict renderer identity ignores SDK timestamp, build ID and its derived CRC only; code, native version bytes, UUID and resources remain covered. Original captures reused without pixel changes; no fresh emulator or physical-device claim."
+  "scope": "Fresh SDK/public builds. Existing strict renderer identity ignores SDK timestamp, build ID and its derived CRC only; code, native version bytes, UUID and resources remain covered. Original captures reused without pixel changes; no fresh emulator or physical-device claim.",
+  "additionalVerifiedCapturePbws": [
+    "029dccc901c0df0a071f4253fe911d45af1a2491def4e53b66957c5544e746ec"
+  ],
+  "additionalCaptureProof": "Earlier frozen release native renderer/resources match both targets exactly under the same SDK metadata audit; Weather packaged config.html is byte-identical. Original source hashes remain unchanged."
 }
