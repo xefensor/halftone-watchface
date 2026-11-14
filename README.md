@@ -3,6 +3,10 @@
 A Pebble Time 2 watchface with a centered Fira clock, procedural dot border and
 two readings. Music, notifications and Timeline Peek retain both reading positions.
 
+## Store update 1.10.2
+
+Current source prepares Halftone 1.10.2 for the reviewed Store update. The new numeric version supersedes the existing public 1.10.1 binary without changing the public UUID. Its exact PBW, Store package, source and checksums are under `releases/`; earlier artifacts remain unchanged.
+
 ## Activities: see what is happening now
 
 Activities are live updates shown by compatible XOCE apps and watchfaces, such as a countdown, music or a new notification. This feature connects compatible XOCE products; support depends on the app or watchface you choose.

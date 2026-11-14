@@ -1,4 +1,4 @@
-Halftone 1.10.1
+Halftone 1.10.2
 
 Pebble Time 2 and Round 2 support, with the Fira clock, halftone dot border, adjustable colours, depth, shadow and readable text choices.
 

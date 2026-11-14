@@ -1,8 +1,8 @@
 {
-  "version": "1.10.1",
+  "version": "1.10.2",
   "nativePixelsModified": false,
-  "scope": "Fresh native emulator captures from the exact PBW; supported settings and synthetic example data; no physical-device claim.",
-  "candidateSha256": "b568c2d6d559833863d3487d387d94cdd6e945ab674ba0b45949f1fa7aa2b8c3",
+  "scope": "Original native PNGs reused for the new patch after strict renderer/resource equality with the reviewed package was verified. Synthetic example data; no fresh capture or physical-device claim.",
+  "candidateSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
   "renderer": {
     "emery": {
       "nativeRendererSha256": "32fd6e8a859cd6958c0a81b548bea01aa9fea380634ed3c3c9291ab4de0f86ce",
@@ -19,7 +19,7 @@
       "sha256": "6a4b2580237767602c45a239c15197ffd603115d976e34f76a156e36c25b8228",
       "source": "Store-Update-2026-11-14/verification/native/halftone/emery/idle.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/emery/report.json",
-      "rendererProof": "Raw native Screenshot-service PNG from this exact PBW; no pixel modifications.",
+      "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
       "settings": "Small text; idle Halftone has two weather locations."
     },
     "emery-store-20261114-music.png": {
@@ -27,7 +27,7 @@
       "sha256": "b6d5d83561625521bacd4f36c02ca50025367e23aeba53d23d046f68501e3492",
       "source": "Store-Update-2026-11-14/verification/native/halftone/emery/music.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/emery/report.json",
-      "rendererProof": "Raw native Screenshot-service PNG from this exact PBW; no pixel modifications.",
+      "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
       "settings": "Small text; idle Halftone has two weather locations."
     },
     "emery-store-20261114-notification.png": {
@@ -35,7 +35,7 @@
       "sha256": "c4b3e076f80f8768ef5d40f14ff24a92aec65b836e1159b91696e12e02b713e7",
       "source": "Store-Update-2026-11-14/verification/native/halftone/emery/notification.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/emery/report.json",
-      "rendererProof": "Raw native Screenshot-service PNG from this exact PBW; no pixel modifications.",
+      "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
       "settings": "Small text; idle Halftone has two weather locations."
     },
     "emery-store-20261114-dark.png": {
@@ -43,7 +43,7 @@
       "sha256": "97b49f99dc2d88a1e0ccf93d5c805b1445b699372e63b350b18f0355a0248160",
       "source": "Store-Update-2026-11-14/verification/native/halftone/emery/dark.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/emery/report.json",
-      "rendererProof": "Raw native Screenshot-service PNG from this exact PBW; no pixel modifications.",
+      "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
       "settings": "Small text; idle Halftone has two weather locations."
     },
     "emery-store-20261114-peek.png": {
@@ -51,7 +51,7 @@
       "sha256": "a4702fd0c5287478a5beea740af5a091119f39ec27a41d6c0a65bd7f632ed2b6",
       "source": "Store-Update-2026-11-14/verification/native/halftone/emery/peek.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/emery/report.json",
-      "rendererProof": "Raw native Screenshot-service PNG from this exact PBW; no pixel modifications.",
+      "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
       "settings": "Small text; idle Halftone has two weather locations."
     },
     "gabbro-store-20261114-idle.png": {
@@ -59,7 +59,7 @@
       "sha256": "84a776dc8fdd3157521950ad1d35529806a8dfcef9cae31a646f303aa69bf687",
       "source": "Store-Update-2026-11-14/verification/native/halftone/gabbro/idle.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/gabbro/report.json",
-      "rendererProof": "Raw native Screenshot-service PNG from this exact PBW; no pixel modifications.",
+      "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
       "settings": "Small text; idle Halftone has two weather locations."
     },
     "gabbro-store-20261114-music.png": {
@@ -67,7 +67,7 @@
       "sha256": "1295a7e363dfc01fa366c3c8c050bce360ce5e01ac784a3ec58277ed7e667829",
       "source": "Store-Update-2026-11-14/verification/native/halftone/gabbro/music.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/gabbro/report.json",
-      "rendererProof": "Raw native Screenshot-service PNG from this exact PBW; no pixel modifications.",
+      "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
       "settings": "Small text; idle Halftone has two weather locations."
     },
     "gabbro-store-20261114-notification.png": {
@@ -75,7 +75,7 @@
       "sha256": "a4435211162046b49aec48ce6f835c424a5dc009a921228dd80ed339cb9ca4a2",
       "source": "Store-Update-2026-11-14/verification/native/halftone/gabbro/notification.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/gabbro/report.json",
-      "rendererProof": "Raw native Screenshot-service PNG from this exact PBW; no pixel modifications.",
+      "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
       "settings": "Small text; idle Halftone has two weather locations."
     },
     "gabbro-store-20261114-dark.png": {
@@ -83,7 +83,7 @@
       "sha256": "ab494bad805ba0e0c73711ab03e66fe8e59bbebd761ea50529d0bd38fe0b6b05",
       "source": "Store-Update-2026-11-14/verification/native/halftone/gabbro/dark.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/gabbro/report.json",
-      "rendererProof": "Raw native Screenshot-service PNG from this exact PBW; no pixel modifications.",
+      "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
       "settings": "Small text; idle Halftone has two weather locations."
     },
     "gabbro-store-20261114-peek.png": {
@@ -91,8 +91,11 @@
       "sha256": "7ce5d21617f797a0e4318bd74db13d940b113b2bf92dd0e593798dcee498def6",
       "source": "Store-Update-2026-11-14/verification/native/halftone/gabbro/peek.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/gabbro/report.json",
-      "rendererProof": "Raw native Screenshot-service PNG from this exact PBW; no pixel modifications.",
+      "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
       "settings": "Small text; idle Halftone has two weather locations."
     }
-  }
+  },
+  "originalCaptureVersion": "1.10.1",
+  "sourceCaptureCandidateSha256": "b568c2d6d559833863d3487d387d94cdd6e945ab674ba0b45949f1fa7aa2b8c3",
+  "reuseProof": "docs/qa/store-version-1.10.2/package-equivalence.json"
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.10.2 — 2026-11-14
+
+- Package the current reviewed implementation and updated Store assets under a new numeric version, preserving the public UUID and saved settings.
+- Earlier released binaries and archives remain unchanged.
+
 ## Repository updates after rc.6
 
 - Publishes the checked rc.6 PBW, source and prepared store archives through

@@ -1,0 +1,4 @@
+be1d6cf148a12e6f7a6df5679ae95c0c174aa5b01dc9c445853218387b04b18d  Halftone-1.10.2-debug.zip
+cad4fdc8823cbe170c2300ac6de39996e885444c110f8ce2819a5b694de486c2  Halftone-1.10.2-source.zip
+551e88b18583d91caa7e2922c9f48d2146868561fe72de961ee5c3cd17fad8ee  Halftone-1.10.2-store-package.zip
+2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d  Halftone-1.10.2.pbw

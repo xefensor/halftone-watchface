@@ -1,7 +1,7 @@
 {
   "name": "halftone",
   "author": "Xef",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "scripts": {
     "test": "python3 scripts/verify-core.py && python3 scripts/test-js.py && python3 scripts/test-native.py && npm run test:workflow && npm run test:platforms && npm run test:assets && npm run test:store",
     "test:js": "python3 scripts/test-js.py",

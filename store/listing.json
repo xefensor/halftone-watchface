@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "Halftone",
   "author": "Xef",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "uuid": "d4dd5046-53be-4624-99e8-46e0b377fe66",
   "type": "watchface",
   "price": "free",
@@ -42,7 +42,7 @@
     ]
   },
   "remaining_publication_gates": [
-    "Verify Developer Dashboard ownership, existing listing and unused numeric version",
+    "Verify Developer Dashboard ownership, existing listing and availability of the new numeric version",
     "Verify live app-owned support/privacy URLs",
     "Publish exact checked GitHub and Store artifacts, then activate website links"
   ],

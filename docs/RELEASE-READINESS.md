@@ -1,4 +1,4 @@
-# Stable release preparation — 1.10.1
+# Stable release preparation — 1.10.2
 
 Xef accepted the reviewed Round 2 implementation on 2026-11-13 and selected a
 stable, listed public release. This acceptance removes the earlier additional
@@ -26,3 +26,8 @@ an unused version and live app-owned GitHub support/privacy URLs before upload.
 After all six public releases match the checked hashes, activate the redesigned
 website and then update Store metadata to its hosted product/support/privacy
 pages. The website's live release gate remains mandatory.
+
+
+## Store update — 1.10.2 (2026-11-14)
+
+Xef requested a new numeric version for the reviewed current implementation and Store handoff. Public Store history already contains 1.10.1; 1.10.2 was absent from the checked public Store history and GitHub tags. The public UUID, saved-state compatibility, pinned dependencies and reviewed native interfaces are retained. New source/artifact/Store verification is recorded with this release preparation; prior emulator captures are reused only after native renderer/resource equality is verified. No new physical-device result is claimed. GitHub branch pushes are authorized; app submission and website deployment remain separate.
