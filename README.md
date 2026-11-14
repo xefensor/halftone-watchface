@@ -3,6 +3,14 @@
 A Pebble Time 2 watchface with a centered Fira clock, procedural dot border and
 two readings. Music, notifications and Timeline Peek retain both reading positions.
 
+## Activities: see what is happening now
+
+Activities are live updates shown by compatible XOCE apps and watchfaces, such as a countdown, music or a new notification. This feature connects compatible XOCE products; support depends on the app or watchface you choose.
+
+Start a countdown in Timer, then return to Halftone to see the time remaining on your watchface. Enable activity plugins and show Timer in Halftone’s activity list, then save. Timer keeps running the countdown and alarm. Open Timer to pause, resume or finish it.
+
+Sharing needs plugin support in the official Pebble phone app, the required permissions and a connected phone. Weather and battery readings use separate reading settings. Music and notification integration requires Android. Open Activity is optional; you can always open Timer from the watch’s app list.
+
 ## Download
 
 The public [v1.9.0-rc.6 release](https://github.com/xefensor/halftone-watchface/releases/tag/v1.9.0-rc.6)

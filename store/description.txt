@@ -1,5 +1,11 @@
 A bold clock, two Pebble readings and a halftone border.
 
+Activities are live updates shown by compatible XOCE apps and watchfaces, such as a countdown, music or a new notification.
+
+Start a countdown in Timer, then return to Halftone to see the time remaining on your watchface. Enable activity plugins and show Timer in Halftone’s activity list, then save. Timer keeps running the countdown and alarm. Open Timer to pause, resume or finish it.
+
+Sharing activities between apps needs plugin support in the Pebble phone app, the required permissions and a connected phone.
+
 See your chosen readings together, with matching numeric sizes that keep complete values and units. Compatible activities can show a primary item and an optional secondary summary. Music shows track, artist and available artwork; a loading symbol keeps the artwork position stable. Notifications are optional.
 
 Choose Small, Medium, Large or Follow Pebble text, your clock format and palettes. Bigger Text, depth and shadow retain Halftone’s own typography. The face responds to Timeline Peek.

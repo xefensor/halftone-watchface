@@ -3271,5 +3271,134 @@ var SAMPLE_STYLE={
 var baseSettingsStrings=settingsStrings;
 settingsStrings=function(language){var result=baseSettingsStrings(language);result.previewOpticalStyle=SAMPLE_STYLE[resolveLanguage(language)];return result;};
 
+// Inline activity education; copy only, with no settings or transport keys.
+var ACTIVITY_INTRO = {
+  "en": {
+    "activityIntroTitle": "What is an activity?",
+    "activityIntroDefinition": "Activities are live updates shown by compatible XOCE apps and watchfaces, such as a countdown, music or a new notification.",
+    "activityIntroExample": "Start a countdown in Timer, then return to Halftone to see the time remaining. Timer still runs the countdown and alarm.",
+    "activityIntroSetup": "Turn on activity plugins and show Timer in the activity list below, then save. Create and control your countdowns in Timer on the watch.",
+    "activityIntroConnection": "Sharing activities between apps needs plugin support and a connected phone. Timer works on its own without sharing."
+  },
+  "cs": {
+    "activityIntroTitle": "Co je aktivita?",
+    "activityIntroDefinition": "Aktivity jsou průběžné informace, které zobrazují kompatibilní aplikace a ciferníky XOCE, například odpočet, hudba nebo nové oznámení.",
+    "activityIntroExample": "Spusťte odpočet v Timer a vraťte se na Halftone. Na ciferníku uvidíte zbývající čas. Odpočet i budík nadále zajišťuje Timer.",
+    "activityIntroSetup": "Zapněte pluginy aktivit a zobrazování Timer v seznamu aktivit níže, pak nastavení uložte. Odpočty vytvářejte a ovládejte v Timer na hodinkách.",
+    "activityIntroConnection": "Sdílení aktivit mezi aplikacemi vyžaduje podporu pluginů a připojený telefon. Timer funguje samostatně i bez sdílení."
+  },
+  "sk": {
+    "activityIntroTitle": "Čo je aktivita?",
+    "activityIntroDefinition": "Aktivity sú priebežné informácie, ktoré zobrazujú kompatibilné aplikácie a ciferníky XOCE, napríklad odpočet, hudba alebo nové oznámenie.",
+    "activityIntroExample": "Spustite odpočet v Timer a vráťte sa na Halftone. Na ciferníku uvidíte zostávajúci čas. Odpočet aj budík naďalej zaisťuje Timer.",
+    "activityIntroSetup": "Zapnite pluginy aktivít a zobrazovanie Timer v zozname aktivít nižšie, potom nastavenia uložte. Odpočty vytvárajte a ovládajte v Timer na hodinkách.",
+    "activityIntroConnection": "Zdieľanie aktivít medzi aplikáciami vyžaduje podporu pluginov a pripojený telefón. Timer funguje samostatne aj bez zdieľania."
+  },
+  "de": {
+    "activityIntroTitle": "Was ist eine Aktivität?",
+    "activityIntroDefinition": "Aktivitäten sind aktuelle Informationen in kompatiblen XOCE-Apps und Zifferblättern, etwa ein Countdown, Musik oder eine neue Mitteilung.",
+    "activityIntroExample": "Starte einen Countdown in Timer und kehre zu Halftone zurück, um die Restzeit zu sehen. Timer übernimmt weiterhin Countdown und Alarm.",
+    "activityIntroSetup": "Aktiviere Aktivitätsplugins und Timer in der Aktivitätsliste unten und speichere. Erstelle und steuere Countdowns in Timer auf der Uhr.",
+    "activityIntroConnection": "Das Teilen von Aktivitäten zwischen Apps benötigt Plugin-Unterstützung und ein verbundenes Telefon. Timer funktioniert auch ohne Teilen."
+  },
+  "fr": {
+    "activityIntroTitle": "Qu’est-ce qu’une activité ?",
+    "activityIntroDefinition": "Les activités sont des informations en cours affichées par les apps et cadrans XOCE compatibles : compte à rebours, musique ou nouvelle notification.",
+    "activityIntroExample": "Lancez un compte à rebours dans Timer, puis revenez à Halftone pour voir le temps restant. Timer gère toujours le décompte et l’alarme.",
+    "activityIntroSetup": "Activez les plugins d’activité et Timer dans la liste ci-dessous, puis enregistrez. Créez et gérez vos comptes à rebours dans Timer sur la montre.",
+    "activityIntroConnection": "Le partage d’activités entre apps nécessite les plugins et un téléphone connecté. Timer fonctionne aussi sans partage."
+  },
+  "es": {
+    "activityIntroTitle": "¿Qué es una actividad?",
+    "activityIntroDefinition": "Las actividades son información en curso que muestran las apps y esferas XOCE compatibles, como una cuenta atrás, música o una nueva notificación.",
+    "activityIntroExample": "Inicia una cuenta atrás en Timer y vuelve a Halftone para ver el tiempo restante. Timer sigue gestionando la cuenta atrás y la alarma.",
+    "activityIntroSetup": "Activa los plugins de actividad y Timer en la lista de abajo, y guarda. Crea y controla las cuentas atrás en Timer en el reloj.",
+    "activityIntroConnection": "Compartir actividades entre apps requiere compatibilidad con plugins y un teléfono conectado. Timer funciona por sí solo sin compartir."
+  },
+  "it": {
+    "activityIntroTitle": "Che cos’è un’attività?",
+    "activityIntroDefinition": "Le attività sono aggiornamenti mostrati dalle app e dai quadranti XOCE compatibili, come un conto alla rovescia, musica o una nuova notifica.",
+    "activityIntroExample": "Avvia un conto alla rovescia in Timer, poi torna a Halftone per vedere il tempo rimasto. Timer continua a gestire il conto e l’allarme.",
+    "activityIntroSetup": "Attiva i plugin delle attività e Timer nell’elenco qui sotto, poi salva. Crea e gestisci i conti alla rovescia in Timer sull’orologio.",
+    "activityIntroConnection": "La condivisione delle attività tra app richiede il supporto dei plugin e un telefono connesso. Timer funziona anche senza condivisione."
+  },
+  "pt": {
+    "activityIntroTitle": "O que é uma atividade?",
+    "activityIntroDefinition": "As atividades são informações em curso mostradas por apps e mostradores XOCE compatíveis, como uma contagem decrescente, música ou uma nova notificação.",
+    "activityIntroExample": "Inicie uma contagem decrescente no Timer e volte ao Halftone para ver o tempo restante. O Timer continua a gerir a contagem e o alarme.",
+    "activityIntroSetup": "Ative os plugins de atividade e o Timer na lista abaixo e guarde. Crie e controle as contagens no Timer no relógio.",
+    "activityIntroConnection": "Partilhar atividades entre apps requer suporte de plugins e um telemóvel ligado. O Timer também funciona sozinho, sem partilha."
+  },
+  "nl": {
+    "activityIntroTitle": "Wat is een activiteit?",
+    "activityIntroDefinition": "Activiteiten zijn actuele updates in compatibele XOCE-apps en wijzerplaten, zoals een aftelling, muziek of een nieuwe melding.",
+    "activityIntroExample": "Start een aftelling in Timer en ga terug naar Halftone om de resterende tijd te zien. Timer blijft de aftelling en het alarm regelen.",
+    "activityIntroSetup": "Schakel activiteitsplugins en Timer in de onderstaande lijst in en sla op. Maak en bedien aftellingen in Timer op je horloge.",
+    "activityIntroConnection": "Activiteiten delen tussen apps vereist pluginondersteuning en een verbonden telefoon. Timer werkt ook zelfstandig zonder delen."
+  },
+  "pl": {
+    "activityIntroTitle": "Czym jest aktywność?",
+    "activityIntroDefinition": "Aktywności to bieżące informacje wyświetlane przez zgodne aplikacje i tarcze XOCE, takie jak odliczanie, muzyka lub nowe powiadomienie.",
+    "activityIntroExample": "Uruchom odliczanie w Timer i wróć do Halftone, aby zobaczyć pozostały czas. Timer nadal obsługuje odliczanie i alarm.",
+    "activityIntroSetup": "Włącz wtyczki aktywności i Timer na poniższej liście, a następnie zapisz. Twórz odliczania i steruj nimi w Timer na zegarku.",
+    "activityIntroConnection": "Udostępnianie aktywności między aplikacjami wymaga obsługi wtyczek i połączonego telefonu. Timer działa też samodzielnie bez udostępniania."
+  },
+  "da": {
+    "activityIntroTitle": "Hvad er en aktivitet?",
+    "activityIntroDefinition": "Aktiviteter er aktuelle oplysninger i kompatible XOCE-apps og urskiver, f.eks. en nedtælling, musik eller en ny notifikation.",
+    "activityIntroExample": "Start en nedtælling i Timer, og vend tilbage til Halftone for at se den resterende tid. Timer styrer stadig nedtællingen og alarmen.",
+    "activityIntroSetup": "Slå aktivitetsplugins og Timer til i listen nedenfor, og gem. Opret og styr nedtællinger i Timer på uret.",
+    "activityIntroConnection": "Deling af aktiviteter mellem apps kræver pluginunderstøttelse og en tilsluttet telefon. Timer virker også alene uden deling."
+  },
+  "sv": {
+    "activityIntroTitle": "Vad är en aktivitet?",
+    "activityIntroDefinition": "Aktiviteter är aktuella uppdateringar i kompatibla XOCE-appar och urtavlor, till exempel en nedräkning, musik eller en ny avisering.",
+    "activityIntroExample": "Starta en nedräkning i Timer och gå tillbaka till Halftone för att se återstående tid. Timer sköter fortfarande nedräkningen och larmet.",
+    "activityIntroSetup": "Aktivera aktivitetspluginer och Timer i listan nedan och spara. Skapa och styr nedräkningar i Timer på klockan.",
+    "activityIntroConnection": "Delning av aktiviteter mellan appar kräver pluginstöd och en ansluten telefon. Timer fungerar även självständigt utan delning."
+  },
+  "no": {
+    "activityIntroTitle": "Hva er en aktivitet?",
+    "activityIntroDefinition": "Aktiviteter er aktuelle oppdateringer i kompatible XOCE-apper og urskiver, som en nedtelling, musikk eller et nytt varsel.",
+    "activityIntroExample": "Start en nedtelling i Timer og gå tilbake til Halftone for å se tiden som gjenstår. Timer styrer fortsatt nedtellingen og alarmen.",
+    "activityIntroSetup": "Slå på aktivitetsplugins og Timer i listen nedenfor, og lagre. Opprett og styr nedtellinger i Timer på klokken.",
+    "activityIntroConnection": "Deling av aktiviteter mellom apper krever pluginstøtte og en tilkoblet telefon. Timer fungerer også alene uten deling."
+  },
+  "fi": {
+    "activityIntroTitle": "Mikä on toiminto?",
+    "activityIntroDefinition": "Toiminnot ovat yhteensopivien XOCE-sovellusten ja kellotaulujen näyttämiä ajankohtaisia tietoja, kuten ajastus, musiikki tai uusi ilmoitus.",
+    "activityIntroExample": "Käynnistä ajastus Timerissa ja palaa Halftone-kellotauluun nähdäksesi jäljellä olevan ajan. Timer huolehtii edelleen ajastuksesta ja hälytyksestä.",
+    "activityIntroSetup": "Ota toimintolisäosat ja Timer käyttöön alla olevassa luettelossa ja tallenna. Luo ja hallitse ajastuksia kellon Timer-sovelluksessa.",
+    "activityIntroConnection": "Toimintojen jakaminen sovellusten välillä vaatii lisäosatuen ja yhteyden puhelimeen. Timer toimii myös itsenäisesti ilman jakamista."
+  },
+  "hu": {
+    "activityIntroTitle": "Mi az a tevékenység?",
+    "activityIntroDefinition": "A tevékenységek a kompatibilis XOCE-alkalmazásokban és számlapokon megjelenő aktuális információk, például visszaszámlálás, zene vagy új értesítés.",
+    "activityIntroExample": "Indíts visszaszámlálást a Timerben, majd térj vissza a Halftone számlapra a hátralévő idő megtekintéséhez. A visszaszámlálást és a riasztást továbbra is a Timer kezeli.",
+    "activityIntroSetup": "Kapcsold be a tevékenységbővítményeket és a Timert az alábbi listában, majd ments. A visszaszámlálásokat az óra Timer alkalmazásában hozhatod létre és kezelheted.",
+    "activityIntroConnection": "A tevékenységek alkalmazások közötti megosztásához bővítménytámogatás és csatlakoztatott telefon kell. A Timer megosztás nélkül is önállóan működik."
+  },
+  "ro": {
+    "activityIntroTitle": "Ce este o activitate?",
+    "activityIntroDefinition": "Activitățile sunt informații curente afișate de aplicațiile și cadranele XOCE compatibile, precum o numărătoare inversă, muzică sau o notificare nouă.",
+    "activityIntroExample": "Pornește o numărătoare inversă în Timer, apoi revino la Halftone pentru a vedea timpul rămas. Timer gestionează în continuare numărătoarea și alarma.",
+    "activityIntroSetup": "Activează pluginurile de activitate și Timer în lista de mai jos, apoi salvează. Creează și controlează numărătorile în Timer pe ceas.",
+    "activityIntroConnection": "Partajarea activităților între aplicații necesită suport pentru pluginuri și un telefon conectat. Timer funcționează și independent, fără partajare."
+  },
+  "tr": {
+    "activityIntroTitle": "Etkinlik nedir?",
+    "activityIntroDefinition": "Etkinlikler, uyumlu XOCE uygulama ve saat yüzlerinde gösterilen geri sayım, müzik veya yeni bildirim gibi güncel bilgilerdir.",
+    "activityIntroExample": "Timer’da geri sayım başlatın, ardından kalan süreyi görmek için Halftone’a dönün. Geri sayımı ve alarmı yine Timer yönetir.",
+    "activityIntroSetup": "Etkinlik eklentilerini ve aşağıdaki listede Timer’ı açıp kaydedin. Geri sayımları saatteki Timer uygulamasında oluşturun ve yönetin.",
+    "activityIntroConnection": "Uygulamalar arasında etkinlik paylaşımı için eklenti desteği ve bağlı bir telefon gerekir. Timer paylaşım olmadan da bağımsız çalışır."
+  }
+};
+Object.keys(ACTIVITY_INTRO).forEach(function(language) {
+  Object.keys(ACTIVITY_INTRO.en).forEach(function(key) {
+    MESSAGES[language][key] = ACTIVITY_INTRO[language][key];
+    LITERALS[ACTIVITY_INTRO.en[key]] = key;
+  });
+});
+
 module.exports = {resolveLanguage:resolveLanguage, translateConfig:translateConfig,
   t:t, settingsStrings:settingsStrings, languages:LANGUAGES.slice()};
