@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 2,
+  "originalArtwork": true,
+  "family": "XOCE optical icon family 2026-11-14",
+  "background": "transparent",
+  "ink": "#000000",
+  "alphaValues": [
+    0,
+    255
+  ],
+  "storeIconSizes": [],
+  "storeIconFieldsApply": false,
+  "icon_tintable": false,
+  "format": "Store PNGs use a single black glyph with binary alpha. Website SVGs use the same silhouette and render smoothly at small UI sizes.",
+  "source": "artwork/generate-icons.py",
+  "files": {
+    "product-mark.svg": "28271528ed349cc8b254b895a5661d5ede7a5ceb6ebe86560871315bdd2000b8",
+    "product-mark-144.png": "eac61ca860302159758e56c840f379d3eacb47ee68a9bc1d4bd40f28a43ca5c3"
+  },
+  "launcherCandidates": {
+    "white": {
+      "file": "artwork/icons/halftone/launcher-white-25.png",
+      "sha256": "df0e72217b0679563600d7ef07c44001536d66eb4b2860d68e2bb2ebbb021691"
+    },
+    "black": {
+      "file": "artwork/icons/halftone/launcher-black-25.png",
+      "sha256": "e97c93d9c81582156f54b2086cb2629d460108d011b920f34261264fcd3af356"
+    }
+  },
+  "launcherIntegrated": true,
+  "launcherIntegration": {
+    "version": "1.10.3",
+    "pbw": "release-candidates/pbws/Halftone-1.10.3.pbw",
+    "pbwSha256": "17247cdb10b6fd6f5a37f06aa0ccd9ad687795a2b7df64eefe5f5a23b4037bee",
+    "foreground": "black",
+    "resource": "release-candidates/sources/halftone/resources/images/menu-icon.png",
+    "published": false,
+    "scope": "Fresh candidate build only; supplied release PBW and source stay unchanged."
+  },
+  "launcherNote": "Native candidates use black 25px glyphs: selected and unselected launcher/picker rows were checked in SDK 4.44.3 emulators. Supplied release PBWs remain unchanged.",
+  "rules": [
+    "https://developer.repebble.com/guides/appstore-publishing/preparing-a-submission/",
+    "https://appstore-api.repebble.com/#changelog",
+    "https://developer.repebble.com/guides/app-resources/images/#menu-icon-in-the-launcher"
+  ]
+}

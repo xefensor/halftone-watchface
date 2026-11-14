@@ -20,7 +20,9 @@
       "source": "Store-Update-2026-11-14/verification/native/halftone/emery/idle.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/emery/report.json",
       "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
-      "settings": "Small text; idle Halftone has two weather locations."
+      "settings": "Small text; idle Halftone has two weather locations.",
+      "captureVersion": "1.10.1",
+      "representedReleaseVersion": "1.10.3"
     },
     "emery-store-20261114-music.png": {
       "platform": "emery",
@@ -28,7 +30,9 @@
       "source": "Store-Update-2026-11-14/verification/native/halftone/emery/music.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/emery/report.json",
       "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
-      "settings": "Small text; idle Halftone has two weather locations."
+      "settings": "Small text; idle Halftone has two weather locations.",
+      "captureVersion": "1.10.1",
+      "representedReleaseVersion": "1.10.3"
     },
     "emery-store-20261114-notification.png": {
       "platform": "emery",
@@ -36,7 +40,9 @@
       "source": "Store-Update-2026-11-14/verification/native/halftone/emery/notification.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/emery/report.json",
       "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
-      "settings": "Small text; idle Halftone has two weather locations."
+      "settings": "Small text; idle Halftone has two weather locations.",
+      "captureVersion": "1.10.1",
+      "representedReleaseVersion": "1.10.3"
     },
     "emery-store-20261114-dark.png": {
       "platform": "emery",
@@ -44,7 +50,9 @@
       "source": "Store-Update-2026-11-14/verification/native/halftone/emery/dark.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/emery/report.json",
       "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
-      "settings": "Small text; idle Halftone has two weather locations."
+      "settings": "Small text; idle Halftone has two weather locations.",
+      "captureVersion": "1.10.1",
+      "representedReleaseVersion": "1.10.3"
     },
     "emery-store-20261114-peek.png": {
       "platform": "emery",
@@ -52,7 +60,9 @@
       "source": "Store-Update-2026-11-14/verification/native/halftone/emery/peek.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/emery/report.json",
       "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
-      "settings": "Small text; idle Halftone has two weather locations."
+      "settings": "Small text; idle Halftone has two weather locations.",
+      "captureVersion": "1.10.1",
+      "representedReleaseVersion": "1.10.3"
     },
     "gabbro-store-20261114-idle.png": {
       "platform": "gabbro",
@@ -60,7 +70,9 @@
       "source": "Store-Update-2026-11-14/verification/native/halftone/gabbro/idle.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/gabbro/report.json",
       "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
-      "settings": "Small text; idle Halftone has two weather locations."
+      "settings": "Small text; idle Halftone has two weather locations.",
+      "captureVersion": "1.10.1",
+      "representedReleaseVersion": "1.10.3"
     },
     "gabbro-store-20261114-music.png": {
       "platform": "gabbro",
@@ -68,7 +80,9 @@
       "source": "Store-Update-2026-11-14/verification/native/halftone/gabbro/music.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/gabbro/report.json",
       "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
-      "settings": "Small text; idle Halftone has two weather locations."
+      "settings": "Small text; idle Halftone has two weather locations.",
+      "captureVersion": "1.10.1",
+      "representedReleaseVersion": "1.10.3"
     },
     "gabbro-store-20261114-notification.png": {
       "platform": "gabbro",
@@ -76,7 +90,9 @@
       "source": "Store-Update-2026-11-14/verification/native/halftone/gabbro/notification.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/gabbro/report.json",
       "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
-      "settings": "Small text; idle Halftone has two weather locations."
+      "settings": "Small text; idle Halftone has two weather locations.",
+      "captureVersion": "1.10.1",
+      "representedReleaseVersion": "1.10.3"
     },
     "gabbro-store-20261114-dark.png": {
       "platform": "gabbro",
@@ -84,7 +100,9 @@
       "source": "Store-Update-2026-11-14/verification/native/halftone/gabbro/dark.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/gabbro/report.json",
       "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
-      "settings": "Small text; idle Halftone has two weather locations."
+      "settings": "Small text; idle Halftone has two weather locations.",
+      "captureVersion": "1.10.1",
+      "representedReleaseVersion": "1.10.3"
     },
     "gabbro-store-20261114-peek.png": {
       "platform": "gabbro",
@@ -92,7 +110,9 @@
       "source": "Store-Update-2026-11-14/verification/native/halftone/gabbro/peek.png",
       "sourceReport": "Store-Update-2026-11-14/verification/native/halftone/gabbro/report.json",
       "rendererProof": "Original capture pixels unchanged; native renderer/resources match the new patch. See docs/qa/store-version-1.10.2/package-equivalence.json",
-      "settings": "Small text; idle Halftone has two weather locations."
+      "settings": "Small text; idle Halftone has two weather locations.",
+      "captureVersion": "1.10.1",
+      "representedReleaseVersion": "1.10.3"
     },
     "emery-store-20261114-orange.png": {
       "platform": "emery",
@@ -101,7 +121,8 @@
       "source": "Watch/Pebble-Store-Artwork-2026-11-14/verification/native/halftone/emery/orange.png",
       "sourceReport": "store/orange-capture-provenance.json",
       "rendererProof": "Fresh Screenshot-service capture from exact Halftone 1.10.2 native PBW in SDK 4.44 QEMU; supported orange palette, synthetic weather data; no pixel edits.",
-      "settings": "Orange #ff5500, white text/accent, two weather locations, small text."
+      "settings": "Orange #ff5500, white text/accent, two weather locations, small text.",
+      "representedReleaseVersion": "1.10.3"
     },
     "gabbro-store-20261114-orange.png": {
       "platform": "gabbro",
@@ -110,10 +131,95 @@
       "source": "Watch/Pebble-Store-Artwork-2026-11-14/verification/native/halftone/gabbro/orange.png",
       "sourceReport": "store/orange-capture-provenance.json",
       "rendererProof": "Fresh Screenshot-service capture from exact Halftone 1.10.2 native PBW in SDK 4.44 QEMU; supported orange palette, synthetic weather data; no pixel edits.",
-      "settings": "Orange #ff5500, white text/accent, two weather locations, small text."
+      "settings": "Orange #ff5500, white text/accent, two weather locations, small text.",
+      "representedReleaseVersion": "1.10.3"
+    },
+    "emery-store-demo-20261114-orange.png": {
+      "platform": "emery",
+      "sha256": "bbcb7f5bddeebd39fc6af2aa124d7b695647b417f17b6496d000907c83ef5359",
+      "captureVersion": "1.10.2",
+      "representedReleaseVersion": "1.10.3",
+      "sourcePbwSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "reuseProof": "final-gallery-reuse.json"
+    },
+    "emery-store-demo-20261114-timer.png": {
+      "platform": "emery",
+      "sha256": "e4aacda1b0b6d96786aaa7790f15f0f9ef8792a840303a3ab7a6f3e8023bf8af",
+      "captureVersion": "1.10.2",
+      "representedReleaseVersion": "1.10.3",
+      "sourcePbwSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "reuseProof": "final-gallery-reuse.json"
+    },
+    "emery-store-demo-20261114-music.png": {
+      "platform": "emery",
+      "sha256": "8958c963b371740ed37baffe88cff2ef353ddead373299dde36e211acf58a53a",
+      "captureVersion": "1.10.2",
+      "representedReleaseVersion": "1.10.3",
+      "sourcePbwSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "reuseProof": "final-gallery-reuse.json"
+    },
+    "emery-store-demo-20261114-notification.png": {
+      "platform": "emery",
+      "sha256": "3969915523c23c7998417414575af5c881fdf78e7e7bbf2dabdef1852a8abdee",
+      "captureVersion": "1.10.2",
+      "representedReleaseVersion": "1.10.3",
+      "sourcePbwSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "reuseProof": "final-gallery-reuse.json"
+    },
+    "emery-store-demo-20261114-dark.png": {
+      "platform": "emery",
+      "sha256": "43edd48ea56973ebed7a16f67446fb031da24a9f2d47eebc07e401aa01787e6a",
+      "captureVersion": "1.10.2",
+      "representedReleaseVersion": "1.10.3",
+      "sourcePbwSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "reuseProof": "final-gallery-reuse.json"
+    },
+    "gabbro-store-demo-20261114-orange.png": {
+      "platform": "gabbro",
+      "sha256": "342d06fcab688ddb4988dcfe0942e508c18f5d84c3a0cb4accb03cc0905dba9f",
+      "captureVersion": "1.10.2",
+      "representedReleaseVersion": "1.10.3",
+      "sourcePbwSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "reuseProof": "final-gallery-reuse.json"
+    },
+    "gabbro-store-demo-20261114-timer.png": {
+      "platform": "gabbro",
+      "sha256": "c879bdab3ebc6fc22211bdefcd761fcf60bdc52ebef9e8d0b60b80e01d18f5e9",
+      "captureVersion": "1.10.2",
+      "representedReleaseVersion": "1.10.3",
+      "sourcePbwSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "reuseProof": "final-gallery-reuse.json"
+    },
+    "gabbro-store-demo-20261114-music.png": {
+      "platform": "gabbro",
+      "sha256": "0cde3db6f1da04d2c32f979c76b7b99d4969946fc9b262bac3b9d2adf57f17b2",
+      "captureVersion": "1.10.2",
+      "representedReleaseVersion": "1.10.3",
+      "sourcePbwSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "reuseProof": "final-gallery-reuse.json"
+    },
+    "gabbro-store-demo-20261114-notification.png": {
+      "platform": "gabbro",
+      "sha256": "852445d0a0235cc2865da1b2d5a81b2ee65bb77bb83c4c722a26a6d5f9604819",
+      "captureVersion": "1.10.2",
+      "representedReleaseVersion": "1.10.3",
+      "sourcePbwSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "reuseProof": "final-gallery-reuse.json"
+    },
+    "gabbro-store-demo-20261114-dark.png": {
+      "platform": "gabbro",
+      "sha256": "1d452e21beca68e5fbb66503ba3557ee3f2ad7f837c2c7b02d35cead1e7fada8",
+      "captureVersion": "1.10.2",
+      "representedReleaseVersion": "1.10.3",
+      "sourcePbwSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+      "reuseProof": "final-gallery-reuse.json"
     }
   },
   "originalCaptureVersion": "1.10.1",
   "sourceCaptureCandidateSha256": "b568c2d6d559833863d3487d387d94cdd6e945ab674ba0b45949f1fa7aa2b8c3",
-  "reuseProof": "docs/qa/store-version-1.10.2/package-equivalence.json"
+  "reuseProof": "docs/qa/store-version-1.10.2/package-equivalence.json",
+  "representedReleaseVersion": "1.10.3",
+  "representedPbwSha256": "199fdad4a20a885f66216075ed07bd336b86fe50c574413f8a5f89a3fc086a9d",
+  "finalReuseProof": "final-gallery-reuse.json",
+  "freshCaptureClaimed": false
 }

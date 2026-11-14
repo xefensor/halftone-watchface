@@ -4,6 +4,87 @@
 // supplied through Clay userData/transport components or declared inside it.
 module.exports = function() {
   var clay = this;
+  function setLiveText(element, text) {
+    if (element && element.textContent !== text) { element.textContent = text; }
+  }
+  function watchRetryAvailable(bridge, saved) {
+    return !!(bridge && typeof bridge.display === 'function' && saved && saved.state && saved.state !== 'none' && !saved.applied);
+  }
+  function selectPreviewTab(tabs, panel, active) {
+    if (!tabs || !panel || !active) { return; }
+    Array.prototype.forEach.call(tabs.children, function(button) {
+      button.setAttribute('aria-selected',button === active ? 'true' : 'false');
+      button.tabIndex = button === active ? 0 : -1;
+      button.setAttribute('aria-controls',panel.id);
+    });
+    panel.setAttribute('aria-labelledby',active.id);
+  }
+  function installPaletteKeyboard(element, opener, doc) {
+    var picker = element.querySelector('.picker-wrap');
+    var swatches = Array.prototype.slice.call(element.querySelectorAll('.color-box.selectable'));
+    if (!picker || !swatches.length) { return function() {}; }
+    var active = 0;
+    function selectedIndex() {
+      for (var i = 0; i < swatches.length; ++i) { if (swatches[i].classList.contains('selected')) { return i; } }
+      return -1;
+    }
+    function sync(focusSelected) {
+      var open = picker.classList.contains('show'), selected = selectedIndex();
+      var focused = swatches.indexOf(doc.activeElement);
+      active = focusSelected || focused < 0 ? Math.max(0,selected) : focused;
+      opener.setAttribute('aria-expanded',open ? 'true' : 'false');
+      picker.setAttribute('aria-hidden',open ? 'false' : 'true');
+      swatches.forEach(function(box,index) {
+        box.tabIndex = open && index === active ? 0 : -1;
+        box.setAttribute('aria-pressed',index === selected ? 'true' : 'false');
+      });
+      if (open && focusSelected) { swatches[active].focus(); }
+      if (!open && focused >= 0) { opener.focus(); }
+    }
+    function close() { picker.classList.remove('show');sync(false);opener.focus(); }
+    function neighbour(index, key) {
+      var rect = swatches[index].getBoundingClientRect();
+      var horizontal = key === 'ArrowLeft' || key === 'ArrowRight';
+      var sign = key === 'ArrowLeft' || key === 'ArrowUp' ? -1 : 1;
+      var x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+      var best = index, bestPrimary = Infinity, bestCross = Infinity;
+      swatches.forEach(function(box,candidate) {
+        if (candidate === index) { return; }
+        var other = box.getBoundingClientRect();
+        if (!other.width || !other.height) { return; }
+        var dx = other.left + other.width / 2 - x, dy = other.top + other.height / 2 - y;
+        var primary = (horizontal ? dx : dy) * sign, cross = Math.abs(horizontal ? dy : dx);
+        if (primary < 1 || horizontal && cross > Math.max(1, Math.min(rect.height,other.height) / 3)) { return; }
+        if (primary < bestPrimary - 1 || Math.abs(primary - bestPrimary) <= 1 && cross < bestCross) {
+          best = candidate;bestPrimary = primary;bestCross = cross;
+        }
+      });
+      return best;
+    }
+    opener.addEventListener('keydown',function(event) {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault();opener.click();sync(true); }
+      else if (event.key === 'Escape') { event.preventDefault();close(); }
+    });
+    swatches.forEach(function(box,index) {
+      box.setAttribute('role','button');
+      var color = Number(box.getAttribute('data-value'));
+      box.setAttribute('aria-label','#' + ('000000' + color.toString(16)).slice(-6));
+      box.addEventListener('focus',function() {
+        active = index;swatches.forEach(function(value,at) { value.tabIndex = at === active ? 0 : -1; });
+      });
+      box.addEventListener('keydown',function(event) {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault();box.click();sync(false);opener.focus();return; }
+        if (event.key === 'Escape') { event.preventDefault();close();return; }
+        var next = event.key === 'Home' ? 0 : event.key === 'End' ? swatches.length - 1 :
+          ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].indexOf(event.key) >= 0 ? neighbour(index,event.key) : -1;
+        if (next < 0) { return; }
+        event.preventDefault();active = next;
+        swatches.forEach(function(value,at) { value.tabIndex = at === active ? 0 : -1; });
+        swatches[active].focus();
+      });
+    });
+    sync(false);return sync;
+  }
   // Clay serializes this hook, so the common stylesheet is explicit userData.
   // Bundled config already needs it for the loading screen; legacy Clay adds it.
   if (!document.getElementById('xoce-settings-style')) {
@@ -151,6 +232,7 @@ module.exports = function() {
     '#main-form .halftone-preview-note,#main-form .halftone-health-help,.halftone-details p,.halftone-state,.halftone-reading small,.halftone-health small,.halftone-activity-name small,.halftone-activity-announcement{font-size:14px!important}',
     '#main-form button{display:inline-flex;align-items:center;justify-content:center;text-align:center}#main-form .component-submit button{display:flex}.component-select .value{display:flex;align-items:center;line-height:1.5}',
     '@media(max-width:340px){body{padding-left:12px;padding-right:12px}.section>.component{padding-left:12px;padding-right:12px}.halftone-reading-grid{gap:6px}.halftone-reading{padding:9px}.component-submit{padding-left:12px;padding-right:12px}}',
+    '.halftone-preview-stage:focus-visible{outline:var(--focus-width) solid var(--accent);outline-offset:3px}',
   ].join('\n');
   document.head.appendChild(style);
   var viewport = document.querySelector('meta[name=viewport]');
@@ -236,22 +318,12 @@ module.exports = function() {
     }
     function color(key) { return nativeColor(field(key).get()); }
     function css(value) { return '#' + ('000000' + value.toString(16)).slice(-6); }
+    var paletteControllers = [];
     clay.getItemsByType('color').forEach(function(value) {
       var element = node(value), opener = element && element.querySelector('label');
       if (!opener) { return; }
-      opener.tabIndex = 0; opener.setAttribute('role','button'); opener.setAttribute('aria-haspopup','true'); opener.setAttribute('aria-expanded','false');
-      opener.addEventListener('keydown',function(event) {
-        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); opener.click(); }
-        if (event.key === 'Escape') { var picker = element.querySelector('.picker-wrap'); if (picker) { picker.classList.remove('show'); } }
-      });
-      Array.prototype.forEach.call(element.querySelectorAll('.color-box.selectable'),function(box) {
-        box.tabIndex = -1; box.setAttribute('role','button');
-        box.setAttribute('aria-label',css(Number(box.getAttribute('data-value'))));
-        box.addEventListener('keydown',function(event) {
-          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); box.click(); opener.focus(); }
-          if (event.key === 'Escape') { var picker = element.querySelector('.picker-wrap'); if (picker) { picker.classList.remove('show'); } opener.focus(); }
-        });
-      });
+      opener.tabIndex = 0;opener.setAttribute('role','button');opener.setAttribute('aria-haspopup','true');
+      paletteControllers.push(installPaletteKeyboard(element,opener,document));
     });
     var initialSnapshot = '', appEntry;
     var bridge = window.HalftoneSettingsBridge, phonePhase = 'ready', phoneConfirmed = false, reloadSaved, discard, confirmedForm, restoring = false;
@@ -651,7 +723,7 @@ module.exports = function() {
         if (recovery) { health.appendChild(make('p',t(recovery),'halftone-health-help')); }
       });
     }
-    var saveStatus = node(item('halftone-save-status'));
+    var saveStatus = node(item('halftone-save-status')), saveMessage;
     var submitHost = document.querySelector('.component-submit');
     function visibleViewport() {
       var view=window.visualViewport,top=view?view.offsetTop:0;
@@ -684,6 +756,7 @@ module.exports = function() {
     }
     if (saveStatus && submitHost) {
       saveStatus.className += ' halftone-save-state'; saveStatus.setAttribute('role','status'); saveStatus.setAttribute('aria-live','polite');
+      clear(saveStatus);saveMessage=make('p');saveStatus.appendChild(saveMessage);
       submitHost.insertBefore(saveStatus,submitHost.firstChild);
     }
     if (bridge && submitHost) {
@@ -725,7 +798,7 @@ module.exports = function() {
       var key = bridge ? phonePhase === 'saving' ? 'saveSending' : phonePhase === 'uncertain' ? 'phoneSaveUncertain' :
         phonePhase === 'failed' ? 'phoneSaveFailed' : dirty ? 'saveUnsaved' : phoneConfirmed ? 'phoneSaved' : 'phoneNoChanges' :
         dirty ? 'saveUnsaved' : saved === 'saved' ? 'saveLastDelivered' : saved === 'pending' || saved === 'failed' ? 'savePhoneWaiting' : 'saveNone';
-      if (saveStatus) { clear(saveStatus); saveStatus.appendChild(make('p',t(key))); }
+      setLiveText(saveMessage,t(key));
       var button = submitHost && submitHost.querySelector(bridge ? '.halftone-primary-save' : 'button');
       if (button) { button.disabled = bridge ? phonePhase === 'saving' || !dirty && phonePhase !== 'uncertain' && phonePhase !== 'failed' : !dirty && saved !== 'none'; }
       if (reloadSaved) { reloadSaved.hidden = phonePhase !== 'uncertain'; reloadSaved.disabled = phonePhase === 'saving'; }
@@ -757,9 +830,9 @@ module.exports = function() {
       [['idle','previewIdle'],['music','previewMusic'],['timer','previewTimer'],['notification-summary','previewBanner'],['notification','previewMessage'],['timeline','previewTimeline']].forEach(function(pair) {
         var button = make('button',t(pair[1])); button.type = 'button'; button.setAttribute('role','tab');
         button.setAttribute('aria-selected',pair[0] === previewState ? 'true' : 'false');
-        button.tabIndex = pair[0] === previewState ? 0 : -1; button.setAttribute('aria-controls','halftone-preview-canvas');
+        button.tabIndex = pair[0] === previewState ? 0 : -1;button.id='halftone-preview-tab-'+pair[0];
         button.addEventListener('click',function() { previewState = pair[0];
-          Array.prototype.forEach.call(tabs.children,function(child) { child.setAttribute('aria-selected',child === button ? 'true' : 'false'); child.tabIndex = child === button ? 0 : -1; });
+          selectPreviewTab(tabs,stage,button);
           renderPreview(); });
         button.addEventListener('keydown',function(event) {
           var shift = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
@@ -772,6 +845,8 @@ module.exports = function() {
         }); tabs.appendChild(button);
       });
       previewHost.appendChild(tabs); var stage = make('div',null,'halftone-preview-stage');
+      stage.id='halftone-preview-panel';stage.setAttribute('role','tabpanel');stage.tabIndex=0;
+      selectPreviewTab(tabs,stage,tabs.children[0]);
       var paletteChoice = make('label',null,'halftone-choice halftone-preview-palette');
       paletteChoice.setAttribute('for','halftone-preview-palette-select');
       paletteChoice.appendChild(make('span',t('previewPalette')));
@@ -931,8 +1006,8 @@ module.exports = function() {
     function updateDisplay(){
       if(!displayLabel)return;
       var dirty=signature()!==initialSnapshot, saved=data.save||{};
-      displayLabel.textContent=t(dirty?'saveUnsaved':saved.state==='none'?'saveNone':saved.applied?'displayApplied':saved.error?'displayFailed':'displayPending');
-      displayRetry.hidden=!!saved.applied;
+      setLiveText(displayLabel,t(dirty?'saveUnsaved':!saved.state||saved.state==='none'?'saveNone':saved.applied?'displayApplied':saved.error?'displayFailed':'displayPending'));
+      displayRetry.hidden=!watchRetryAvailable(bridge,saved);
       displayRetry.disabled=dirty||displayBusy||phonePhase==='saving'||phonePhase==='uncertain';
     }
     function pollDisplay(retryDelivery){
@@ -951,16 +1026,7 @@ module.exports = function() {
       if(typeof ResizeObserver!=='undefined'&&submitHost)new ResizeObserver(saveSpace).observe(submitHost);
       function saveVisibility() {
         document.body.classList.toggle('halftone-picker-open',!!document.querySelector('.picker-wrap.show'));
-        clay.getItemsByType('color').forEach(function(value) { var element = node(value), opener = element && element.querySelector('label');
-          if (!element) { return; }
-          var picker = element.querySelector('.picker-wrap'), open = !!element.querySelector('.picker-wrap.show');
-          if (opener) { opener.setAttribute('aria-expanded',open ? 'true' : 'false'); }
-          if (picker) {
-            if (!open && picker.contains(document.activeElement) && opener) { opener.focus(); }
-            picker.setAttribute('aria-hidden',open ? 'false' : 'true');
-            Array.prototype.forEach.call(picker.querySelectorAll('.color-box.selectable'),function(box) { box.tabIndex = open ? 0 : -1; });
-          }
-        });
+        paletteControllers.forEach(function(sync) { sync(false); });
       }
       saveVisibility();
       if (typeof MutationObserver !== 'undefined') { new MutationObserver(saveVisibility).observe(form,{subtree:true,attributes:true,attributeFilter:['class']}); }

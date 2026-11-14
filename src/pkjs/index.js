@@ -321,7 +321,7 @@ Pebble.addEventListener('showConfiguration', function() {
       } else if (issue && status.message) { issue += ' · ' + status.message; }
       // Clay text fields support HTML. Source diagnostics remain literal text,
       // including provider-supplied error messages and category/item names.
-      item.defaultValue = escapeHtml('Halftone ' + previewAssets.version + '. ' + summary +
+      item.defaultValue = escapeHtml('Halftone ' + previewAssets.applicationVersion + '. ' + summary +
         (issue ? ' · ' + t('complicationsError', {error: issue}) : ''));
     });
   }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.10.3
+
+- New XOCE launcher icon.
+- Improved colour-palette keyboard navigation and labelled preview panels.
+- More reliable settings status and Retry feedback.
+- The current app version is now kept separate from historical preview-image versions.
+
 ## 1.10.2 — 2026-11-14
 
 - Package the current reviewed implementation and updated Store assets under a new numeric version, preserving the public UUID and saved settings.

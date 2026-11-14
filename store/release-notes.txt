@@ -1,7 +1,4 @@
-Halftone 1.10.2
-
-Pebble Time 2 and Round 2 support, with the Fira clock, halftone dot border, adjustable colours, depth, shadow and readable text choices.
-
-Keep two readings above music, optional notifications and compatible Activities. Start a countdown in Timer and return to Halftone to see its remaining time; Timer continues to own its controls and alarm.
-
-Round 2 uses a circular border and layouts fitted to its display. Native Timeline Peek and the Time 2 composition remain supported.
+- New XOCE launcher icon.
+- Improved colour-palette keyboard navigation and labelled preview panels.
+- More reliable settings status and Retry feedback.
+- The current app version is now kept separate from historical preview-image versions.

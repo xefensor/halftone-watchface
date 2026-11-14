@@ -4,8 +4,12 @@ const crypto=require('node:crypto');
 const {test}=require('node:test');
 const preview=require('../src/pkjs/settings-preview');
 
+test('current application status version is separate from historical capture version',()=>{
+  assert.equal(require('../src/pkjs/settings-preview-all').applicationVersion,require('../package.json').version);
+});
+
 test('offline settings have every native preset and intact 200×228 PNGs',()=>{
-  assert.equal(preview.version,require('../package.json').version);
+  assert.equal(preview.version,'1.10.2','Retain original historical preview version');
   const expected=[];
   for(const state of ['idle','music','timer','notification','notification-summary','timeline'])
     for(const format of [12,24])for(const theme of ['light','dark'])
@@ -40,7 +44,7 @@ test('custom preview preserves source artwork and the native Timeline area',()=>
 
 test('Round 2 previews contain all native states and keep artwork within the physical circle',()=>{
   const round=require('../src/pkjs/settings-preview-round');
-  assert.equal(round.version,require('../package.json').version);
+  assert.equal(round.version,'1.10.2','Retain original historical Round preview version');
   assert.deepEqual(Object.keys(round.frames).sort(),Object.keys(preview.frames).sort());
   for(const [key,frame] of Object.entries(round.frames)){
     const png=Buffer.from(frame.src.split(',')[1],'base64');

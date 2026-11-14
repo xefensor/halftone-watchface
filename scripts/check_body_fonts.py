@@ -109,7 +109,10 @@ def audit_body_fonts(root,packed,binary):
         require(len(maps[metric])==len(points) and all(len(row)==8 for row in pools[metric]),'Invalid metric table')
         linked.extend([bytes(maps[metric]),bytes(v&255 for row in pools[metric] for v in row)])
     require(all(binary.count(table)==1 for table in linked),'Native binary lacks exact metric ranges/maps/pools')
-    resources=read_resource_pack(packed,len(sizes));checks=0
+    all_media=[m for m in json.loads((root/'package.json').read_text())['pebble']['resources']['media'] if 'emery' in m.get('targetPlatforms',['emery'])]
+    from launcher_icon import audit_launcher
+    resources=read_resource_pack(packed,len(all_media));checks=0
+    audit_launcher(root,all_media,resources[9]['data'],binary)
     for column,size in enumerate(sizes):
         font=read_pfo(resources[column+1]['data'])
         require(font['height']==size and font['wildcard']==0x25af,'Wrong packaged font/fallback')
@@ -122,7 +125,7 @@ def audit_body_fonts(root,packed,binary):
                 pools['descent'][maps['descent'][index]][column]==descent,
                 'Packaged glyph metrics differ: %dpx U+%04X'%(size,point))
             checks+=1
-    media=[m for m in json.loads((root/'package.json').read_text())['pebble']['resources']['media'] if 'emery' in m.get('targetPlatforms',['emery'])]
+    media=all_media[:-1]
     require([entry['name'] for entry in media]==['FONT_BODY_'+str(size) for size in sizes] and
         all(entry['type']=='font' and entry['file']=='fonts/RobotoCondensed-Bold.ttf' and
             entry.get('extended') is True for entry in media),'Body resource definitions differ')

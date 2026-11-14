@@ -1,5 +1,6 @@
 """Compare every packaged platform font pixel/metric and raw asset with source."""
 import json,struct,subprocess,sys,zipfile
+from launcher_icon import audit_launcher
 from pathlib import Path
 from platform_audit import require
 
@@ -53,7 +54,7 @@ def audit_assets(root,pbw):
         for platform in ['emery']+[p for p in targets if p!='emery']:
             media=[m for m in all_media if platform in m.get('targetPlatforms',targets)]
             pack=z.read(platform+'/app_resources.pbpack');require(struct.unpack_from('<I',pack)[0]==len(media),'Resource declaration count differs')
-            fonts=raw=0
+            fonts=raw=0;launcher=None
             for i,item in enumerate(media):
                 rid,offset,size,_=struct.unpack_from('<4I',pack,12+i*16);require(rid==i+1,'Resource ID differs')
                 data=pack[4108+offset:4108+offset+size]
@@ -63,5 +64,9 @@ def audit_assets(root,pbw):
                     glyphs=font_glyphs(data);name=item['name'];fonts+=1
                     if platform=='emery':reference[name]=glyphs
                     else:require(glyphs==reference[name],'Font pixels/metrics differ: '+platform+'/'+name)
-            report[platform]={'fontsWithIdenticalPixelsAndMetrics':fonts,'sourceIdenticalRawAssets':raw}
+                elif item['type']=='bitmap':
+                    require(i==8,'Launcher must be appended after all eight fonts')
+                    launcher=audit_launcher(root,media,data,z.read(platform+'/pebble-app.bin'))
+                else:require(False,'Unaudited resource type '+item['type'])
+            report[platform]={'fontsWithIdenticalPixelsAndMetrics':fonts,'sourceIdenticalRawAssets':raw,'launcher':launcher}
     return report

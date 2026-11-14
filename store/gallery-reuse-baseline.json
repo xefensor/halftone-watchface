@@ -1,0 +1,61 @@
+{
+  "version": "1.10.2",
+  "pbwSha256": "2aebe161f36be2368b94ae52e84dce2be58ae6ccb8ac1dd6cf479a10f8848d1d",
+  "candidateMenuId": 9,
+  "candidateResourceCount": 9,
+  "platforms": {
+    "emery": {
+      "normalizedNativeSha256": "bdc448e11668e253766782c38dc324451be8dbd93417722158e4886cf149e6a4",
+      "nonIconResources": {
+        "1": "da95d55e3e497141d114936e05d5a7c766413f04b450650cd3bc5c28cc5fa0b7",
+        "2": "31851269c422c7191deb59d2fb4545d8404a40c2173071c8dd5b4bd0d7ac023e",
+        "3": "46dab7aa0b7561c1fedc2ab7bf42c373fa8e1208bc72ce8783524ebe872f89ea",
+        "4": "591944781d933ea0df3de9678423ebd131559f3d9eb9546f2ee7c8e35f2cb8b8",
+        "5": "1cf3bfdfeedcad17485d2ce5ececef2620ab876b26bfce80a3f567f560029f96",
+        "6": "30f77c6c6c299b3c6fe9725117446f46c516b303322e0f775c74f106bad37b8f",
+        "7": "122ab2faea4dd055d1f7aeb1bfbf9039b26f8bb2285a1159017fa31798e6723b",
+        "8": "1f982067b36a6a7bd344835ae2c4ecce1cb6e9b343c334cadbd06dd8c4e9f4de"
+      },
+      "nativeBytes": 67020,
+      "loadedBytes": 64588,
+      "relocations": 608,
+      "resourceCount": 8
+    },
+    "gabbro": {
+      "normalizedNativeSha256": "8f3de37e7401792baf5ae5cd7d5b76d53030c58e925321865c1286ce21475f32",
+      "nonIconResources": {
+        "1": "da95d55e3e497141d114936e05d5a7c766413f04b450650cd3bc5c28cc5fa0b7",
+        "2": "31851269c422c7191deb59d2fb4545d8404a40c2173071c8dd5b4bd0d7ac023e",
+        "3": "46dab7aa0b7561c1fedc2ab7bf42c373fa8e1208bc72ce8783524ebe872f89ea",
+        "4": "591944781d933ea0df3de9678423ebd131559f3d9eb9546f2ee7c8e35f2cb8b8",
+        "5": "1cf3bfdfeedcad17485d2ce5ececef2620ab876b26bfce80a3f567f560029f96",
+        "6": "30f77c6c6c299b3c6fe9725117446f46c516b303322e0f775c74f106bad37b8f",
+        "7": "122ab2faea4dd055d1f7aeb1bfbf9039b26f8bb2285a1159017fa31798e6723b",
+        "8": "1f982067b36a6a7bd344835ae2c4ecce1cb6e9b343c334cadbd06dd8c4e9f4de"
+      },
+      "nativeBytes": 67668,
+      "loadedBytes": 65236,
+      "relocations": 608,
+      "resourceCount": 8
+    }
+  },
+  "sourceArchiveSha256": "49b575ddc22e7dd990e1000d4dbdce900a899e7c4bde31fd8ee59a4a593f2b9f",
+  "allowedNativeByteRanges": [
+    [
+      20,
+      24
+    ],
+    [
+      88,
+      92
+    ],
+    [
+      120,
+      128
+    ],
+    [
+      148,
+      168
+    ]
+  ]
+}

@@ -40,18 +40,10 @@ with zipfile.ZipFile(pbw) as built,zipfile.ZipFile(root/'build'/(root.name+'.pbw
     require(binary.count(packed)==1,'Linked Fira metrics differ')
     require('licenses/OFL-FiraSans.txt' in built.namelist(),'Fira licence missing')
     preview=json.loads((root/'src/pkjs/settings-preview.js').read_text().split('module.exports = ',1)[1].strip().removesuffix(';'))
-    require(preview['version']==package['version'],'Wrong native preview version')
-    source=preview['source'];native=source['nativePayloadSha256']
-    from native_identity import renderer_identity
-    renderer=source.get('nativeRendererIdentity')
-    if renderer:require(renderer==renderer_identity(binary,built.read('emery/app_resources.pbpack')),'Native preview renderer/resources differ')
-    else:
-        require(sha(built.read('emery/app_resources.pbpack'))==native['emery/app_resources.pbpack'],'Native preview resources differ')
-    if not renderer:require(sha(binary)==native['emery/pebble-app.bin'] or
-        sha(binary[:124]+b'\0'*4+binary[128:])==source['normalizedNativeBinarySha256'],
-        'Native previews describe a different renderer')
+    from historical_preview import audit_historical_preview
+    preview_report=audit_historical_preview(root,'emery',binary,built.read('emery/app_resources.pbpack'))
     body_fonts=audit_body_fonts(root,built.read('emery/app_resources.pbpack'),binary)
-    report={'bodyFonts':body_fonts,'pbw':str(pbw),'sha256':sha(pbw.read_bytes()),'nativeBytes':len(binary),'nativePayloadsUnchanged':True,'firaGeometryMatches':True,'nativePreviewCodeAndResourcesMatch':True,'checks':'source fingerprints, package identity, keys, permissions, navigation, settings, native payloads, linked Fira tables'}
+    report={'bodyFonts':body_fonts,'pbw':str(pbw),'sha256':sha(pbw.read_bytes()),'nativeBytes':len(binary),'nativePayloadsUnchanged':True,'firaGeometryMatches':True,'historicalPreview':preview_report,'checks':'source fingerprints, package identity, keys, permissions, navigation, settings, native payloads, linked Fira tables'}
 output=root/'build/qa/artifact.json';output.parent.mkdir(parents=True,exist_ok=True);output.write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report,indent=2))
 
@@ -63,9 +55,7 @@ print(audit_assets(root,pbw))
 # Round previews have independent source identity; Emery pixels cannot stand in
 # for Gabbro even when both targets share the same application version.
 round_preview=json.loads((root/'src/pkjs/settings-preview-round.js').read_text().split('module.exports = ',1)[1].strip().removesuffix(';'))
-from native_identity import renderer_identity as round_renderer_identity
+from historical_preview import audit_historical_preview
 with zipfile.ZipFile(pbw) as round_built:
-    actual_round=round_renderer_identity(round_built.read('gabbro/pebble-app.bin'),round_built.read('gabbro/app_resources.pbpack'))
-assert round_preview['source']['nativeRendererIdentity']==actual_round,'Round preview renderer/resources differ'
-assert len(round_preview['frames'])==24 and round_preview['version']==package['version']
-print('Round 2 preview renderer identity: PASS')
+    round_report=audit_historical_preview(root,'gabbro',round_built.read('gabbro/pebble-app.bin'),round_built.read('gabbro/app_resources.pbpack'))
+print(json.dumps({'historicalRoundPreview':round_report},indent=2))

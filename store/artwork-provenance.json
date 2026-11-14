@@ -1,42 +1,52 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "family": "XOCE individual product identities 2026-11-14",
+  "scope": "Orange colour field and graduated dots preserve Xef’s selected Halftone direction.",
   "originalArtwork": true,
-  "family": "XOCE original-Halftone Store family 2026-11-14",
-  "scope": "Xef selected the original orange Halftone banner as the reference: bold colour, curved patterned edge, large title and illustrated watch. Original binary glyphs use transparency and icon_tintable; native screenshot PNGs remain unchanged.",
   "font": {
     "name": "Fira Sans Condensed Bold",
     "licence": "SIL OFL 1.1",
+    "file": "artwork/fonts/FiraSansCondensed-Bold.ttf",
     "sourceSha256": "7ea603ffe9e04b7746213bf9414c3d63babb722c8034079bb9106bd2237a8bd3",
     "treatment": "Outlined SVG text"
   },
   "reference": {
-    "file": "pebble-watchface-halftone/store/halftone-banner-720x320.png",
-    "sha256": "e166f451c58a2b6f48addce6c1d4a075a7169180145a8258f1cd35b0b3d011de"
+    "file": "artwork/reference/halftone-banner-720x320.png",
+    "sha256": "e166f451c58a2b6f48addce6c1d4a075a7169180145a8258f1cd35b0b3d011de",
+    "use": "Preserved orange/dither character for Halftone; shared family typography and hardware treatment, not a mandatory composition for other apps."
   },
+  "sharedRules": [
+    "Fira typography",
+    "Graphite and silver watch treatment",
+    "Native app screenshots",
+    "Small XOCE endorsement",
+    "Clear text margins"
+  ],
   "files": {
-    "product-mark.svg": "144382293fb3f120a763d7f0c18f1eae59557d49e2e296684a124bfb87e73dae",
-    "product-mark-144.png": "1442b85de6871da23ae939e34887bc6dac283932b943e87dad404a67688765a0",
-    "emery-family-banner.svg": "5cb84fc96ce5af1a6c960df464d6a228b6dd68fd0f810b80a511d6dfef404620",
-    "emery-family-banner.png": "9a784bd18ef4423779eea5f19b3fd2cb75b8a0976d60d581ee6479c4320a614b",
-    "gabbro-family-banner.svg": "baed9947a30a3542058692778227513f4cf8fea5f0837e2b38fdd59111880f14",
-    "gabbro-family-banner.png": "906dbfcef0fa9167387bae8b2e76e96b8946ce590d87bf2bb01d149a28fb898c"
+    "emery-family-banner.svg": "cec982cdc56e37cb88a718023d6b80120be15441e73d6b1a8954af90611dd629",
+    "emery-family-banner.png": "0c0d374b7514a5ce710fc43b6bb026faba41b66c19751a6032e478907eecbdb0",
+    "gabbro-family-banner.svg": "e5a06a83c01086211462f902f42d0e00c03d23c2eae3dfd53a85fc3abc2df4dd",
+    "gabbro-family-banner.png": "fefcbf08ee47c95c74308b359eca34d3633457e3a9b0d947e621e2cf414275ce"
   },
   "banners": {
     "emery": {
       "file": "emery-family-banner.png",
       "platform": "emery",
-      "screenshot": "emery-store-20261114-orange.png",
-      "screenshotSha256": "ae37f5142814dd105564163924349ece337c06f23f800730266fe834f18f04f6",
-      "composition": "Based on Xef's original Halftone banner: bold colour field, curved patterned edge and illustrated watch. Native display stays at 1:1; original embedded capture bytes unchanged.",
-      "illustrationSource": "pebble-watchface-halftone/store/banner-source.svg"
+      "screenshot": "emery-store-demo-20261114-orange.png",
+      "screenshotSha256": "bbcb7f5bddeebd39fc6af2aa124d7b695647b417f17b6496d000907c83ef5359",
+      "composition": "Orange colour field and graduated dots preserve Xef’s selected Halftone direction.",
+      "illustration": "Original XOCE vector watch illustration; supplied native capture embedded unchanged at native pixel size."
     },
     "gabbro": {
       "file": "gabbro-family-banner.png",
       "platform": "gabbro",
-      "screenshot": "gabbro-store-20261114-orange.png",
-      "screenshotSha256": "fbd6e73222a8bc1897e2076f7ad4adbc8784e2a341f86d8cbb790ad1d702e0e6",
-      "composition": "Based on Xef's original Halftone banner: bold colour field, curved patterned edge and illustrated watch. Native display stays at 1:1; original embedded capture bytes unchanged.",
-      "illustrationSource": "pebble-watchface-halftone/store/banner-source.svg"
+      "screenshot": "gabbro-store-demo-20261114-orange.png",
+      "screenshotSha256": "342d06fcab688ddb4988dcfe0942e508c18f5d84c3a0cb4accb03cc0905dba9f",
+      "composition": "Orange colour field and graduated dots preserve Xef’s selected Halftone direction.",
+      "illustration": "Original XOCE vector watch illustration; supplied native capture embedded unchanged at native pixel size."
     }
-  }
+  },
+  "source": "artwork/generate-artwork.py",
+  "screenshotPolicy": "Raw captures and PBW files are unchanged. Example data comes from supplied emulator captures, not physical hardware.",
+  "icons": "Banner generation leaves current product marks and Store icons unchanged. Their separate refresh is owned by artwork/generate-icons.py and artwork/apply-icons.py."
 }

@@ -1,15 +1,16 @@
-A Pebble watchface with a bold Fira clock, a halftone dot border and room for your everyday information.
+A bold Pebble clock with a halftone dot border.
 
-Halftone pairs distinctive typography with two readings beneath the time. Choose weather, battery or another compatible Pebble reading, then make the clock your own with colour, depth and shadow settings.
+Halftone puts a distinctive clock and two useful readings on your wrist. Choose weather, battery or other compatible Pebble readings, then make the face your own with colour, depth and shadow.
 
-- Keep two readings together with complete values and units.
-- Customize colours, Bigger Text, depth and shadow.
-- Choose Small, Medium, Large or Follow Pebble text.
-- Show one main activity and an optional smaller summary below the readings.
-- Follow music with the song, artist and available artwork, and use Timeline Peek.
+- Keep the time, date and two readings together.
+- Customize the colours and dot-border appearance.
+- Adjust depth, shadow, Bigger Text and text size.
+- See a Timer countdown or music with its title, artist and available artwork.
+- Choose your Activities and their order. A smaller secondary summary appears when space allows.
+- Show Timeline Peek alongside the clock.
 
-A countdown can stay in view when you leave Timer. Start it there, then return to Halftone to see the time remaining. These ongoing updates are called Activities. Timer still runs the countdown and handles the alarm. Open Timer to change it, or add Open Activity as an optional button shortcut back to the app.
+Activities are ongoing updates from other apps. Start a countdown in Timer, then return to Halftone to see the time remaining. Timer handles its controls and alarm. Open Activity can add an optional Quick Launch shortcut back to Timer.
 
-Shared readings and activities need the official Pebble phone app's plugin support, source permissions and a connected phone. Music and notification integration requires Android. Notifications are optional; message text is opt-in.
+For Pebble Time 2 and Round 2. Shared readings and Activities require a connected phone, plugin support enabled in the official Pebble phone app, and permissions for the chosen sources. Built-in music and notifications require Android. Notification summaries and message text are separate opt-in settings.
 
-Free. For Pebble Time 2 and Round 2. No account, advertisements or analytics.
+Free. Part of XOCE. No XOCE account, ads or analytics. Selected providers have their own requirements and privacy practices.

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "name": "Halftone",
   "author": "Xef",
-  "version": "1.10.2",
+  "version": "1.10.3",
   "uuid": "d4dd5046-53be-4624-99e8-46e0b377fe66",
   "type": "watchface",
   "price": "free",
@@ -17,8 +17,8 @@
   "privacy_url": "https://github.com/xefensor/halftone-watchface/blob/main/PRIVACY.md",
   "publication_status": "preparation",
   "store_submission_allowed": false,
-  "publication_rule_url": "https://developer.repebble.com/guides/plugins/publishing-plugins/",
-  "publication_rule_checked_on": "2026-11-12",
+  "publication_rule_url": "https://developer.repebble.com/guides/appstore-publishing/preparing-a-submission/",
+  "publication_rule_checked_on": "2026-11-14",
   "requirements": [
     "Pebble Time 2 or Round 2; current PebbleOS",
     "Current Pebble mobile app with Plugins / permissions preview enabled",
@@ -27,18 +27,18 @@
   ],
   "screenshots": {
     "emery": [
-      "emery-store-20261114-orange.png",
-      "emery-store-20261114-music.png",
-      "emery-store-20261114-notification.png",
-      "emery-store-20261114-dark.png",
-      "emery-store-20261114-peek.png"
+      "emery-store-demo-20261114-orange.png",
+      "emery-store-demo-20261114-timer.png",
+      "emery-store-demo-20261114-music.png",
+      "emery-store-demo-20261114-notification.png",
+      "emery-store-demo-20261114-dark.png"
     ],
     "gabbro": [
-      "gabbro-store-20261114-orange.png",
-      "gabbro-store-20261114-music.png",
-      "gabbro-store-20261114-notification.png",
-      "gabbro-store-20261114-dark.png",
-      "gabbro-store-20261114-peek.png"
+      "gabbro-store-demo-20261114-orange.png",
+      "gabbro-store-demo-20261114-timer.png",
+      "gabbro-store-demo-20261114-music.png",
+      "gabbro-store-demo-20261114-notification.png",
+      "gabbro-store-demo-20261114-dark.png"
     ]
   },
   "remaining_publication_gates": [
@@ -55,5 +55,8 @@
   "banners": {
     "emery": "emery-family-banner.png",
     "gabbro": "gabbro-family-banner.png"
-  }
+  },
+  "store_submission_scope": "Local release-preparation gate retained from the input package; this flag is not a claim that Pebble prohibits publication. Developer account access and release availability were not checked in this presentation refresh.",
+  "publication_guidance_note": "Current guide specifies optional 720x320 banners and exact-size, unframed native screenshots. Watchface store icon uploads are separate from watchapp icon fields.",
+  "website_url": "https://xefensor.github.io/xoce/projects/halftone/"
 }
