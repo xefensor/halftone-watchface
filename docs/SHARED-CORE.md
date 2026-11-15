@@ -1,6 +1,8 @@
 # Current shared dependencies
 
-The development candidate pins Core **0.5.2**, Activities **0.4.4** and UI **0.1.1**.
+Published Halftone **1.10.3** pins Core **0.6.0**, Activities **0.4.5** and UI
+**0.1.3** in `vendor/`. Those are checked app-bundled snapshots, not claims of
+matching public standalone library releases.
 See [current contracts](MAINTENANCE.md) and [development](../CONTRIBUTING.md).
 The following describes the frozen rc.6 extraction and its original Core 0.1.0 pin.
 

@@ -3,7 +3,7 @@
   "author": "Xef",
   "version": "1.10.3",
   "scripts": {
-    "test": "python3 scripts/verify-core.py && python3 scripts/test-js.py && python3 scripts/test-native.py && npm run test:workflow && npm run test:platforms && npm run test:assets && npm run test:store",
+    "test": "python3 scripts/verify-core.py && python3 scripts/test-js.py && python3 scripts/test-native.py && npm run test:workflow && npm run test:platforms && npm run test:assets && npm run test:store && npm run test:release && npm run check:docs",
     "test:js": "python3 scripts/test-js.py",
     "test:native": "python3 scripts/test-native.py",
     "build": "python3 scripts/build.py",
@@ -14,7 +14,10 @@
     "test:assets": "python3 -m unittest discover -s tests -p test_native_assets.py && python3 -m unittest discover -s tests -p test_historical_preview.py && python3 -m unittest discover -s tests -p test_source_fixtures.py",
     "store:prepare": "python3 scripts/store-kit.py",
     "store:check": "python3 scripts/store-kit.py --check",
-    "test:store": "python3 -m unittest discover -s tests -p test_store_kit.py"
+    "test:store": "python3 -m unittest discover -s tests -p test_store_kit.py",
+    "test:release": "python3 -m unittest discover -s tests -p \"test_*release*.py\"",
+    "release:prepare": "python3 scripts/github-release.py prepare",
+    "check:docs": "python3 scripts/check-docs.py"
   },
   "license": "SEE LICENSE IN LICENSE",
   "keywords": [

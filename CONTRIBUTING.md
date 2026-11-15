@@ -2,9 +2,19 @@
 
 Follow the [XOCE contributor conventions](https://github.com/xefensor/xoce/blob/main/docs/contributor-conventions.md). Project-specific commands and exceptions are below.
 
-Use Node 22 (see .node-version), Python 3.12 (see .python-version), a C99 compiler,
-and Pebble SDK 4.44 on PATH for native builds. Font asset regeneration additionally
-uses fontTools 4.61.1 and skia-pathops 0.9.2; ordinary builds use committed geometry.
+Select **Node 22.23.4** from `.node-version`, **Python 3.12.15** from
+`.python-version` and a C99 compiler (`cc`, or set `CC`). Portable tests need
+**Pillow 13.0.0** for historical image audits, even without a native build.
+Create a Python virtual environment before installing those pinned test requirements:
+
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install -r requirements-test.txt
+```
+
+Native builds additionally need Pebble SDK 4.44 on PATH. Font regeneration uses
+fontTools 4.61.1 and skia-pathops 0.9.2; ordinary builds use committed geometry.
 
 ```sh
 npm ci --ignore-scripts
@@ -38,7 +48,7 @@ are simulated and do not establish live plugin, phone delivery, hardware or batt
 
 The old `package-beta.py`, `check-clock-fonts.py` and versioned release scripts describe
 v1.9.0-rc.6's bitmap-font release process. They are retained for that frozen release;
-use the current candidate workflow above for the scalable Fira implementation.
+use the current development workflow above for the scalable Fira implementation.
 
 
 ## Pinned native build checks
@@ -61,5 +71,20 @@ kit bytes and make the standalone source ZIP. It refuses an existing version
 and writes `releases/SHA256SUMS-VERSION.txt`; old root checksums and artifacts
 remain untouched. Commit these files locally, then run `npm run release:prepare`
 to validate committed HEAD. No build, tag, upload or publication happens during
-freezing or preparation. The current candidate's physical-device and account
-gates remain in `docs/RELEASE-READINESS.md`.
+freezing or preparation. Existing publication and verification scope are recorded in
+`docs/RELEASE-READINESS.md`. A new release needs its own validation; ordinary
+maintenance does not reopen an extra approval gate for the published release.
+
+## Existing releases and maintenance-only changes
+
+`npm run release:prepare` validates committed frozen inputs and writes
+`build/release/`. It does not build, tag, upload or publish. The current release
+configuration pins 1.10.3 to its original source commit so documentation and test
+command maintenance cannot redefine the source shipped with that version.
+Future versions use their own reviewed commit and new archives. Never change
+an existing tag or asset to incorporate a maintenance edit.
+
+`npm test` includes the freezer and GitHub release-helper regression suites,
+plus local links in the active documentation.
+Publication remains the separate manual workflow described in
+[GitHub releases](docs/GITHUB-RELEASES.md).

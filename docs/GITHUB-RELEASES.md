@@ -1,76 +1,66 @@
 # GitHub releases
 
-The [Releases page](https://github.com/xefensor/halftone-watchface/releases)
-provides versioned sideload downloads. GitHub Actions uploads the existing,
-checked packages; the native SDK build and render checks happen before
-publication. This workflow does not submit anything to the Pebble appstore.
+[Halftone 1.10.3](https://github.com/xefensor/halftone-watchface/releases/tag/v1.10.3)
+is the current stable release. It is also published in
+[Pebble Store](https://apps.repebble.com/48d7f4eab704414c8bc1fa7e) for Time 2 and
+Round 2. The release page supplies its exact PBW, source archive, Store package,
+debug files and checksums. [Current publication record](../store/publication.json).
 
-## Published candidate
+## Maintain an existing release
 
-[**v1.9.0-rc.6**](https://github.com/xefensor/halftone-watchface/releases/tag/v1.9.0-rc.6)
-is published as a **prerelease**, using tested artifact commit
-`dca19138bae62455609d359065324acffedbf041`. Its numeric Pebble SDK version is
-`1.9.0`; `halftoneReleaseCandidate: 6` supplies the `-rc.6` GitHub/filename suffix.
-
-| Download | Purpose |
-| --- | --- |
-| [Halftone-1.9.0-rc.6.pbw](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6.pbw) | Installable Emery watchface |
-| [Halftone-1.9.0-rc.6-source.zip](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6-source.zip) | Source matching the candidate |
-| [Halftone-1.9.0-rc.6-store-package.zip](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6-store-package.zip) | Prepared listing materials and the same PBW |
-| [SHA256SUMS.txt](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/SHA256SUMS.txt) | Flat checksums for these three assets |
-
-The initial tag stays on the tested commit. The automation was added later on
-`main` and did not rebuild the PBW or archives. Documentation-only updates do
-not require repackaging that release; its source archive remains the source
-snapshot shipped with the candidate.
-
-## Prepare the stable 1.10.1 release
-
-Xef accepted the reviewed Round 2 implementation for a stable public release on
-2026-11-13. This does not alter the frozen rc.6 or 1.10.0 archives, nor establish
-new physical-device test results. Current evidence is in
-[release readiness](RELEASE-READINESS.md).
-
-Run the current source, SDK candidate, artifact, configuration and Store-kit
-checks. Refresh native captures before preparing the Store kit, then use
-`python3 scripts/freeze-release.py` to freeze the exact checked candidate into
-new `releases/` files. The source snapshot is made last. The 1.10.1 configuration
-sets `prerelease` to false.
-
-Commit the complete source/metadata/artifact set locally, then run:
+Published tags and assets retain their original bytes. A README, support or
+contributor-tooling update does not rebuild or replace the source shipped with
+1.10.3. `.github/release.json` pins that version's source commit to
+`22f4193c07fd28d4cffacce68bb89e425dcc3610`; preparation validates its immutable
+archives against that commit and checks their bytes still match the current
+branch's selected artifacts. An identical rerun verifies and reuses the
+existing release; a conflicting tag or altered published asset fails.
 
 ```sh
-python3 scripts/github-release.py prepare --output build/release-stable-1.10.1
+npm run release:prepare
 ```
 
-Preparation reads committed HEAD and never uploads. Publication uses the manual
-GitHub release workflow on main and the same frozen PBW in the Developer
-Dashboard. Existing tags and published asset bytes remain immutable.
+This reads committed inputs and writes `build/release/`. It never builds,
+creates a tag, uploads or publishes. Run it from a committed checkout. Its
+manifest reports the original `source_commit` separately from the maintenance
+trigger commit. No extra physical-device approval gate is created for an
+already published release; existing test gaps remain explicit.
 
-## Validation and automation
+## Prepare a future version
 
-The workflow runs only through **Run workflow** on `main` in GitHub Actions. It installs the locked Node dependencies, runs `npm test`,
-runs the Python release-helper tests and prepares the release. Publication is a
-separate job using the built-in GitHub token with `contents: write`; the check
-job has read access. No personal access token or external schedule is required.
+A behaviour/dependency change belongs in a new reviewed app release. Select its
+new version and intended platforms, run the owning source, SDK, artifact,
+configuration and Store checks, and record actual browser/emulator/device scope.
+New captures retain their own source identity; reuse needs an explicit proof.
 
-The helper validates PBW identity/version, matching source metadata,
-checksums and the PBW inside the store package. The source archive must exclude
-root `build/`, `node_modules/`, `.git/` and `.pebble/` directories and any embedded
-PBW, including differently cased names. Use the explicit asset allowlist in
-`.github/release.json`; unrelated historical files in `dist/` are not uploaded.
-The attached checksum file contains only the selected release assets.
+`python3 scripts/freeze-release.py` freezes only a new version's checked PBW,
+debug and Store inputs and creates its standalone source ZIP. It refuses an
+existing version. Commit the complete source/artifact/metadata set, then run
+the preparer. A version different from the pinned historical bootstrap uses
+its own committed HEAD and strict source/archive checks.
 
-The configuration's `bootstrap` entry freezes the first existing candidate to
-its tested commit. Future versions use their own artifact commit. Versioned tags
-and published asset bytes are immutable: changes require a new candidate or
-version. Identical reruns verify and reuse the existing release rather than
-creating duplicates; interrupted drafts can resume. Conflicting tags or changed
-published bytes fail rather than replacing a release. The live rc.6 rerun was
-checked to preserve the existing tag, asset IDs and bytes.
+## Publish separately
 
-## Pebble distribution status
+The manual GitHub release workflow runs only through **Run workflow** on main.
+Its check job has read access and runs `npm test`, including freezer/release
+regressions. Publication uses the built-in GitHub token in a separate job with
+`contents: write`. Normal pushes and tests do not publish.
 
-GitHub downloads are separate from the older public store listing. Appstore
-submission remains governed by the [publishing checklist](../store/PUBLISHING.md),
-current Pebble publishing instructions and the recorded review acceptance. See [privacy](../store/PRIVACY.md) for the current source/cache contract.
+The helper validates PBW UUID/version, source and native/JavaScript identity,
+asset allowlists/checksums, and the PBW embedded in the Store package. It rejects
+working directories and unapproved compiled PBWs in source archives. It never
+silently replaces an existing tag or published asset. Interrupted drafts can
+resume under the same policy.
+
+GitHub publication does not submit to Pebble Store. For a future version,
+verify listing ownership, UUID, unused numeric version, live support/privacy
+URLs and exact checked bytes before that separately authorized submission.
+A local kit or successful preparation establishes consistency, not account
+ownership or a completed upload.
+
+## History and evidence
+
+[Release readiness](RELEASE-READINESS.md) owns the current version's scope.
+The [earlier publishing guide](https://github.com/xefensor/halftone-watchface/blob/22f4193c07fd28d4cffacce68bb89e425dcc3610/docs/GITHUB-RELEASES.md)
+retains rc.6/1.10.1 preparation details. Older tags, source snapshots, checksums
+and [rc.6 validation](VALIDATION.md) remain unchanged.

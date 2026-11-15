@@ -1,107 +1,114 @@
 # Halftone
 
-A Pebble Time 2 watchface with a centered Fira clock, procedural dot border and
-two readings. Music, notifications and Timeline Peek retain both reading positions.
+A watchface for **Pebble Time 2 and Round 2**, with a centred Fira clock,
+a distinctive dotted border and two readings beneath the time. Choose colours,
+Big text, depth and shadow while keeping room for ongoing activities.
 
-## Store update 1.10.2
+![Halftone Store banner with an orange dot motif and a Time 2 watch illustration](store/emery-family-banner.png)
 
-Current source prepares Halftone 1.10.2 for the reviewed Store update. The new numeric version supersedes the existing public 1.10.1 binary without changing the public UUID. Its exact PBW, Store package, source and checksums are under `releases/`; earlier artifacts remain unchanged.
+Store artwork; [sources and provenance](store/artwork-provenance.json).
 
-## Activities: see what is happening now
+## Install Halftone 1.10.3
 
-Activities are live updates shown by compatible XOCE apps and watchfaces, such as a countdown, music or a new notification. This feature connects compatible XOCE products; support depends on the app or watchface you choose.
+[View in Pebble Store](https://apps.repebble.com/48d7f4eab704414c8bc1fa7e) ·
+[Product page and screenshots](https://xefensor.github.io/xoce/projects/halftone/) ·
+[Set up Halftone](https://xefensor.github.io/xoce/docs/pebble/halftone/)
 
-Start a countdown in Timer, then return to Halftone to see the time remaining on your watchface. Enable activity plugins and show Timer in Halftone’s activity list, then save. Timer keeps running the countdown and alarm. Open Timer to pause, resume or finish it.
+Halftone 1.10.3 is a published stable release for Time 2 / Emery and
+Round 2 / Gabbro. Install through the official Pebble phone app. Duo and other
+watch models are outside this release's targets. No separate library is needed.
 
-Sharing needs plugin support in the official Pebble phone app, the required permissions and a connected phone. Weather and battery readings use separate reading settings. Music and notification integration requires Android. Open Activity is optional; you can always open Timer from the watch’s app list.
+For manual installation, download the matching
+[Halftone-1.10.3.pbw](https://github.com/xefensor/halftone-watchface/releases/download/v1.10.3/Halftone-1.10.3.pbw)
+and [SHA256SUMS.txt](https://github.com/xefensor/halftone-watchface/releases/download/v1.10.3/SHA256SUMS.txt),
+then verify with `sha256sum --ignore-missing -c SHA256SUMS.txt`. The
+[release page](https://github.com/xefensor/halftone-watchface/releases/tag/v1.10.3)
+also contains the matching source, debugging and Store archives. The PBW's SHA-256 is
+`199fdad4a20a885f66216075ed07bd336b86fe50c574413f8a5f89a3fc086a9d`.
+Older releases remain available with their original source and evidence.
 
-## Download
+| Time 2 | Round 2 |
+| --- | --- |
+| ![Halftone on Time 2, orange clock with two weather readings](store/emery-store-demo-20261114-orange.png) | ![Halftone on Round 2, orange clock with two weather readings](store/gabbro-store-demo-20261114-orange.png) |
 
-The public [v1.9.0-rc.6 release](https://github.com/xefensor/halftone-watchface/releases/tag/v1.9.0-rc.6)
-is a **prerelease** for sideloading:
+Native emulator examples, captured from 1.10.2 and reused for 1.10.3 after
+[renderer/resource verification](store/final-gallery-reuse.json). The image bytes
+and original capture versions remain unchanged; these are not physical-watch tests.
 
-- [Installable PBW](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6.pbw)
-- [Source archive](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6-source.zip)
-- [Prepared store package](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/Halftone-1.9.0-rc.6-store-package.zip)
-- [Checksums](https://github.com/xefensor/halftone-watchface/releases/download/v1.9.0-rc.6/SHA256SUMS.txt)
+## Start with two readings
 
-The numeric SDK label is 1.9.0. Development in this checkout is a separate local
-1.10.1 stable release preparation using Core 0.6.0, Activities 0.4.5 and shared UI 0.1.3, with activity
-navigation and current settings/privacy handling. It does not replace rc.6 or
-its original evidence. See [candidate validation](docs/DEVELOPMENT-VALIDATION.md).
+1. Pair your Time 2 or Round 2 with the [official Pebble phone app](https://repebble.com/app), then install Halftone and choose it as your active watchface.
+2. Enable plugin support where your phone-app version requires it. In Pebble's **Complications** settings, choose readings for slots **1 and 2**. Halftone ignores choices 3–5.
+3. Open Halftone's settings gear. **Appearance** contains colours, Text size and the separate **Big text** option, plus depth and shadow.
+4. Save and wait for **✓ Saved**. That confirms phone persistence. Check the separate watch-delivery status; keep the watch connected and retry delivery when offered.
 
-## Compatibility
+A reading can be weather, battery or another compatible source. Halftone retains
+its provider's units and public qualifiers. An unconfigured position stays empty;
+a selected but expired or unavailable reading shows `--`. The clock and date keep
+working without a phone. [Reading behaviour](docs/COMPLICATIONS.md) ·
+[Weather setup](docs/PLUGIN-WEATHER.md).
 
-Candidate targets: **Pebble Time 2 / Emery** and **Round 2 / Gabbro**, built with **Pebble SDK 4.44**. Duo is deferred. The phone
-needs Pebble's plugin and complication APIs; enable the plugin preview if your
-phone version requires it. A library is bundled in the PBW and needs no separate
-watch installation. Readings use their providers' permissions and units.
+## Keep a Timer countdown in view
 
-The reviewed implementation is accepted for stable release preparation. GitHub and Pebble Store publication remain separate steps.
-Check the [publishing checklist](store/PUBLISHING.md) before any submission.
-[Version-specific validation](docs/VALIDATION.md) records phone/watch gaps.
+Install [Timer](https://xefensor.github.io/xoce/projects/timer/) separately.
+In Halftone's **Content & priority**, enable **Show activity plugins**, turn on
+**Show** for Timer and use its **Move up / Move down** controls to set priority.
+Save, start a countdown in Timer, then press Back twice to return to Halftone.
 
-## Setup and use
+Timer still owns its countdown and alarm; open Timer to pause or resume it.
+[Open Activity](https://xefensor.github.io/xoce/projects/open-activity/) can add
+optional Quick Launch shortcuts: choose Halftone as that helper's source and
+match its configured shortcuts in Pebble. It opens the associated app, not a
+particular timer. [Illustrated setup](https://xefensor.github.io/xoce/docs/pebble/setup/#illustrated-first-setup).
 
-1. Open the released PBW with the Pebble phone app and install it on the watch.
-2. Configure the first two **Complications** choices in Pebble's settings.
-3. Open Halftone's gear settings, choose appearance, clock and context options,
-   then save. Keep saved palettes and the explicit clock-size option.
-4. Grant the permissions required by the selected sources. Configure their
-   services in Pebble when needed.
+Shared readings and activities need plugin support, relevant source permissions
+and a connected phone. Built-in music and notification sources require Android.
+Notifications and message text start off; enable private content deliberately.
+Halftone displays activity data and app destinations, without playback or Timer
+controls. [Activities, privacy and interactions](docs/DYNAMIC-CONTENT.md).
 
-Either reading can show temperature, precipitation, battery or another supported
-scalar source. Values keep the source's text and units. Unconfigured positions
-stay empty; stale or unavailable configured readings show `--`. Both positions
-remain visible above music, notifications and Timeline Peek. The date, clock,
-watch battery and connection state keep their native watch behavior.
+## Display preferences
 
-[Reading formats and limits](docs/COMPLICATIONS.md) · [Weather setup](docs/PLUGIN-WEATHER.md) ·
-[Context and privacy](docs/DYNAMIC-CONTENT.md) · [Current UI](docs/UI.md).
+Text size can follow the watch or use Small, Medium or Large. **Big text** remains
+a separate clock/date/reading option. Day and Night palettes stay independent;
+appearance can select a palette or follow Quiet Time. Automatic Follow Pebble
+appearance is unavailable on SDK 4.44 and retains its last explicit Light/Dark
+fallback. Phone-page appearance is independent of the watch palette.
 
-The local development candidate adds independent Text Size and Appearance choices,
-including Manual Day/Night and Follow Quiet Time. Bigger Text and optical settings
-remain separate. Follow Pebble Appearance is unavailable on the pinned SDK and
-retains the last manual palette. See the [preferences checkpoint](docs/ui-preferences-checkpoint.md)
-for candidate evidence and limits; published downloads retain their original UI.
+[Current UI](docs/UI.md) · [Troubleshooting and support](SUPPORT.md) ·
+[Privacy](PRIVACY.md). Versioned source tests, browser simulations, native emulator
+renders and physical-device checks remain different evidence.
 
-## Development
+## Develop and contribute
 
-Use the runtimes and tools in [CONTRIBUTING](CONTRIBUTING.md): Node 22, Python
-3.12, a C99 compiler and Pebble SDK 4.44. Ordinary builds use committed font
-geometry; regeneration has additional documented prerequisites.
+[CONTRIBUTING](CONTRIBUTING.md) selects Node 22.23.4, Python 3.12.15, Pillow 13.0.0
+and a C99 compiler for portable checks. Native builds additionally require the
+pinned Pebble SDK 4.44 tooling. Ordinary builds use committed font geometry.
 
 ```sh
+python3 -m pip install -r requirements-test.txt
 npm ci --ignore-scripts
 npm test
+# With the pinned Pebble SDK selected:
 npm run build
 npm run check:artifact
 npm run check:config
 ```
 
-Development PBW/debug packages live in `build/candidate/`; captures and reports
-live in `build/qa/`. Build independently from the pinned archives and provenance
-in `vendor/`. Keep `dist/` and existing release evidence frozen. The font/preview
-audits bind screenshots to the actual native renderer; refresh development
-previews when that renderer changes.
+Use a Python virtual environment as described in CONTRIBUTING. Outputs belong in
+ignored `build/`; `dist/`, released archives, tags and historical QA remain frozen.
+The app bundles Core 0.6.0, Activities 0.4.5 and UI 0.1.3 snapshots under `vendor/`.
+Those app dependencies are separate from the public standalone library releases.
+[Dependency ownership](docs/SHARED-CORE.md) · [Release maintenance](docs/GITHUB-RELEASES.md).
 
-Read [maintenance contracts](docs/MAINTENANCE.md), [shared-core notes](docs/SHARED-CORE.md)
-and [release preparation](docs/GITHUB-RELEASES.md). Publication requires a manual GitHub workflow dispatch;
-local verification does not authorize it. Earlier release details and commands
-are preserved in the [earlier README](docs/history/readme-before-native-ui.md)
-and [changelog](CHANGELOG.md).
+## Licence and history
 
-## Licence
+[PolyForm Noncommercial 1.0.0](LICENSE) covers Halftone's source and original
+artwork. Preserve its required notices and attribution. This is source-available
+software; commercial use requires separate permission. Fira Sans Condensed and
+Roboto Condensed retain their OFL notices in [third-party notices](THIRD-PARTY-NOTICES.md)
+and [font provenance](resources/fonts/font-provenance.json).
 
-Halftone's source code and original artwork are available under the
-[PolyForm Noncommercial License 1.0.0](LICENSE). You may use, modify and share
-them for noncommercial purposes. Commercial use requires separate permission
-from Xef. Redistributed copies and derivatives must retain the license and the
-required attribution notice naming Xef as the original author.
-
-Because commercial use is restricted, Halftone is source-available rather than
-OSI-approved open-source software.
-
-Fira Sans Condensed and Roboto Condensed retain their SIL Open Font License 1.1
-notices. Keep [third-party notices](THIRD-PARTY-NOTICES.md), the bundled license
-texts and [font provenance](resources/fonts/font-provenance.json).
+The [documentation history](docs/history/publication-docs-2026-11-15.md) links the
+earlier preparation guides. Published source archives and prior beta/RC records
+retain their original scope and bytes.

@@ -1,0 +1,2 @@
+# Portable image audits; native SDK tooling is separately pinned.
+pillow==13.0.0

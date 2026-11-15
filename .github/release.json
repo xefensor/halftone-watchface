@@ -20,8 +20,8 @@
     "path": "store/release-notes.txt"
   },
   "bootstrap": {
-    "version": "1.9.0-rc.6",
-    "source_commit": "dca19138bae62455609d359065324acffedbf041"
+    "version": "1.10.3",
+    "source_commit": "22f4193c07fd28d4cffacce68bb89e425dcc3610"
   },
   "javascript_debug_archive": "releases/Halftone-{version}-debug.zip"
 }

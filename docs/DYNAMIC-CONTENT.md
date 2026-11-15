@@ -1,199 +1,87 @@
-# Development behavior
+# Activities, music and notifications
 
-For the current ACT3 activity, privacy, eight-second notification and public-only cache
-contracts, read [MAINTENANCE](MAINTENANCE.md). The following is historical rc.6 behavior.
+This guide describes published **Halftone 1.10.3**. Its two global readings stay
+above compatible activities; the [reading guide](COMPLICATIONS.md) describes
+those separate Complications choices. [Earlier rc.6 panel behaviour](https://github.com/xefensor/halftone-watchface/blob/22f4193c07fd28d4cffacce68bb89e425dcc3610/docs/DYNAMIC-CONTENT.md)
+remains historical and does not define the current activity engine.
 
-# Dynamic content
+## Choose activities and priority
 
-Halftone 1.9.0 rc.6 uses one adaptive layout. Two large complications sit side
-by side below the clock and plain date. When music or a brief new-notification
-summary appears, both readings shrink into a compact horizontal row above it.
-Neither selected reading is replaced by contextual content.
+In **Content & priority**, turn on **Show activity plugins** and the intended
+provider's **Show** checkbox. Use **Move up / Move down** to set its position.
+The first eligible source becomes Primary and the next becomes Secondary when
+space allows. Either role can contain a compatible Timer, music or notification
+activity. Halftone's order is independent of Dynamic and Dashboard.
 
-## Panel priority
+Music and Notifications participate in the same list but retain their own
+visibility and privacy choices. Hiding a provider preserves its saved order.
+A missing, expired, private or unfittable activity yields instead of displaying
+old content. Timeline Peek owns its native area; activities make room for it.
 
-| Available content | Lower panel |
-| --- | --- |
-| A fresh new-notification summary | App/title and optional message text |
-| Music playing, or its short paused grace period | Song title, artist and artwork when supplied |
-| Neither | No contextual panel; the two global readings use their larger side-by-side presentation |
+Save confirms phone persistence. A separate status describes delivery to the
+watch. The [illustrated setup](https://xefensor.github.io/xoce/docs/pebble/setup/#illustrated-first-setup)
+shows the current controls and their separate statuses.
 
-Both complications remain visible above these panels. During Timeline Peek /
-Quick View, the contextual panel hides; the clock, date and both horizontal
-complications adapt to the space Pebble leaves available. Calendar events and other Timeline items
-remain Pebble's responsibility; Halftone does not duplicate them in another
-panel.
+## Timer and Open Activity
 
-There is no timer integration, automatic rain-warning panel, separate calendar
-panel or automatic page rotation in this candidate. Buttons and touch retain their
-normal Pebble behavior. Use Pebble's Music app for next/previous and play/pause;
-Halftone does not add motion-based playback controls.
+Install Timer separately, enable it in Halftone, save, then start a countdown
+on the watch and press Back twice to return to the watchface. Timer owns its
+saved countdown and alarm. Halftone only displays its shared activity; a zero
+shown by a prediction is not proof that the native alarm fired. A paused Timer
+activity leaves the view after its bounded five-minute visibility interval.
 
-## Music
+Open Activity is an optional, separately installed helper. Choose Halftone as
+its source and configure Primary/Secondary shortcuts, then match those in
+Pebble's Quick Launch settings. A valid recent displayed destination can open
+its associated app. A missing Secondary never substitutes Primary. The helper
+opens the whole app, not a specific saved timer, song or notification.
 
-**Show music while playing** defaults to on. Halftone subscribes to the phone's
-`music/track` source and reads title, artist, playing state and artwork. The
-built-in source is currently an Android feature. Incoming artwork is optional,
-static and capped at 24 pixels. Music artwork and notification icons use the
-same display box: **32 pixels normally or 40 with Big text** for a two-line
-panel, and **28 pixels** for a single-line panel. The visible artwork/icon
-bottom aligns with the visible bottom of the actual fitted foreground text,
-including its ellipsis when needed and excluding the one-pixel shadow.
-Compiled-font glyph metrics determine the text edge; transparent icon padding
-and empty space from contain-fitting are excluded from the icon edge. Text
-and clock positions are unchanged. Scaling adds no source-image detail.
+Halftone exports only activities actually painted by its native renderer. The
+navigation plugin retains bounded destination metadata, not activity text.
+Use one connected watch for the supported handoff flow. The platform does not
+prove the previously active watchface or reliably recall a dispatched launch.
 
-Bundled glyphs use exact compiled ink metrics. System emoji belong to the
-firmware and follow its nominal baseline; their painted edge can differ by a
-few pixels, especially in emoji-only text. Other missing glyphs use the bundled
-wildcard bounds. Source text is preserved.
+## Music and source-owned content
 
-Rectangular music images are center-cropped to a square before scaling,
-preserving their proportions without stretching. Generic complication images
-and notification icons fit inside their boxes without cropping.
-Title and artist use two wide, left-aligned lines, with an inset based on the
-displayed artwork box plus a gap. When removing artwork allows the
-full title to fit, the artwork is omitted. If the
-title still cannot fit, it uses a clean ellipsis; it does not continuously scroll
-or force smaller and smaller text.
-There is no playback-position or duration reading in that source, so Halftone
-does not invent a progress bar.
+Built-in music and notification sources require Android and their Pebble
+permissions. Music can show supplied title, artist and artwork; missing content
+stays absent. Use Pebble's Music app for playback. Halftone does not issue
+provider playback or other contextual action commands.
 
-Pausing releases the panel after a five-second grace period. Stopping playback,
-losing usable source data, disabling music or losing the phone connection also
-releases it. Music data has a maximum 120-second confirmation lease, capped by
-an earlier source expiry. A one-minute source refresh obtains current state;
-it does not renew notification lifetimes or change the weather refresh cadence.
+A real item change can enter with a brief 180ms dot dissolve when enabled.
+Repeated snapshots, countdown ticks and late artwork do not replay that
+transition. Text starts at its beginning, then fits or truncates without
+marquees or automatic text paging. Both watch shapes use fitted geometry;
+Round 2 is not a rectangular screen cropped into a circle.
 
-## Panel presentation and transitions
+## Privacy, expiry and notifications
 
-The normal readings use equal-width left and right columns. Both become
-smaller and move into a compact row above music or notifications, whose text
-uses wide, left-aligned lines. Short number/unit readings use larger digits and
-smaller recognized units without converting source values. Missing readings
-keep their positions; a selected but unusable reading shows `--`.
+Notifications and message text start off. Choose App-only, summary or message
+detail deliberately; even a summary title can contain private text. App filters
+limit display without replacing Android/Pebble permission controls. Additional
+vibration is optional, defaults off and respects Quiet Time. PebbleOS's own
+notification alerts remain independent.
 
-**Brief halftone transitions** defaults to on. A real incoming panel-content
-change can reveal the new content with a 180 ms halftone dissolve, using three
-short timer callbacks. The effect is clipped to the lower interior. When a
-context mode needs space, the clock and reading row fit to that space before
-the reveal; the clock, date and bezel stay still during the dissolve frames.
-Repeated snapshots with identical visible content do not restart the effect
-merely because receipt or expiry times change.
+Startup/reconnect establishes a baseline rather than replaying old notices.
+A fresh continuous notification burst has one original **eight-second** bound,
+shortened by earlier source expiry. Identical updates and unrelated source
+traffic do not renew it. Music and phone state use their bounded original
+confirmation leases; a source receipt is not a new observation.
 
-Clock placement uses measured visible glyph bounds from the compiled fonts,
-rather than their line boxes. At full height, its normal vertical ink center
-is 96 pixels;
-active context centers it at 88 pixels, and the Timeline Peek layout also
-centers it at 88. Big text chooses a contextual clock font no larger than
-88 pixels, fitting down further for wide times. This keeps tall narrow clocks
-clear of the reading row while giving shorter clocks a balanced position.
+Private activity, music and notification content stays transient. Expiry,
+disconnect, removed permission and privacy changes clear it before decoration.
+Public reading caches keep their original receipt/expiry and cannot become
+fresh through replay. [Privacy details](../PRIVACY.md) ·
+[current ownership contracts](MAINTENANCE.md).
 
-Expiry, privacy clearing, disconnection and Timeline Peek hide content
-immediately instead of waiting for an effect. Peek restoration is not animated.
-The switch disables the effect while keeping the same layout and data behavior.
+## Source and evidence
 
-## Notification summaries
+The app pins Activities 0.4.5 for ACT3/schema 4 activity handling, Core 0.6.0 for
+readings/transport and UI 0.1.3 for presentation helpers. Providers own source
+meaning; Halftone owns priority, fitted layout, settings and native lifecycle.
+The exact archives and provenance are in `vendor/`.
 
-**New notifications** defaults to off. Enable it in Halftone's
-settings and allow notification access through Pebble. **Include message text**
-is a separate switch and also defaults to off. With it disabled, the panel shows
-the app and notification title, which can itself contain a sender or other
-private text.
-
-**Apps to show** accepts comma-separated app names, for example `Signal,
-WhatsApp`. Matching is case-insensitive; an exact package name can also be used.
-An empty field includes every notification app allowed for Halftone in Pebble.
-This display filter does not grant Android or Pebble notification access.
-
-The first source snapshot establishes a baseline. Notifications already in it
-are not shown as new. A new notification ID, or changed title/message text on an existing ID after
-that baseline, can appear for at most 12 seconds, with a shorter lifetime if
-the source expires sooner. This supports chat apps that reuse a notification
-ID. Identical redeliveries and artwork-only changes do not replay it. Another
-source update cannot extend its original expiry. Removing the active notification, disabling
-summaries or losing the source clears the panel. Reconnection establishes a
-new baseline, so notifications accumulated while disconnected are not replayed.
-
-The source represents active notifications in the phone's notification shade,
-not a reliable unread-message count or Pebble's notification history. Android
-notification access and each app's notification behavior determine what data
-is available. Halftone adds no duplicate notification sound or vibration and
-provides no dismiss or reply action.
-
-## Status indicators
-
-**Status indicators** defaults to on. It controls small
-indicators beside the complication row:
-
-- Watch battery at 10% or less while not charging, read on the watch.
-- Phone battery at 15% or less, read from `phone/phone_state`.
-- A disconnected phone, read on the watch.
-
-These indicators do not take over the main panel. Phone battery has the same
-maximum 120-second confirmation lease as music, and disappears if it cannot be
-confirmed. Zero is a valid low-battery value. Disabling the option hides the
-native indicators and stops the contextual phone-battery subscription; a phone
-battery chosen separately as a global complication remains the user's choice.
-
-## Privacy, freshness and transport
-
-Contextual music, notification content and phone battery are not persisted in
-Halftone's watch cache or phone storage and are not logged. Native context is
-cleared on disconnection and is absent after the watchface relaunches. Global
-complication cache behavior is separate: choosing a music or notification
-property as a global complication follows that generic cache contract.
-
-Source errors clear their own contextual data. Disabled, empty or expired
-sources release the lower panel rather than leaving an old song or message
-visible. Settings expose content-free source diagnostics. Music needs
-`ReadMusic`; notification access is requested only when summaries are enabled.
-Halftone has no Internet permission or independent network fallback.
-
-All theme, global-complication and contextual deliveries share a serialized
-AppMessage queue. Native expiry timers remove short-lived content without
-waiting for the next minute tick. Already-expired deliveries cannot renew a
-summary, and invalid packets do not become displayable context.
-
-## Context packet contract
-
-`CONTEXT_DATA` uses the shared five-record complication codec and CRC. New
-packets use version 2; native decoding also accepts legacy version 1. The
-20-byte record header is unchanged, and contextual records require the generic
-`displayKind` value 0 at byte 5. Weather hints cannot be carried as media or
-notification content. It is a complete snapshot on a separate message key, not
-an update to the two displayed global choices.
-
-| Record index | Meaning | Maximum lease |
-| --- | --- | --- |
-| 0 | Music title and optional artwork | 120 seconds |
-| 1 | Artist | 120 seconds |
-| 2 | Notification app/title and optional app icon | 12 seconds |
-| 3 | Notification body, only when enabled | 12 seconds |
-| 4 | Low phone battery formatted as `15%` | 120 seconds |
-
-Records retain original confirmation and absolute expiry times; timestamps
-are not used as display content. Native selection requires a fresh record 2
-for a notification or a fresh record 0 for music. Notification and artist/body
-records do not independently create a panel. The global-complication packet is
-still carried by `COMPLICATION_DATA` and retains its original persistence rules.
-
-`REQUEST_CONTEXT` value 1 requests a regular contextual refresh. Values 2 and
-above carry the native session token described below. The native watchface
-requests both contextual and global-complication data as needed.
-
-### Reconnect boundary
-
-The watch assigns a new nonprivate session token at launch and reconnect. A
-standalone `REQUEST_CONTEXT=1` from PKJS asks the watch to repeat that token;
-regular native refresh requests can also use value 1. Values 2 through
-2,147,483,647 identify the current session. The controller echoes the exact
-token alongside a valid context snapshot containing no notification records.
-The watch suppresses notification records until that matching boundary arrives,
-and the controller waits for its matching delivery ACK before sending fresh
-summaries. Old queued packets and old boundary tokens cannot reopen a new
-session. Context arriving while the phone session is disconnected is cleared.
-The token counter contains no music or notification content.
-
-Settings changes retract content in the next delivered snapshot. They cannot
-recall a packet already in transit; its original short expiry remains in force.
+[Current release evidence](RELEASE-READINESS.md) distinguishes portable tests,
+packaged browser simulation and native emulator rendering. None of these
+establishes physical-watch comfort, battery life or real-phone provider results.
+Published source archives and older captures keep their original versions.

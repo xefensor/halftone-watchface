@@ -15,7 +15,7 @@
   "source_url": "https://github.com/xefensor/halftone-watchface",
   "support_url": "https://github.com/xefensor/halftone-watchface/issues",
   "privacy_url": "https://github.com/xefensor/halftone-watchface/blob/main/PRIVACY.md",
-  "publication_status": "preparation",
+  "publication_status": "published",
   "store_submission_allowed": false,
   "publication_rule_url": "https://developer.repebble.com/guides/appstore-publishing/preparing-a-submission/",
   "publication_rule_checked_on": "2026-11-14",
@@ -41,11 +41,7 @@
       "gabbro-store-demo-20261114-dark.png"
     ]
   },
-  "remaining_publication_gates": [
-    "Verify Developer Dashboard ownership, existing listing and availability of the new numeric version",
-    "Verify live app-owned support/privacy URLs",
-    "Publish exact checked GitHub and Store artifacts, then activate website links"
-  ],
+  "remaining_publication_gates": [],
   "review_acceptance": {
     "date": "2026-11-13",
     "reviewer": "Xef",
@@ -56,7 +52,8 @@
     "emery": "emery-family-banner.png",
     "gabbro": "gabbro-family-banner.png"
   },
-  "store_submission_scope": "Local release-preparation gate retained from the input package; this flag is not a claim that Pebble prohibits publication. Developer account access and release availability were not checked in this presentation refresh.",
+  "store_submission_scope": "Published status records the verified existing Store/GitHub release. Local kit generation and checks never authorize or perform an upload.",
   "publication_guidance_note": "Current guide specifies optional 720x320 banners and exact-size, unframed native screenshots. Watchface store icon uploads are separate from watchapp icon fields.",
-  "website_url": "https://xefensor.github.io/xoce/projects/halftone/"
+  "website_url": "https://xefensor.github.io/xoce/projects/halftone/",
+  "publication_record_file": "publication.json"
 }

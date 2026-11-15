@@ -1,27 +1,35 @@
-# Store review kit
+# Store publication and local reference kit
 
-This directory prepares Halftone 1.10.1 for Time 2 and Round 2. Duo is deferred.
-The kit is local and has not been submitted or published.
+Halftone **1.10.3** is published for Time 2 and Round 2. Its
+[publication record](publication.json) identifies the verified Store/GitHub
+locations, UUID, version and exact PBW hash. This record describes observed
+publication; it does not authorize another upload.
 
-Run `npm run store:prepare`, then `npm run store:check`. Both use the exact
-checked candidate PBW. `listing.json` contains the proposed fields;
-`capture-provenance.json` binds the current raw screenshots to its native code
-and resources. Screenshots contain synthetic sample data, with no added frame,
-labels or modified pixels. Each target has its own native dimensions.
+`listing.json` describes that current published version. The local generator
+accepts published metadata only when the record matches identity, canonical
+release/download URLs and the exact selected PBW bytes. `store_submission_allowed`
+remains false: no test or local command submits anything to an account.
 
-Pebble now documents plugin publishing in its
-[publishing guide](https://developer.repebble.com/guides/plugins/publishing-plugins/).
-The former blanket preview restriction is historical. Current phone versions
-still require enabling Plugins / permissions preview as described in the
-[preview guide](https://developer.repebble.com/guides/plugins/preview/).
-Music and notification integration requires Android.
+`npm run store:prepare` reads the exact hash-validated PBW from `releases/`
+and writes a reference kit under ignored `build/store/`; `npm run store:check`
+verifies that local output. Preparation-state listings retain the strict fresh
+candidate/local ELF path. The kit manifest identifies which validation scope ran. A reference generated after documentation maintenance does not
+replace the frozen 1.10.3 Store archive. Keep earlier screenshots and captures
+unchanged, with their original versions and gallery-reuse proof.
 
-Xef accepted this reviewed implementation for stable release preparation on
-2026-11-13. Physical coverage remains recorded separately. Before publication,
-verify Dashboard ownership, an unused version and live app-owned GitHub
-support/privacy URLs. Upload the exact frozen PBW after GitHub publication.
-A successful local kit check establishes package consistency only.
+For a new app version, prepare a new reviewed kit, verify the Developer
+Dashboard listing/UUID/version and live support/privacy URLs, then upload only
+the exact checked artifacts under separately authorized publication scope.
+Published tags/assets remain immutable.
 
-Files with the old `emery_` naming and the old asset manifest/provenance belong
-to earlier releases; they are excluded from the new kit. Historical archives,
-checksums and download links remain unchanged. Current capture names use hyphens.
+Pebble's [plugin publishing guide](https://developer.repebble.com/guides/plugins/publishing-plugins/)
+supersedes the former blanket preview restriction. A phone-app build can still
+require enabling Plugins / permissions preview. Music and notification sources
+require Android. Neither publication nor a local check establishes unobserved
+physical-watch or real-phone behaviour.
+
+The [artwork guide](README.md) identifies checked-in masters and the maintained
+XOCE generator reference. Native Store screenshots remain raw and unframed;
+marketing banners have their own provenance. The
+[earlier Store preparation notes](https://github.com/xefensor/halftone-watchface/blob/22f4193c07fd28d4cffacce68bb89e425dcc3610/store/PUBLISHING.md)
+remain available with the historical source.

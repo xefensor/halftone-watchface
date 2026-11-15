@@ -45,7 +45,7 @@ can show **No location**. That is not the same evidence as a router reporting
 **No plugin**. Changing providers cannot be diagnosed from the short code alone.
 
 This diagnostic was introduced in 1.6.1 beta 8 and remains available in
-1.9.0 rc.6 for the two selected readings.
+published 1.10.3 for the two selected readings.
 
 ## Automatic recovery
 

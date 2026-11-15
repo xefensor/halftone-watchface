@@ -1,5 +1,11 @@
 # Halftone privacy information
 
+**Clarification — 15 November 2026, Halftone 1.10.3:** the current text corrects
+an older twelve-second notification description to the shipped eight-second
+burst limit. This documentation maintenance changes no runtime or data handling.
+Frozen release ZIPs retain their original privacy text; this current policy and
+its website copy carry the clarification.
+
 This information describes the current two-complication build. Archived releases
 through 1.5 used different weather clients and caches; their disclosures are
 included in their release archives.
@@ -50,7 +56,7 @@ Notification summaries are off by default. Enabling them uses Pebble's source
 permission flow. Message text is a separate option and is also off by default.
 An optional comma-separated app-name filter limits the sources shown; an empty
 filter includes apps allowed by Pebble. New summaries can contain an app name,
-title and optional body. They last at most 12 seconds and retain their original
+title and optional body. They last at most eight seconds and retain their original
 expiry even if another source updates.
 
 Existing notifications are not replayed on startup, reconnect or notification

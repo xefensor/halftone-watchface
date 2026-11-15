@@ -1,4 +1,8 @@
-# Halftone development UI
+# Halftone: current UI
+
+This describes published **1.10.3** on Time 2 and Round 2. Versioned checkpoint
+links below retain their original capture/build numbers; current release identity
+and verification scope live in [release readiness](RELEASE-READINESS.md).
 
 Halftone keeps its centered Fira clock and value shapes, black alternating dot rings,
 rounded corners, orange/white default palette and three/four-step depth. Big text and
@@ -15,8 +19,9 @@ A compact centered clock leaves room below the readings for an activity. The pri
 retains its title/value and context footer; the secondary occupies one static row when
 it fits. The secondary is omitted from both painting and navigation when space is needed
 for the primary. Text wraps from its beginning and uses ellipsis; no paging or rotation.
-Activity content stays within x24–176 and ends at y208 for the classic border or
-y203 for four-step depth. The same font measures and paints each text role.
+On Time 2, activity content stays within x24–176 and ends at y208 for the classic
+border or y203 for four-step depth. Round 2 instead measures the usable circular
+band for each block; do not copy those rectangular coordinates to Gabbro. The same font measures and paints each text role.
 Required long values retain their full unit through measured fitting; optional
 identity, artwork and compact rows yield before the primary value or paused state. Native Peek
 owns the lower event panel and hides activities while retaining both reading positions.
@@ -70,7 +75,7 @@ preserves both palettes and all Bigger Text, depth, shadow and dissolve choices.
 Legacy Quiet Time users migrate to Follow Quiet Time; other saved colours stay
 Manual Light. Supported older boolean and numeric-key encodings remain readable.
 
-SDK 4.33.1 has no supported system appearance API. Follow Pebble Appearance stays
+The pinned SDK 4.44 has no supported system appearance API. Follow Pebble Appearance stays
 saved and renders its last Manual Light/Dark fallback; the phone explains this
 limit. The main clock retains its own Bigger Text control and Fira shapes.
 

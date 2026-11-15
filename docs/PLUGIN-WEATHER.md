@@ -1,9 +1,9 @@
 # Weather through Pebble complications
 
-This guide applies to **Halftone 1.9.0 rc.6**. It displays the first **two**
+This guide applies to **Halftone 1.10.3**. It displays the first **two**
 global complication choices from the Pebble phone app. Choices 3–5 remain
 available to other faces but are not subscribed to, displayed or cached by
-Halftone. Download the candidate from the [README](../README.md).
+Halftone. Install the published version from the [README](../README.md).
 
 There is no Halftone weather preset, provider picker, API-key setting or hourly
 forecast cache. The native clock and date do not use complication slots.
@@ -39,8 +39,9 @@ Halftone preserves them rather than offering a separate Celsius/Fahrenheit
 setting. Use Pebble's weather/unit settings or the provider's configuration.
 The two sources can use different units if that is what you selected.
 
-Halftone declares no Internet or blanket Location permission. Reading a chosen
-weather source can ask for Location through Pebble's source-permission flow.
+Halftone declares optional Location and ReadWatchSettings permissions, alongside
+Music and Notifications. It declares no Internet permission. Pebble controls
+access to a selected weather source through its source-permission flow.
 Other choices can require their own permissions or provider sign-in; configure
 those in the Pebble phone app. Halftone makes no independent weather HTTP request.
 
@@ -82,7 +83,7 @@ guide](WEATHER-TROUBLESHOOTING.md). Halftone shows the full reason in settings
 and retries source registration with bounded backoff; it has no independent
 weather fallback.
 
-## Remaining device checks
+## Verify your configured sources
 
 - Configure the two suggested readings and verify their fixed left/right
   positions. Replace either with phone battery to confirm it has no fixed weather role.
@@ -101,7 +102,7 @@ weather fallback.
 
 These are checks to perform on a supported physical phone/PT2, not a claim that
 those paths have already been verified. Actual build/emulator checks are
-recorded by version in [VALIDATION.md](VALIDATION.md). Historical beta archives
+recorded by version in [release readiness](RELEASE-READINESS.md). Historical beta archives
 retain the documentation matching their earlier weather presets and five-slot
 layouts.
 

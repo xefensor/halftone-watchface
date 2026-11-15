@@ -1,37 +1,36 @@
-# Release 1.10.3 · 2026-11-14
+# Published Halftone 1.10.3
 
-The final source tests, fresh builds, package checks and native emulator scope are recorded in [current validation](qa/release-1.10.3/validation.json). Historical galleries keep their capture versions and have explicit final-binary reuse proof. Physical phone/watch and live-provider results are not claimed. Xef authorized stable GitHub publication and retained the existing review acceptance; no new device approval gate applies. Pebble Store submission remains manual and unsubmitted.
+Halftone 1.10.3 is published in
+[GitHub Releases](https://github.com/xefensor/halftone-watchface/releases/tag/v1.10.3)
+and [Pebble Store](https://apps.repebble.com/48d7f4eab704414c8bc1fa7e) for Time 2
+and Round 2. The [publication record](../store/publication.json) binds its
+version, unchanged UUID and exact PBW hash to those public locations.
 
-# Stable release preparation — 1.10.2
+## Verified scope
 
-Xef accepted the reviewed Round 2 implementation on 2026-11-13 and selected a
-stable, listed public release. This acceptance removes the earlier additional
-physical-device review prerequisite; it does not create unobserved test results.
+Available repository evidence includes the version-labelled
+[1.10.1 release review](qa/1.10.1/release-review.json),
+[1.10.2 package equivalence](qa/store-version-1.10.2/package-equivalence.json)
+and [1.10.3 final gallery proof](../store/final-gallery-reuse.json). Each record
+retains its original scope. The previous guide linked a separate
+`qa/release-1.10.3/validation.json`, but that file is not present in this repository
+or its frozen source archive; do not treat it as available evidence. Historical
+galleries preserve their capture versions and explicit renderer/resource reuse proof. Physical phone/watch and live-provider results are not
+claimed. Xef retained the existing review acceptance; publication does not
+create unobserved device evidence or require another approval for this version.
 
-This release retains Time 2 and Round 2, the public UUID, saved state, permissions
-and provider protocols. Duo is excluded. Core/Activities/UI archives remain
-pinned to their exact reviewed sources. Older release files and versioned QA
-records stay frozen.
+Time 2 and Round 2, the public UUID, saved-state compatibility, permissions and
+provider protocols remain unchanged. Duo is excluded. App-bundled Core 0.6.0,
+Activities 0.4.5 and UI 0.1.3 snapshots keep their exact recorded archives.
 
-The current source/package/emulator coverage is recorded in
-[the release review](qa/1.10.1/release-review.json). Physical phone/watch
-coverage remains explicitly separate. Earlier versioned reviews retain their
-original decisions and do not override Xef's current acceptance.
+## Maintenance after publication
 
-Prepare/check the Store kit, then freeze the exact candidate with
-`python3 scripts/freeze-release.py`. Commit its source, metadata and archives
-locally before running this repository's GitHub release preparer. The release
-configuration marks this version stable. No upload, tag or publication is
-implied by preparation.
+Current support/privacy and build instructions may be corrected on main.
+Published source/PBW/debug/Store archives, tags, capture bytes and checksums
+remain frozen. Such documentation changes are not retroactively included in
+the released source snapshot. The [release guide](GITHUB-RELEASES.md) describes
+maintenance-only preparation and the stricter path for a future app version.
 
-Publication uses the existing GitHub release workflow and the exact same frozen
-PBW in the Developer Dashboard. Verify listing ownership, the unchanged UUID,
-an unused version and live app-owned GitHub support/privacy URLs before upload.
-After all six public releases match the checked hashes, activate the redesigned
-website and then update Store metadata to its hosted product/support/privacy
-pages. The website's live release gate remains mandatory.
-
-
-## Store update — 1.10.2 (2026-11-14)
-
-Xef requested a new numeric version for the reviewed current implementation and Store handoff. Public Store history already contains 1.10.1; 1.10.2 was absent from the checked public Store history and GitHub tags. The public UUID, saved-state compatibility, pinned dependencies and reviewed native interfaces are retained. New source/artifact/Store verification is recorded with this release preparation; prior emulator captures are reused only after native renderer/resource equality is verified. No new physical-device result is claimed. GitHub branch pushes are authorized; app submission and website deployment remain separate.
+[Earlier preparation notes](https://github.com/xefensor/halftone-watchface/blob/22f4193c07fd28d4cffacce68bb89e425dcc3610/docs/RELEASE-READINESS.md)
+retain the 1.10.1/1.10.2 sequence. [Original rc.6 validation](VALIDATION.md) remains
+historical evidence, not a second current release specification.

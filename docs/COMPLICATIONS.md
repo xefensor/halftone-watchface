@@ -1,6 +1,6 @@
 # Two complications in the adaptive layout
 
-**Halftone 1.9.0 rc.6** uses the first two global complication choices in the
+Published **Halftone 1.10.3** uses the first two global complication choices in the
 Pebble phone app. A complication is a source reading: a temperature, phone
 battery level, calendar time, condition or another plugin property. Clock and
 date remain native watch functions and do not consume a slot.
@@ -40,7 +40,9 @@ and notification summaries stay hidden until Peek closes. Halftone does not
 read or duplicate Timeline's own events. Small battery/connection indicators
 sit beside the reading row when enabled.
 
-![Normal and contextual reading positions](images/horizontal-layout-states.png)
+The [current product gallery](https://xefensor.github.io/xoce/projects/halftone/#screenshots)
+shows both watch shapes with each capture version and reuse scope. The original
+[rc.6 layout illustration](images/horizontal-layout-states.png) remains historical evidence.
 
 Both complications remain visible during music and notification panels. They
 return to their larger size when the panel clears. Timeline Peek keeps both
@@ -92,9 +94,10 @@ transition are described in [dynamic content](DYNAMIC-CONTENT.md).
 ## Sources, access and cache
 
 Pebble chooses the provider for each category/item. Units and provider sign-in
-belong to Pebble or the provider. Halftone declares `ReadMusic` and no Internet
-or hard-coded Location permission. Pebble requests access needed by selected
-sources through its normal flow; notification summaries are opt-in.
+belong to Pebble or the provider. Halftone declares optional ReadMusic, Notifications, Location and
+ReadWatchSettings permissions, with no Internet permission or independent HTTP
+client. Pebble requests access needed by selected sources through its normal
+flow; notification summaries are opt-in.
 
 The two readings can be cached for at most **two hours from their original
 confirmed receipt**, capped by an earlier source expiry. Reopening or replaying
@@ -105,9 +108,9 @@ There is no independent HTTP fallback; clock and date continue on the watch.
 The phone cache uses a two-reading signature and does not restore an older
 five-reading cache. Native version-1 snapshots can still be decoded during an
 upgrade, but only the first two positions can be displayed. Contextual music
-and notifications have separate short leases and are never persisted as
-context. Choosing such a property as one of the two global readings follows
-the generic reading-cache rules instead.
+and notifications have separate short leases and remain transient. Their values
+and private descriptor labels are excluded from persistent caches even when
+selected as global readings. Public readings keep their bounded cache rules.
 
 A direct source may differ from Pebble's normalized native Weather display.
 See [weather setup and comparison](PLUGIN-WEATHER.md).
@@ -120,8 +123,8 @@ preference envelope, so array position is not the slot number. The separate
 `index.numericValue.value` selects an underlying source instance by zero-based
 position, not by stable instance ID. Reordering instances can retarget a choice.
 
-The transport still has five records because contextual snapshots share its
-codec. The global-reading encoder emits EMPTY records at indices 2–4. Version 2
+The legacy reading transport has five records for compatibility; Halftone
+uses only the first two global reading positions. The global-reading encoder emits EMPTY records at indices 2–4. Version 2
 keeps the 20-byte record header and uses byte 5 as `displayKind`: 0 is generic,
 1 is precipitation probability. The native decoder accepts version 1 and
 version 2; version 1 requires that byte to remain zero. Unknown hints and invalid

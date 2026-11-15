@@ -1,14 +1,15 @@
 # Current Halftone contracts
 
-The development candidate adopts Dynamic 0.18.3's shared engine and activity capabilities.
-The SDK label remains 1.9.0 for local development; this is not a replacement rc.6 release.
+These contracts describe the published Halftone **1.10.3** implementation for
+Time 2 and Round 2. The package version and release records own current identity;
+older candidate and rc.6 evidence retains its original scope.
 
-Core 0.5.2 supplies v1–v4 reading decoding, public identity/observation metadata and
+The bundled Core **0.6.0** supplies v1–v4 reading decoding, public identity/observation metadata and
 public-only cache handling. Generic receipt leases last at most two hours, shortened
 by original source expiry. Music/notification readings do not survive cache reopening.
 Halftone preserves its legacy cache namespace, persistent ranges and original key numbers.
 
-Activities 0.4.4 supplies ACT3 source/run identity, primary/secondary selection, clocks,
+The bundled Activities **0.4.5** supplies ACT3 source/run identity, primary/secondary selection, clocks,
 Timer/plugin activities and built-in music/notifications. New notifications use an
 original eight-second burst, shortened by earlier expiry; updates do not extend it.
 Start/reconnect requires a confirmed baseline. Private content is transient and clears
@@ -33,8 +34,9 @@ messages nor persist data. Covered views update expiry without decorative redraw
 new navigation claims. Genuine incoming item changes may dissolve for 180ms; appearance
 transitions and native Peek movement respect the animation preference and unobstructed area.
 
-Development and QA use ignored build/. Historical documents and store materials describe
-their original published version; docs/VALIDATION.md does not certify this candidate.
+Development and QA use ignored `build/`. Historical documents and frozen Store
+materials describe their original version; `docs/VALIDATION.md` remains rc.6
+evidence. See [current release scope](RELEASE-READINESS.md).
 
 Supporting type follows its local override or the launch-time OS size using
 Halftone-owned profiles and
@@ -74,9 +76,10 @@ adding native code; do not silently change the SDK or omit glyph coverage.
 Gabbro uses the complete 260×260 physical display. Text and artwork are fitted
 inside the chord for their vertical band; the shared UI library owns only
 geometry and drawing. Time 2 retains its established rectangular composition.
-The SDK 4.44 reference and disposable candidate evidence are in the workspace's
-`Round2-Development/` directory. This is development work; frozen release files
-and historical QA are unchanged. No physical Round 2 or Android result is implied.
+SDK 4.44 targets both shapes. The [current release scope](RELEASE-READINESS.md) and
+[gallery reuse proof](../store/final-gallery-reuse.json) identify the shipped
+build, available versioned evidence and reused captures. Earlier workspace-only experiments are historical;
+no physical Round 2 or Android result is implied.
 
 Clock raster buffers and activity transition distances use the display dimensions.
 Readings fit one shared numeric size before measuring their supporting lines.
